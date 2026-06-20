@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 이 파일은 Claude Code가 저장소를 열 때 자동으로 읽는 프로젝트 컨텍스트다.
+더 긴 개발 컨텍스트(설계 결정·불변·TODO·금지사항 전체)는 [`docs/development-context.md`](docs/development-context.md)를 참조.
 
 ## 프로젝트
 

@@ -22,6 +22,27 @@ python -m stele.cli demos
 python -m pytest -q
 ```
 
+## Development
+
+Requirements: Python 3.10+, `pytest` (test-only dependency, no runtime deps).
+
+```bash
+# Run the test suite
+python -m pytest -q
+
+# Check a proof against a specific logic
+python -m stele.cli check examples/dne.stele --logic classical_prop
+python -m stele.cli check examples/dne.stele --logic intuitionistic_prop
+
+# Many-valued semantics demos
+python -m stele.cli demos
+
+# Local web UI (port 8765)
+python -m stele.web
+```
+
+CI runs on every push and pull request via GitHub Actions (`.github/workflows/tests.yml`), testing Python 3.10–3.12.
+
 ## 웹 UI
 
 `python -m stele.web` 를 실행하면 로컬 서버(기본 포트 8765)가 뜨고 브라우저가 열린다. 증명 편집기에서 예제를 불러오고 **논리 세계 토글**을 바꾸면 같은 증명의 판정이 즉시 뒤집히며, 하단에 K3/LP/고전 진리표와 배중률·거짓말쟁이·폭발원리 결과가 표시된다. 백엔드는 표준 라이브러리만 쓰며 기존 Python 커널을 그대로 호출한다(검사 로직 중복 없음).

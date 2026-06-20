@@ -94,40 +94,63 @@ def _check_block(lines, env, logic, top=False):
 
 def _apply_rule(node, env, logic, subproofs):
     rule = node.rule
-    if rule == "imp_intro":
-        if len(node.refs) != 2:
-            raise ProofError(
-                "imp_intro expects 2 arguments: <assumption-label> <conclusion-label>",
-                node.line)
-        a, b = node.refs
-        for sp in subproofs:
-            if sp.assume_label == a and b in sp.locals:
-                return Op("imp", (sp.assume_formula, sp.locals[b]))
-        raise ProofError(
-            f"imp_intro requires a closed subproof that assumes '{a}' and derives '{b}'",
-            node.line)
     schema = logic.rules.get(rule)
     if schema is None:
         raise ProofError(
             f"rule '{rule}' is not available in logic '{logic.name}'", node.line)
-    if len(node.refs) != len(schema.premises):
+    n_ord = len(schema.premises)
+    n_hyp = len(schema.hyp_premises)
+    expected = n_ord + 2 * n_hyp
+    if len(node.refs) != expected:
         raise ProofError(
-            f"rule '{rule}' expects {len(schema.premises)} premise(s), "
+            f"rule '{rule}' expects {expected} argument(s) "
+            f"({n_ord} premise(s), {n_hyp} subproof(s)), "
             f"got {len(node.refs)}", node.line)
+
     subst = {}
-    for i, (pat, ref) in enumerate(zip(schema.premises, node.refs), start=1):
+
+    # Ordinary premises — matched against the current environment.
+    for i, (pat, ref) in enumerate(zip(schema.premises, node.refs[:n_ord]), start=1):
         if ref not in env:
             raise ProofError(f"unknown reference '{ref}'", node.line)
         new = match(pat, env[ref], schema.metavars, subst)
         if new is None:
-            expected = pretty(instantiate(pat, subst))
+            expected_f = pretty(instantiate(pat, subst))
             raise ProofError(
-                f"rule '{rule}': premise {i} expected {expected}, "
+                f"rule '{rule}': premise {i} expected {expected_f}, "
                 f"but '{ref}' is {pretty(env[ref])}", node.line)
         subst = new
-    # Match the conclusion pattern against the claimed formula so that
-    # conclusion-only metavariables (not bound by any premise) are resolved
-    # from what the user wrote.  Also verifies structural consistency.
+
+    # Hypothesis premises — each consumes two refs (assume_label, concl_label)
+    # that name labels inside a closed sibling subproof.
+    hyp_refs = node.refs[n_ord:]
+    for j, (assume_pat, concl_pat) in enumerate(schema.hyp_premises, start=1):
+        a, b = hyp_refs[2 * (j - 1)], hyp_refs[2 * (j - 1) + 1]
+        sp_found = None
+        for sp in subproofs:
+            if sp.assume_label == a and b in sp.locals:
+                sp_found = sp
+                break
+        if sp_found is None:
+            raise ProofError(
+                f"rule '{rule}': no closed subproof found that assumes '{a}' "
+                f"and derives '{b}'", node.line)
+        new = match(assume_pat, sp_found.assume_formula, schema.metavars, subst)
+        if new is None:
+            raise ProofError(
+                f"rule '{rule}': subproof assumption '{a}' "
+                f"({pretty(sp_found.assume_formula)}) does not match expected pattern",
+                node.line)
+        new = match(concl_pat, sp_found.locals[b], schema.metavars, new)
+        if new is None:
+            raise ProofError(
+                f"rule '{rule}': subproof conclusion '{b}' "
+                f"({pretty(sp_found.locals[b])}) does not match expected pattern",
+                node.line)
+        subst = new
+
+    # Conclusion-directed matching: resolves any metavariable not yet bound
+    # (e.g. conclusion-only free variables) and verifies structural consistency.
     final = match(schema.conclusion, node.formula, schema.metavars, subst)
     if final is None:
         raise ProofError(

@@ -1,0 +1,5 @@
+theorem dne_law:
+  suppose h1: not not P
+    have h2: P by dne h1
+  have h3: not not P -> P by imp_intro h1 h2
+  conclude not not P -> P by h3

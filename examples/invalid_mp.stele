@@ -1,0 +1,5 @@
+theorem bad_mp:
+  assume h1: P -> Q
+  assume h2: R
+  have h3: Q by mp h1 h2
+  conclude Q by h3

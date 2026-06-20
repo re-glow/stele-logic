@@ -1,0 +1,7 @@
+# the hypothesis h2 lives only inside the subproof; using it after the
+# block closes must fail (discharge / scope)
+theorem leak:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P by copy h2
+  conclude P by h3

@@ -1,0 +1,12 @@
+[project]
+name = "stele-logic"
+version = "0.1.0"
+description = "Human-readable formal language and proof checker -- a 유리학-based logical framework"
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["stele"]

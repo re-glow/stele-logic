@@ -1,0 +1,7 @@
+theorem and_demo:
+  assume h1: P
+  assume h2: Q
+  have h3: P and Q by and_intro h1 h2
+  have h4: P by and_elim_left h3
+  have h5: Q by and_elim_right h3
+  conclude Q by h5

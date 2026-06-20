@@ -125,4 +125,12 @@ def _apply_rule(node, env, logic, subproofs):
                 f"rule '{rule}': premise {i} expected {expected}, "
                 f"but '{ref}' is {pretty(env[ref])}", node.line)
         subst = new
-    return instantiate(schema.conclusion, subst)
+    # Match the conclusion pattern against the claimed formula so that
+    # conclusion-only metavariables (not bound by any premise) are resolved
+    # from what the user wrote.  Also verifies structural consistency.
+    final = match(schema.conclusion, node.formula, schema.metavars, subst)
+    if final is None:
+        raise ProofError(
+            f"rule '{rule}': conclusion does not match claimed formula "
+            f"{pretty(node.formula)}", node.line)
+    return instantiate(schema.conclusion, final)

@@ -25,6 +25,7 @@ def _imp(a, b):
 
 A = Var("A")
 B = Var("B")
+C = Var("C")
 BOT = Op("bot", ())
 
 COPY           = RuleSchema("copy",           frozenset({"A"}),         (A,),              A)
@@ -37,13 +38,17 @@ NEG_ELIM       = RuleSchema("neg_elim",       frozenset({"A"}),         (A, _not
 EX_FALSO       = RuleSchema("ex_falso",       frozenset({"A"}),         (BOT,),            A)
 OR_INTRO_LEFT  = RuleSchema("or_intro_left",  frozenset({"A", "B"}),    (A,),              Op("or", (A, B)))
 OR_INTRO_RIGHT = RuleSchema("or_intro_right", frozenset({"A", "B"}),    (B,),              Op("or", (A, B)))
-IMP_INTRO      = RuleSchema("imp_intro",      frozenset({"A", "B"}),    (),                _imp(A, B),
+IMP_INTRO      = RuleSchema("imp_intro",      frozenset({"A", "B"}),         (),                   _imp(A, B),
                              ((A, B),))
+NEG_INTRO      = RuleSchema("neg_intro",      frozenset({"A"}),               (),                   _not(A),
+                             ((A, BOT),))
+OR_ELIM        = RuleSchema("or_elim",        frozenset({"A", "B", "C"}),     (Op("or", (A, B)),),  C,
+                             ((A, C), (B, C)))
 
 _SHARED = {r.name: r for r in (
     COPY, MP, AND_INTRO, AND_ELIM_L, AND_ELIM_R,
     NEG_ELIM, EX_FALSO, OR_INTRO_LEFT, OR_INTRO_RIGHT,
-    IMP_INTRO,
+    IMP_INTRO, NEG_INTRO, OR_ELIM,
 )}
 
 

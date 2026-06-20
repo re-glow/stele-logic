@@ -1,0 +1,9 @@
+# Disjunction commutativity: P or Q |- Q or P
+theorem or_comm:
+  assume h1: P or Q
+  suppose h2: P
+    have h3: Q or P by or_intro_right h2
+  suppose h4: Q
+    have h5: Q or P by or_intro_left h4
+  have h6: Q or P by or_elim h1 h2 h3 h4 h5
+  conclude Q or P by h6

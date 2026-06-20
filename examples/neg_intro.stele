@@ -1,0 +1,8 @@
+# neg_intro: prove not (P and not P) by assuming it and deriving false
+theorem neg_intro_demo:
+  suppose h1: P and not P
+    have h2: P by and_elim_left h1
+    have h3: not P by and_elim_right h1
+    have h4: false by neg_elim h2 h3
+  have h5: not (P and not P) by neg_intro h1 h4
+  conclude not (P and not P) by h5

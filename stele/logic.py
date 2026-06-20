@@ -8,6 +8,7 @@ class RuleSchema:
     metavars: frozenset
     premises: tuple
     conclusion: object
+    hyp_premises: tuple = ()  # ((assume_pat, concl_pat), ...) for discharge rules
 
 
 def _not(a):
@@ -36,12 +37,13 @@ NEG_ELIM       = RuleSchema("neg_elim",       frozenset({"A"}),         (A, _not
 EX_FALSO       = RuleSchema("ex_falso",       frozenset({"A"}),         (BOT,),            A)
 OR_INTRO_LEFT  = RuleSchema("or_intro_left",  frozenset({"A", "B"}),    (A,),              Op("or", (A, B)))
 OR_INTRO_RIGHT = RuleSchema("or_intro_right", frozenset({"A", "B"}),    (B,),              Op("or", (A, B)))
+IMP_INTRO      = RuleSchema("imp_intro",      frozenset({"A", "B"}),    (),                _imp(A, B),
+                             ((A, B),))
 
-# imp_intro (->I) is a hypothesis-discharge rule handled specially in the
-# kernel; it is available in every natural-deduction logic defined here.
 _SHARED = {r.name: r for r in (
     COPY, MP, AND_INTRO, AND_ELIM_L, AND_ELIM_R,
     NEG_ELIM, EX_FALSO, OR_INTRO_LEFT, OR_INTRO_RIGHT,
+    IMP_INTRO,
 )}
 
 

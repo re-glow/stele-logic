@@ -99,25 +99,57 @@ label = ident ; rule = ident ; arg = ident ; ref = ident ;
 | `ex_falso` (⊥E) | `false ⊢ A` | 1 | ● | ● |
 | `or_intro_left` (∨I₁) | `A ⊢ A∨B` | 1 | ● | ● |
 | `or_intro_right` (∨I₂) | `B ⊢ A∨B` | 1 | ● | ● |
+| `neg_intro` (¬I) | `[A]…false ⊢ ¬A` | 2 (방출) | ● | ● |
+| `or_elim` (∨E) | `A∨B, [A]…C, [B]…C ⊢ C` | 5 (방출×2) | ● | ● |
 | `dne` | `¬¬A ⊢ A` | 1 | ✗ | ● |
 
 두 세계는 `dne` 단 하나로 갈린다. 이것이 상대성 데모의 축이다.
 `ex_falso`, `or_intro_left`, `or_intro_right` 는 **결론 주도 매칭**(conclusion-directed matching)을 사용한다 — 결론에만 나타나는 메타변수(`B` in ∨I₁, `A` in ∨I₂, `A` in ⊥E)는 사용자가 `have` 에 적은 식으로 결정된다.
+`neg_intro`와 `or_elim` 은 일반화된 방출 메커니즘(`RuleSchema.hyp_premises`)을 사용한다.
 
 **예시 (각 규칙)**
 
 ```
-have c: P by copy a                       # a: P
-have c: Q by mp imp a                     # imp: P -> Q, a: P
-have c: P and Q by and_intro a b          # a: P, b: Q
-have c: P by and_elim_left a              # a: P and Q
-have c: Q by and_elim_right a             # a: P and Q
-have c: false by neg_elim a na            # a: P, na: not P
-have c: Q by ex_falso bot                 # bot: false  (Q 는 임의의 식)
-have c: P or Q by or_intro_left a         # a: P  (Q 는 임의의 식)
-have c: P or Q by or_intro_right b        # b: Q  (P 는 임의의 식)
-have c: P by dne a                        # a: not not P   (classical 전용)
+have c: P by copy a                           # a: P
+have c: Q by mp imp a                         # imp: P -> Q, a: P
+have c: P and Q by and_intro a b              # a: P, b: Q
+have c: P by and_elim_left a                  # a: P and Q
+have c: Q by and_elim_right a                 # a: P and Q
+have c: false by neg_elim a na                # a: P, na: not P
+have c: Q by ex_falso bot                     # bot: false  (Q 는 임의의 식)
+have c: P or Q by or_intro_left a             # a: P  (Q 는 임의의 식)
+have c: P or Q by or_intro_right b            # b: Q  (P 는 임의의 식)
+have c: not A by neg_intro h_a h_bot          # h_a: suppose label (A), h_bot: false 유도
+have c: C by or_elim h_ab h_a h_c1 h_b h_c2  # h_ab: A or B, [h_a]C, [h_b]C  (C 는 임의의 식)
+have c: P by dne a                            # a: not not P   (classical 전용)
 ```
+
+**`neg_intro` 예시 (완전한 증명)**
+
+```
+theorem neg_intro_demo:
+  suppose h1: P and not P       # 가정 A
+    have h2: P by and_elim_left h1
+    have h3: not P by and_elim_right h1
+    have h4: false by neg_elim h2 h3
+  have h5: not (P and not P) by neg_intro h1 h4
+  conclude not (P and not P) by h5
+```
+
+**`or_elim` 예시 — 선언 교환(commutativity)**
+
+```
+theorem or_comm:
+  assume h1: P or Q
+  suppose h2: P                         # 좌 분기 시작 (가정 라벨 h2)
+    have h3: Q or P by or_intro_right h2
+  suppose h4: Q                         # 우 분기 시작 (가정 라벨 h4)
+    have h5: Q or P by or_intro_left h4
+  have h6: Q or P by or_elim h1 h2 h3 h4 h5
+  conclude Q or P by h6
+```
+
+`or_elim <선언라벨> <좌가정> <좌결론> <우가정> <우결론>` — 인자 5개.
 
 ---
 

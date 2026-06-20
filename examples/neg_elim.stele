@@ -1,0 +1,5 @@
+theorem neg_elim_demo:
+  assume h1: P
+  assume h2: not P
+  have h3: false by neg_elim h1 h2
+  conclude false by h3

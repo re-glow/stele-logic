@@ -82,6 +82,8 @@ class _Pratt:
         if t is None or t in _OPS:
             raise ParseError(f"expected a formula, got {t!r}")
         self.adv()
+        if t == "false":
+            return Op("bot", ())
         return Var(t)
 
 

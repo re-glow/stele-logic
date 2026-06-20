@@ -1,0 +1,8 @@
+# or_intro_left: prove P or Q by proving P alone.
+# or_intro_right: prove P or Q by proving Q alone.
+theorem or_intro_demo:
+  assume h1: P
+  assume h2: Q
+  have h3: P or Q by or_intro_left h1   # left side proven
+  have h4: P or Q by or_intro_right h2  # right side proven
+  conclude P or Q by h3

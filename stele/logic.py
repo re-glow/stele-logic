@@ -24,17 +24,25 @@ def _imp(a, b):
 
 A = Var("A")
 B = Var("B")
+BOT = Op("bot", ())
 
-COPY       = RuleSchema("copy",           frozenset({"A"}),      (A,),             A)
-MP         = RuleSchema("mp",             frozenset({"A", "B"}), (_imp(A, B), A),  B)
-AND_INTRO  = RuleSchema("and_intro",      frozenset({"A", "B"}), (A, B),           _and(A, B))
-AND_ELIM_L = RuleSchema("and_elim_left",  frozenset({"A", "B"}), (_and(A, B),),    A)
-AND_ELIM_R = RuleSchema("and_elim_right", frozenset({"A", "B"}), (_and(A, B),),    B)
-DNE        = RuleSchema("dne",            frozenset({"A"}),      (_not(_not(A)),), A)
+COPY           = RuleSchema("copy",           frozenset({"A"}),         (A,),              A)
+MP             = RuleSchema("mp",             frozenset({"A", "B"}),    (_imp(A, B), A),   B)
+AND_INTRO      = RuleSchema("and_intro",      frozenset({"A", "B"}),    (A, B),            _and(A, B))
+AND_ELIM_L     = RuleSchema("and_elim_left",  frozenset({"A", "B"}),    (_and(A, B),),     A)
+AND_ELIM_R     = RuleSchema("and_elim_right", frozenset({"A", "B"}),    (_and(A, B),),     B)
+DNE            = RuleSchema("dne",            frozenset({"A"}),         (_not(_not(A)),),  A)
+NEG_ELIM       = RuleSchema("neg_elim",       frozenset({"A"}),         (A, _not(A)),      BOT)
+EX_FALSO       = RuleSchema("ex_falso",       frozenset({"A"}),         (BOT,),            A)
+OR_INTRO_LEFT  = RuleSchema("or_intro_left",  frozenset({"A", "B"}),    (A,),              Op("or", (A, B)))
+OR_INTRO_RIGHT = RuleSchema("or_intro_right", frozenset({"A", "B"}),    (B,),              Op("or", (A, B)))
 
 # imp_intro (->I) is a hypothesis-discharge rule handled specially in the
 # kernel; it is available in every natural-deduction logic defined here.
-_SHARED = {r.name: r for r in (COPY, MP, AND_INTRO, AND_ELIM_L, AND_ELIM_R)}
+_SHARED = {r.name: r for r in (
+    COPY, MP, AND_INTRO, AND_ELIM_L, AND_ELIM_R,
+    NEG_ELIM, EX_FALSO, OR_INTRO_LEFT, OR_INTRO_RIGHT,
+)}
 
 
 class Logic:

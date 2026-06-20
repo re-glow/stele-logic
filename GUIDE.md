@@ -23,6 +23,7 @@ theorem dne_law using classical_prop:
 | 종류 | 형태 |
 |---|---|
 | 식별자 | `[A-Za-z_][A-Za-z0-9_]*` — 명제 변수(`P`), 라벨(`h1`), 규칙명(`mp`) |
+| 상수 | `false` — 항상 거짓인 식(⊥, falsum). 내부표현 `Op("bot", ())`. |
 | 키워드 연산자 | `not` `and` `or` |
 | 함의 기호 | `->` |
 | 괄호 | `(` `)` |
@@ -42,8 +43,10 @@ imp     = disj [ "->" imp ] ;        (* 우결합 *)
 disj    = conj { "or" conj } ;       (* 좌결합 *)
 conj    = neg  { "and" neg } ;       (* 좌결합 *)
 neg     = "not" neg | atom ;
-atom    = ident | "(" formula ")" ;
+atom    = ident | "false" | "(" formula ")" ;
 ```
+
+`false` 는 예약 상수(falsum, ⊥)다. 명제 변수로 쓸 수 없다.
 
 **우선순위** (강→약): `not` > `and` > `or` > `->`. `->` 는 우결합.
 
@@ -92,19 +95,28 @@ label = ident ; rule = ident ; arg = ident ; ref = ident ;
 | `and_intro` | `A, B ⊢ A∧B` | 2 | ● | ● |
 | `and_elim_left` | `A∧B ⊢ A` | 1 | ● | ● |
 | `and_elim_right` | `A∧B ⊢ B` | 1 | ● | ● |
+| `neg_elim` (¬E) | `A, ¬A ⊢ false` | 2 | ● | ● |
+| `ex_falso` (⊥E) | `false ⊢ A` | 1 | ● | ● |
+| `or_intro_left` (∨I₁) | `A ⊢ A∨B` | 1 | ● | ● |
+| `or_intro_right` (∨I₂) | `B ⊢ A∨B` | 1 | ● | ● |
 | `dne` | `¬¬A ⊢ A` | 1 | ✗ | ● |
 
 두 세계는 `dne` 단 하나로 갈린다. 이것이 상대성 데모의 축이다.
+`ex_falso`, `or_intro_left`, `or_intro_right` 는 **결론 주도 매칭**(conclusion-directed matching)을 사용한다 — 결론에만 나타나는 메타변수(`B` in ∨I₁, `A` in ∨I₂, `A` in ⊥E)는 사용자가 `have` 에 적은 식으로 결정된다.
 
 **예시 (각 규칙)**
 
 ```
-have c: P by copy a                 # a: P
-have c: Q by mp imp a               # imp: P -> Q, a: P
-have c: P and Q by and_intro a b    # a: P, b: Q
-have c: P by and_elim_left a        # a: P and Q
-have c: Q by and_elim_right a       # a: P and Q
-have c: P by dne a                  # a: not not P   (classical 전용)
+have c: P by copy a                       # a: P
+have c: Q by mp imp a                     # imp: P -> Q, a: P
+have c: P and Q by and_intro a b          # a: P, b: Q
+have c: P by and_elim_left a              # a: P and Q
+have c: Q by and_elim_right a             # a: P and Q
+have c: false by neg_elim a na            # a: P, na: not P
+have c: Q by ex_falso bot                 # bot: false  (Q 는 임의의 식)
+have c: P or Q by or_intro_left a         # a: P  (Q 는 임의의 식)
+have c: P or Q by or_intro_right b        # b: Q  (P 는 임의의 식)
+have c: P by dne a                        # a: not not P   (classical 전용)
 ```
 
 ---

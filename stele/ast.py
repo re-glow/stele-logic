@@ -25,7 +25,9 @@ def _p(f, parent):
         return f.name
     if isinstance(f, Op):
         s = f.sym
-        if s == "not":
+        if s == "bot":
+            return "false"
+        elif s == "not":
             prec = _PREC["not"]
             out = "not " + _p(f.args[0], prec)
         elif s in _BIN:

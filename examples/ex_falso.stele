@@ -1,0 +1,8 @@
+# ex falso quodlibet: from false, anything follows.
+# The conclusion Q is a free metavariable resolved from the claimed formula.
+theorem ex_falso_demo:
+  assume h1: P
+  assume h2: not P
+  have h3: false by neg_elim h1 h2
+  have h4: Q by ex_falso h3
+  conclude Q by h4

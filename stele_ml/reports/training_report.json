@@ -1,0 +1,84 @@
+{
+  "dataset": {
+    "n_test": 80,
+    "n_total": 400,
+    "n_train": 320,
+    "source": "generated (seed=0, n=400)"
+  },
+  "metrics": {
+    "exact_match": 0.525,
+    "exact_n_correct": 42,
+    "macro_f1": 0.2451,
+    "macro_precision": 0.3333,
+    "macro_recall": 0.218,
+    "micro_f1": 0.4528,
+    "micro_precision": 1.0,
+    "micro_recall": 0.2927,
+    "n_codes_with_support": 6,
+    "per_code": {
+      "InvalidTransition": {
+        "f1": 0.0,
+        "fn": 8,
+        "fp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 8,
+        "tp": 0
+      },
+      "MissingHypothesis": {
+        "f1": 0.0,
+        "fn": 3,
+        "fp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 3,
+        "tp": 0
+      },
+      "UndefinedDefinition": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 8,
+        "tp": 8
+      },
+      "UndefinedSymbol": {
+        "f1": 0.4706,
+        "fn": 9,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 0.3077,
+        "support": 13,
+        "tp": 4
+      },
+      "UnsupportedConclusion": {
+        "f1": 0.0,
+        "fn": 5,
+        "fp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 5,
+        "tp": 0
+      },
+      "UnusedAssumption": {
+        "f1": 0.0,
+        "fn": 4,
+        "fp": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 4,
+        "tp": 0
+      }
+    },
+    "validity_accuracy": 0.8375,
+    "validity_n_correct": 67,
+    "validity_n_total": 80
+  },
+  "model": {
+    "alpha": 1.0,
+    "n_vocab": 454,
+    "type": "MultinomialNaiveBayes (stdlib baseline)"
+  },
+  "note": "Stdlib Naive Bayes baseline on synthetic/benchmark data. Metrics reflect this small corpus and simple model. These are measured values \u2014 not targets or claims."
+}

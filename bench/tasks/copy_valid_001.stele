@@ -1,0 +1,4 @@
+theorem copy_valid_001 using intuitionistic_prop:
+  assume h: P
+  have h2: P by copy h
+  conclude P by h2

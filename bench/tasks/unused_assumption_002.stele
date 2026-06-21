@@ -1,0 +1,6 @@
+theorem unused_assumption_002 using intuitionistic_prop:
+  assume h1: P -> Q
+  assume h2: P
+  assume h3: R
+  have h4: Q by mp h1 h2
+  conclude Q by h4

@@ -1,0 +1,7 @@
+definition MY_IMP := P -> Q
+
+theorem def_valid_001 using intuitionistic_prop:
+  assume h: MY_IMP
+  assume hp: P
+  have hq: Q by mp h hp
+  conclude Q by hq

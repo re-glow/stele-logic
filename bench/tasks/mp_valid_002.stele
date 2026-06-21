@@ -1,0 +1,7 @@
+theorem mp_valid_002 using intuitionistic_prop:
+  assume h1: P -> Q
+  assume h2: Q -> R
+  assume h3: P
+  have h4: Q by mp h1 h3
+  have h5: R by mp h2 h4
+  conclude R by h5

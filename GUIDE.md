@@ -844,7 +844,111 @@ expand_defs(formula, defs_dict)  # 정의 치환 유틸리티
 
 ---
 
-## 17. 한계와 다음 단계
+## 17. 벤치마크와 평가 하네스
+
+### 17.1 벤치마크 디렉터리 구조
+
+```
+bench/
+  labels.jsonl       ← 레이블 파일 (JSONL, 한 줄 = 한 태스크)
+  tasks/             ← .stele 태스크 파일
+    mp_valid_001.stele
+    undefined_symbol_001.stele
+    ...
+  reports/
+    latest.json      ← 평가 하네스를 실행해 생성된 결과 (하드코딩 금지)
+```
+
+v1 시드 벤치마크: 31개 태스크 (17개 valid, 10개 error, 4개 warning).
+
+### 17.2 레이블 형식
+
+`bench/labels.jsonl` 은 JSON Lines 포맷으로, 한 줄 = 한 태스크 레코드:
+
+```jsonl
+{"id":"mp_valid_001","path":"tasks/mp_valid_001.stele",
+ "logic":"intuitionistic_prop","expected_valid":true,"expected_codes":[],
+ "description":"basic modus ponens","tags":["valid","mp"]}
+
+{"id":"undefined_symbol_001","path":"tasks/undefined_symbol_001.stele",
+ "logic":"intuitionistic_prop","expected_valid":false,
+ "expected_codes":["UndefinedSymbol"],"tags":["invalid","UndefinedSymbol"]}
+```
+
+| 필드 | 설명 |
+|---|---|
+| `id` | 안정적인 태스크 식별자 (파일명과 일치) |
+| `path` | `bench/` 기준 상대 경로 |
+| `logic` | 검증에 사용할 논리 이름 |
+| `expected_valid` | `check`가 통과해야 하면 `true`, 실패해야 하면 `false` |
+| `expected_codes` | `diagnose`가 반환해야 할 코드 목록 (valid 태스크는 `[]`) |
+| `description` | (선택) 태스크 설명 |
+| `tags` | (선택) 분류 태그 |
+
+**주의:** `expected_valid = true` + `expected_codes = ["UnusedAssumption"]` 조합이 가능하다. `check`는 통과하지만 `diagnose`는 경고를 반환할 수 있다.
+
+### 17.3 평가 실행
+
+```
+python -m stele.eval bench \
+  --labels bench/labels.jsonl \
+  --tasks bench \
+  --report bench/reports/latest.json
+```
+
+| 옵션 | 설명 |
+|---|---|
+| `--labels` | JSONL 레이블 파일 (기본: `bench/labels.jsonl`) |
+| `--tasks` | 태스크 루트 디렉터리 (기본: `bench`) |
+| `--report` | JSON 리포트 출력 경로 (선택) |
+| `-v` | 태스크별 PASS/FAIL 출력 |
+
+### 17.4 측정 지표
+
+하네스는 다음을 계산한다:
+
+**유효성 정확도 (validity_accuracy)**
+- 전체 태스크 중 `predicted_valid == expected_valid` 비율
+
+**진단 코드 정합율 (exact_match_rate)**
+- 전체 태스크 중 `set(predicted_codes) == set(expected_codes)` 비율
+
+**진단 코드 P / R / F1**
+
+| 지표 | 계산 방법 |
+|---|---|
+| 코드별 precision | `TP / (TP + FP)` (분모=0이면 0.0) |
+| 코드별 recall | `TP / (TP + FN)` (분모=0이면 0.0) |
+| 코드별 F1 | `2·P·R / (P+R)` |
+| micro P/R/F1 | 모든 코드의 TP/FP/FN 합산 후 계산 |
+| macro P/R/F1 | `support > 0`인 코드의 평균 |
+
+TP = 예측과 기대 모두에 코드 있음, FP = 예측에만 있음, FN = 기대에만 있음.
+
+### 17.5 새 벤치마크 태스크 추가 방법
+
+1. `bench/tasks/<task_id>.stele` 에 증명 파일 작성
+2. `bench/labels.jsonl` 에 레코드 추가
+3. 하네스 실행으로 레이블 확인:
+   ```
+   python -m stele.eval bench --labels bench/labels.jsonl --tasks bench -v
+   ```
+4. 모든 태스크가 PASS이면 커밋
+
+**정직성 규칙:** `expected_valid`와 `expected_codes`는 구현이 실제로 생성하는 값이어야 한다. 바람직한 값이 아니라 측정된 값을 기록하라.
+
+### 17.6 리포트 결정론성
+
+`bench/reports/latest.json`은 하네스 실행으로 생성한다:
+- 태스크 ID로 정렬
+- 부동소수점 값은 소수 4자리 반올림
+- 타임스탬프·절대경로 없음
+
+버전 관리에 포함하면 측정 수치의 변화를 git diff로 추적할 수 있다.
+
+---
+
+## 18. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

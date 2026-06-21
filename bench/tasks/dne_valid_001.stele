@@ -1,0 +1,4 @@
+theorem dne_valid_001 using classical_prop:
+  assume h1: not not P
+  have h2: P by dne h1
+  conclude P by h2

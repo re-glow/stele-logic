@@ -1,0 +1,4 @@
+theorem missing_hyp_002 using intuitionistic_prop:
+  suppose h1: P
+    have h2: P by copy h1
+  conclude P by h2

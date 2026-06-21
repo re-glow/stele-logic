@@ -1,0 +1,4 @@
+theorem unused_assumption_001:
+  assume h1: P
+  assume h2: Q
+  conclude P by h1

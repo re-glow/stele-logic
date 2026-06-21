@@ -1,0 +1,5 @@
+theorem invalid_transition_003 using intuitionistic_prop:
+  assume h1: P and Q
+  assume h2: P -> R
+  have h3: R by mp h1 h2
+  conclude R by h3

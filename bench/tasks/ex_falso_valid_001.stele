@@ -1,0 +1,4 @@
+theorem ex_falso_valid_001 using intuitionistic_prop:
+  assume h_bot: false
+  have h_p: P by ex_falso h_bot
+  conclude P by h_p

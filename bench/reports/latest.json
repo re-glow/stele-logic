@@ -1,0 +1,447 @@
+{
+  "labels_path": "bench/labels.jsonl",
+  "metrics": {
+    "exact_match_rate": 1.0,
+    "macro": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "micro": {
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "n_exact_match": 31,
+    "n_invalid_expected": 10,
+    "n_tasks": 31,
+    "n_valid_expected": 21,
+    "n_valid_match": 31,
+    "per_code": {
+      "InvalidTransition": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 3,
+        "tp": 3
+      },
+      "MissingHypothesis": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 3,
+        "tp": 3
+      },
+      "UndefinedDefinition": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2,
+        "tp": 2
+      },
+      "UndefinedSymbol": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2,
+        "tp": 2
+      },
+      "UnsupportedConclusion": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2,
+        "tp": 2
+      },
+      "UnusedAssumption": {
+        "f1": 1.0,
+        "fn": 0,
+        "fp": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2,
+        "tp": 2
+      }
+    },
+    "validity_accuracy": 1.0
+  },
+  "results": [
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "and_elim_left_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "and_elim_right_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "and_intro_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "copy_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "def_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "dne_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "ex_falso_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "imp_intro_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "InvalidTransition"
+      ],
+      "expected_valid": false,
+      "id": "invalid_transition_001",
+      "predicted_codes": [
+        "InvalidTransition"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "InvalidTransition"
+      ],
+      "expected_valid": false,
+      "id": "invalid_transition_002",
+      "predicted_codes": [
+        "InvalidTransition"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "InvalidTransition"
+      ],
+      "expected_valid": false,
+      "id": "invalid_transition_003",
+      "predicted_codes": [
+        "InvalidTransition"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "lem_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "MissingHypothesis"
+      ],
+      "expected_valid": false,
+      "id": "missing_hyp_001",
+      "predicted_codes": [
+        "MissingHypothesis"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "MissingHypothesis"
+      ],
+      "expected_valid": false,
+      "id": "missing_hyp_002",
+      "predicted_codes": [
+        "MissingHypothesis"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "MissingHypothesis"
+      ],
+      "expected_valid": false,
+      "id": "missing_hyp_003",
+      "predicted_codes": [
+        "MissingHypothesis"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "mp_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "mp_valid_002",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "neg_elim_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "neg_intro_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "or_elim_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "or_intro_left_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "or_intro_right_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [],
+      "expected_valid": true,
+      "id": "pbc_valid_001",
+      "predicted_codes": [],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UndefinedDefinition"
+      ],
+      "expected_valid": true,
+      "id": "undef_definition_001",
+      "predicted_codes": [
+        "UndefinedDefinition"
+      ],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UndefinedDefinition"
+      ],
+      "expected_valid": true,
+      "id": "undef_definition_002",
+      "predicted_codes": [
+        "UndefinedDefinition"
+      ],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UndefinedSymbol"
+      ],
+      "expected_valid": false,
+      "id": "undefined_symbol_001",
+      "predicted_codes": [
+        "UndefinedSymbol"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UndefinedSymbol"
+      ],
+      "expected_valid": false,
+      "id": "undefined_symbol_002",
+      "predicted_codes": [
+        "UndefinedSymbol"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UnsupportedConclusion"
+      ],
+      "expected_valid": false,
+      "id": "unsupported_conclusion_001",
+      "predicted_codes": [
+        "UnsupportedConclusion"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UnsupportedConclusion"
+      ],
+      "expected_valid": false,
+      "id": "unsupported_conclusion_002",
+      "predicted_codes": [
+        "UnsupportedConclusion"
+      ],
+      "predicted_valid": false,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UnusedAssumption"
+      ],
+      "expected_valid": true,
+      "id": "unused_assumption_001",
+      "predicted_codes": [
+        "UnusedAssumption"
+      ],
+      "predicted_valid": true,
+      "valid_match": true
+    },
+    {
+      "code_exact_match": true,
+      "error": null,
+      "expected_codes": [
+        "UnusedAssumption"
+      ],
+      "expected_valid": true,
+      "id": "unused_assumption_002",
+      "predicted_codes": [
+        "UnusedAssumption"
+      ],
+      "predicted_valid": true,
+      "valid_match": true
+    }
+  ],
+  "tasks_root": "bench"
+}

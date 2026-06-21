@@ -1,0 +1,10 @@
+theorem or_elim_valid_001 using intuitionistic_prop:
+  assume h: P or Q
+  assume h_ptor: P -> R
+  assume h_qtor: Q -> R
+  suppose hp: P
+    have hR1: R by mp h_ptor hp
+  suppose hq: Q
+    have hR2: R by mp h_qtor hq
+  have hR: R by or_elim h hp hR1 hq hR2
+  conclude R by hR

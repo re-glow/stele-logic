@@ -1,0 +1,6 @@
+theorem neg_intro_valid_001 using intuitionistic_prop:
+  assume h_pf: P -> false
+  suppose h_p: P
+    have h_bot: false by mp h_pf h_p
+  have h_np: not P by neg_intro h_p h_bot
+  conclude not P by h_np

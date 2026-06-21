@@ -1,0 +1,5 @@
+theorem and_intro_valid_001 using intuitionistic_prop:
+  assume h1: P
+  assume h2: Q
+  have h3: P and Q by and_intro h1 h2
+  conclude P and Q by h3

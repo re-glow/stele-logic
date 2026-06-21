@@ -1,0 +1,4 @@
+theorem or_intro_right_valid_001 using intuitionistic_prop:
+  assume h1: Q
+  have h2: P or Q by or_intro_right h1
+  conclude P or Q by h2

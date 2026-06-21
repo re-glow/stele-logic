@@ -122,6 +122,38 @@ def cmd_soundness(logic_name, matrix_name):
     return 0
 
 
+def cmd_lattice(formula_str):
+    from .parser import parse_formula
+    from .ast import Op, pretty
+    from .world import World, lattice_status
+    from .errors import ParseError
+
+    try:
+        phi = parse_formula(formula_str)
+    except ParseError as e:
+        print(f"X Parse error: {e}")
+        return 1
+
+    neg = Op("not", (phi,))
+    phi_s = pretty(phi)
+    neg_s = pretty(neg)
+
+    # CH-style default world family: base, positive extension, negative extension.
+    labelled = [
+        ("Gamma",             World("boolean", ())),
+        (f"Gamma + {phi_s}",  World("boolean", (phi,))),
+        (f"Gamma + {neg_s}",  World("boolean", (neg,))),
+    ]
+    worlds = [w for _, w in labelled]
+
+    print(f"lattice  [formula: {phi_s} | matrix: boolean]")
+    for (label, w), (_, s) in zip(labelled, lattice_status(phi, worlds)):
+        axioms_s = "[" + ", ".join(pretty(a) for a in w.axioms) + "]"
+        print(f"  {label:<26}  axioms: {axioms_s:<16}  =>  {s}")
+
+    return 0
+
+
 def cmd_demos():
     M.run_demos()
     return 0
@@ -145,6 +177,11 @@ def main(argv=None):
     s.add_argument("--matrix", required=True,
                    help="matrix semantics to check against (K3 | LP | boolean)")
 
+    lt = sub.add_parser("lattice",
+                        help="show formula status across the CH-style world family")
+    lt.add_argument("formula",
+                    help="formula to evaluate (quote multi-word formulas: 'P or Q')")
+
     sub.add_parser("demos", help="run the many-valued semantics demonstrations")
 
     args = ap.parse_args(argv)
@@ -152,6 +189,8 @@ def main(argv=None):
         return cmd_check(args.file, args.logic)
     if args.cmd == "soundness":
         return cmd_soundness(args.logic, args.matrix)
+    if args.cmd == "lattice":
+        return cmd_lattice(args.formula)
     if args.cmd == "demos":
         return cmd_demos()
     return 2

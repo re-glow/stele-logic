@@ -1,0 +1,27 @@
+{
+  "args": {
+    "corpus": "all",
+    "n": 40,
+    "seed": 0,
+    "shard_size": 20
+  },
+  "corpora": [
+    "definition_use",
+    "diagnostic_errors",
+    "prop_nd"
+  ],
+  "generator": "bench.generate v1",
+  "generator_version": 1,
+  "n_per_corpus": {
+    "definition_use": 8,
+    "diagnostic_errors": 8,
+    "prop_nd": 24
+  },
+  "n_shards": 2,
+  "n_total": 40,
+  "shard_size": 20,
+  "shards": [
+    "shard_00000.jsonl",
+    "shard_00001.jsonl"
+  ]
+}

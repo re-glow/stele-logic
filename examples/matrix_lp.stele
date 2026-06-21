@@ -2,7 +2,7 @@
 # Designated values: T and B.  Third value B = "both true and false".
 #
 # Key result: explosion (ex contradictione quodlibet) fails in LP.
-# When P=B, both P and not P are designated, but Q=F is not — counterexample exists.
+# When P=B, both P and not P are designated, but Q=F is not -- counterexample exists.
 
 entails P, not P |- Q
 
@@ -11,3 +11,6 @@ entails P -> Q, P |- Q
 
 # Non-contradiction holds at the designated level:
 tautology? not (P and not P)
+
+# Liar paradox: in LP, B is "both true and false" -- B is its own negation.
+fixpoint not

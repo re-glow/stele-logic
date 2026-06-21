@@ -181,6 +181,8 @@ def parse_matrix_file(text):
       evaluate <formula>
       tautology? <formula>
       entails <premise>, ... |- <conclusion>
+      fixpoint not          -- negation fixed-point query
+      liar                  -- alias for 'fixpoint not'
     """
     directives = []
     for n, raw in enumerate(text.splitlines(), start=1):
@@ -205,6 +207,8 @@ def parse_matrix_file(text):
             )
             conc = parse_formula(concl_part.strip())
             directives.append(MatrixDirective("entails", prems, conc, n))
+        elif code in ("fixpoint not", "liar"):
+            directives.append(MatrixDirective("fixpoint", (), None, n))
         else:
             raise ParseError(f"unknown matrix directive: {code!r}", line=n)
     if not directives:

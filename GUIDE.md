@@ -212,7 +212,7 @@ OK Proof verified: peirce   [logic: classical_prop]
 
 **논리 경계(logic boundary).** `classical_prop = intuitionistic_prop + {dne, lem, pbc}`. 세 추가 규칙은 고전논리 안에서 서로 도출 가능(쌍방 동치)하다. Stele는 그것들을 별개의 이름 있는 규칙으로 노출함으로써 어떤 원리를 쓰는지를 증명 텍스트 수준에서 명시적으로 드러낸다.
 
-**정직한 한계.** 검사기가 보이는 것은 *그 증명이 직관논리 규칙으로는 타입검사되지 않음*이다. `dne`/`lem`/`pbc` 없이도 해당 명제가 도출 불가능하다는 것은 메타 주장이며, 검사기가 직접 확립하지 못한다. 그 비도출성을 *의미론적으로* 보이는 것은 matrix 모드와 이후 단계의 크립키 의미론의 몫이다(§9 참조 — `demos`).
+**정직한 한계.** 검사기가 보이는 것은 *그 증명이 직관논리 규칙으로는 타입검사되지 않음*이다. `dne`/`lem`/`pbc` 없이도 해당 명제가 도출 불가능하다는 것은 메타 주장이며, 검사기가 직접 확립하지 못한다. 그 비도출성을 *의미론적으로* 보이는 것은 matrix 모드(§8)와 `soundness` 명령(§9)의 몫이다.
 
 ---
 
@@ -262,6 +262,19 @@ entails |- P or not P
 
 출력 예 (LP): `entails P, not P |- Q  =>  no  (counterexample: P=B, Q=F)`
 
+**`fixpoint not`** — 부정의 고정점: `not v = v` 를 만족하는 진리치를 보고한다. 별칭 `liar` 도 동일하게 동작한다.
+
+```
+fixpoint not
+liar
+```
+
+출력 예 (K3): `fixpoint not  =>  {I}`
+출력 예 (LP): `fixpoint not  =>  {B}`
+출력 예 (boolean): `fixpoint not  =>  {}`
+
+고정점은 거짓말쟁이 역설의 진리치에 해당한다. K3에서는 "정의되지 않음"(I), LP에서는 "참이면서 거짓"(B), 고전논리(boolean)에서는 고정점이 없다.
+
 ### 8.3 예시 실행
 
 ```
@@ -293,7 +306,67 @@ tautology? P or not P  =>  yes
 
 ---
 
-## 9. 오류 카탈로그 (증명 모드)
+## 9. 규칙 건전성 보고 (`soundness` 명령)
+
+### 9.1 명령 형식
+
+```
+python -m stele.cli soundness --logic <증명논리> --matrix <행렬>
+```
+
+예:
+
+```
+python -m stele.cli soundness --logic classical_prop --matrix K3
+python -m stele.cli soundness --logic classical_prop --matrix boolean
+python -m stele.cli soundness --logic intuitionistic_prop --matrix K3
+```
+
+`--logic` 에는 증명 논리(`classical_prop`, `intuitionistic_prop`)를, `--matrix` 에는 행렬 이름(`K3`, `LP`, `boolean`)을 지정한다.
+
+### 9.2 출력 형식
+
+```
+soundness  [logic: classical_prop | matrix: K3]
+  and_elim_left: sound
+  lem: unsound  counterexample: A=I
+  imp_intro: skipped  (discharge rules not checked in v1)
+  ...
+```
+
+각 규칙에 대해 세 가지 상태 중 하나를 보고한다:
+
+| 상태 | 의미 |
+|---|---|
+| `sound` | 모든 배정에서 전제가 지정되면 결론도 지정됨 |
+| `unsound` | 전제는 지정되지만 결론이 지정되지 않는 반례 배정이 존재함 |
+| `skipped` | v1에서 검사 대상이 아닌 방출 규칙(discharge rule) |
+
+### 9.3 v1 범위와 한계
+
+**검사 대상**: `hyp_premises == ()` 인 규칙 (비방출 규칙)만 검사.
+**건너뜀**: `imp_intro`, `neg_intro`, `or_elim`, `pbc` 등 방출 규칙 — `hyp_premises` 가 있는 규칙.
+
+방출 규칙의 의미론적 건전성은 더 정교한 의미론(예: 크립키 의미론)이 필요하며, v1에서는 다루지 않는다.
+
+### 9.4 결과 해석 — 중요한 의미론적 주의사항
+
+**행렬 건전성은 증명-이론적 도출가능성과 다르다.** 이 명령이 보고하는 것은 *지정값 보존(designation preservation)* — "전제가 지정되면 결론도 지정되는가". 이것은 해당 논리가 그 행렬에 대해 건전(sound)한지의 *조건 중 일부*이지, 완전한 증명이 아니다.
+
+**예상 밖의 결과들:**
+
+- `dne` (¬¬A ⊢ A): K3와 LP 모두에서 **건전**. K3에서 ¬¬A가 지정값(=T)이 되려면 A = T이어야 하므로 결론도 T.
+- `lem` (⊢ A∨¬A): K3에서 **불건전** (A=I 반례), LP에서 **건전** (B가 지정값이므로 A∨¬A ∈ {T,B}).
+- `neg_elim` (A, ¬A ⊢ false): LP에서 **불건전** (A=B이면 A와 ¬A 모두 지정값 B, 결론 false는 비지정값).
+- `mp` (A→B, A ⊢ B): LP에서 **불건전** (A=B, B_var=F이면 A→B=B 지정값, A=B 지정값, B_var=F 비지정값).
+
+이 결과들은 LP가 폭발 원리와 전건긍정을 거부하는 초일관 논리임을 의미론적으로 확인해 준다.
+
+**주의**: `unsound` 판정이 "그 규칙을 써서 만든 증명이 Stele에서 거부된다"는 뜻이 아니다. Stele의 proof checker는 행렬 의미론에 의존하지 않는다. 건전성 보고는 순수하게 *의미론적 진단*이다. 이 두 가지를 혼동하지 말 것.
+
+---
+
+## 10. 오류 카탈로그 (증명 모드)
 
 | 메시지 | 원인 | 해결 |
 |---|---|---|
@@ -308,7 +381,7 @@ tautology? P or not P  =>  yes
 
 ---
 
-## 10. 첫 증명 작성하기
+## 11. 첫 증명 작성하기
 
 목표: `(P → Q) → (P → Q)` 가 아니라, 간단히 **`P, P→Q ⊢ Q`** (mp) 를 증명해 보자.
 
@@ -331,9 +404,9 @@ OK Proof verified: first   [logic: intuitionistic_prop]
 
 ---
 
-## 10. 한계와 다음 단계
+## 12. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).
-- matrix 모드(다치 의미론)는 별도 모듈이며 표면 문법이 아직 없다 — `python -m stele.cli demos` 로 실행.
+- 규칙 건전성 보고(§9)는 비방출 규칙만 다루는 v1이다. 방출 규칙의 의미론적 건전성은 추후 크립키 의미론으로 확장 예정.
 - 전체 설계·단계: `stele_redesign.md`. 결정·근거: `DECISIONS.md`.

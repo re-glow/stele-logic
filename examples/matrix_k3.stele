@@ -14,3 +14,7 @@ entails P -> Q, P |- Q
 
 # But P -> P is also not a tautology (P=I gives I->I = I):
 tautology? P -> P
+
+# Liar paradox: the negation fixed point is the value that equals its own negation.
+# In K3, I is "indeterminate" -- the truth value of the Liar sentence.
+liar

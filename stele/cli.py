@@ -54,6 +54,7 @@ def _check_matrix(path, logic):
         print(f"X Parse error{loc}: {e}")
         return 1
 
+    from .matrix import negation_fixpoints
     m = logic.matrix
     for d in directives:
         if d.kind == "evaluate":
@@ -79,6 +80,45 @@ def _check_matrix(path, logic):
             else:
                 cx_str = ", ".join(f"{k}={v}" for k, v in sorted(cx.items()))
                 print(f"{label}  =>  no  (counterexample: {cx_str})")
+        elif d.kind == "fixpoint":
+            fps = negation_fixpoints(m)
+            fps_str = ", ".join(fps) if fps else ""
+            print(f"fixpoint not  =>  {{{fps_str}}}")
+    return 0
+
+
+def cmd_soundness(logic_name, matrix_name):
+    from .logic import get_logic, LOGICS
+    from .matrix import MATRICES, rule_soundness
+    from .errors import SteleError
+
+    try:
+        logic = get_logic(logic_name)
+    except SteleError as e:
+        print(f"X Error: {e}")
+        return 1
+
+    if logic.semantics != "proof":
+        print(f"X Error: '{logic_name}' is a matrix logic; "
+              f"--logic must name a proof logic (e.g. classical_prop)")
+        return 1
+
+    if matrix_name not in MATRICES:
+        print(f"X Error: unknown matrix '{matrix_name}'. "
+              f"available: {', '.join(sorted(MATRICES))}")
+        return 1
+
+    m = MATRICES[matrix_name]
+    print(f"soundness  [logic: {logic_name} | matrix: {matrix_name}]")
+    for name, schema in sorted(logic.rules.items()):
+        r = rule_soundness(schema, m)
+        if r.status == "sound":
+            print(f"  {name}: sound")
+        elif r.status == "unsound":
+            cx_str = ", ".join(f"{k}={v}" for k, v in sorted(r.counterexample.items()))
+            print(f"  {name}: unsound  counterexample: {cx_str}")
+        else:
+            print(f"  {name}: skipped  ({r.reason})")
     return 0
 
 
@@ -91,15 +131,27 @@ def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     ap = argparse.ArgumentParser(prog="stele")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    c = sub.add_parser("check", help="check a .stele proof file")
+
+    c = sub.add_parser("check", help="check a .stele proof or matrix file")
     c.add_argument("file")
     c.add_argument("--logic", default=None,
                    help="object logic: classical_prop | intuitionistic_prop "
                         "(proof mode) or K3 | LP | boolean (matrix mode)")
+
+    s = sub.add_parser("soundness",
+                       help="report whether proof rules preserve designation in a matrix")
+    s.add_argument("--logic", required=True,
+                   help="proof logic whose rules to check (e.g. classical_prop)")
+    s.add_argument("--matrix", required=True,
+                   help="matrix semantics to check against (K3 | LP | boolean)")
+
     sub.add_parser("demos", help="run the many-valued semantics demonstrations")
+
     args = ap.parse_args(argv)
     if args.cmd == "check":
         return cmd_check(args.file, args.logic)
+    if args.cmd == "soundness":
+        return cmd_soundness(args.logic, args.matrix)
     if args.cmd == "demos":
         return cmd_demos()
     return 2

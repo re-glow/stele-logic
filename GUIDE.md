@@ -102,10 +102,13 @@ label = ident ; rule = ident ; arg = ident ; ref = ident ;
 | `neg_intro` (¬I) | `[A]…false ⊢ ¬A` | 2 (방출) | ● | ● |
 | `or_elim` (∨E) | `A∨B, [A]…C, [B]…C ⊢ C` | 5 (방출×2) | ● | ● |
 | `dne` | `¬¬A ⊢ A` | 1 | ✗ | ● |
+| `lem` | `⊢ A∨¬A` | 0 | ✗ | ● |
+| `pbc` | `[¬A]…false ⊢ A` | 2 (방출) | ✗ | ● |
 
-두 세계는 `dne` 단 하나로 갈린다. 이것이 상대성 데모의 축이다.
-`ex_falso`, `or_intro_left`, `or_intro_right` 는 **결론 주도 매칭**(conclusion-directed matching)을 사용한다 — 결론에만 나타나는 메타변수(`B` in ∨I₁, `A` in ∨I₂, `A` in ⊥E)는 사용자가 `have` 에 적은 식으로 결정된다.
-`neg_intro`와 `or_elim` 은 일반화된 방출 메커니즘(`RuleSchema.hyp_premises`)을 사용한다.
+`classical_prop` 는 `intuitionistic_prop` 에 고전 원리 `dne`, `lem`, `pbc` 를 추가한다. 세 규칙은 고전논리 안에서 서로 도출 가능하지만(쌍방 동치), 직관논리에서는 성립하지 않으며 Stele에서는 별개의 이름 있는 규칙으로 노출된다.
+
+`ex_falso`, `or_intro_left`, `or_intro_right`, `lem` 은 **결론 주도 매칭**(conclusion-directed matching)을 사용한다 — 결론에만 나타나는 메타변수는 사용자가 `have` 에 적은 식으로 결정된다.
+`neg_intro`, `or_elim`, `pbc` 는 일반화된 방출 메커니즘(`RuleSchema.hyp_premises`)을 사용한다.
 
 **예시 (각 규칙)**
 
@@ -122,6 +125,8 @@ have c: P or Q by or_intro_right b            # b: Q  (P 는 임의의 식)
 have c: not A by neg_intro h_a h_bot          # h_a: suppose label (A), h_bot: false 유도
 have c: C by or_elim h_ab h_a h_c1 h_b h_c2  # h_ab: A or B, [h_a]C, [h_b]C  (C 는 임의의 식)
 have c: P by dne a                            # a: not not P   (classical 전용)
+have c: P or not P by lem                     # (classical 전용, 인자 없음, A는 결론에서 결정)
+have c: P by pbc h_np h_bot                   # h_np: suppose label (not P), h_bot: false 유도 (classical 전용)
 ```
 
 **`neg_intro` 예시 (완전한 증명)**
@@ -192,7 +197,22 @@ X Proof failed: dne_consequent (line 3)
   rule 'dne' is not available in logic 'intuitionistic_prop'
 ```
 
-**정직한 한계.** 검사기가 보이는 것은 *그 증명이 직관논리 규칙으로는 타입검사되지 않음*이다. `dne` 없이도 `¬¬P→P` 가 도출 불가능하다는 것은 메타 주장이며, 검사기가 직접 확립하지 못한다. 그 비도출성을 *의미론적으로* 보이는 것은 matrix 모드와 이후 단계의 크립키 의미론의 몫이다(§9 참조 — `demos`).
+고전 원리 `dne`, `lem`, `pbc` 는 모두 `classical_prop` 에서만 사용할 수 있다.
+예를 들어 배중률(`P or not P`)과 피어스 법칙(`((P→Q)→P)→P`)은 고전논리에서 검증되지만 직관논리에서는 거부된다:
+
+```
+$ python -m stele.cli check examples/lem.stele
+OK Proof verified: lem_demo   [logic: classical_prop]
+
+$ python -m stele.cli check examples/peirce.stele
+OK Proof verified: peirce   [logic: classical_prop]
+```
+
+`lem` 이나 `pbc` 를 직관논리 증명 안에서 쓰면 `"rule '...' is not available in logic 'intuitionistic_prop'"` 오류가 발생한다.
+
+**논리 경계(logic boundary).** `classical_prop = intuitionistic_prop + {dne, lem, pbc}`. 세 추가 규칙은 고전논리 안에서 서로 도출 가능(쌍방 동치)하다. Stele는 그것들을 별개의 이름 있는 규칙으로 노출함으로써 어떤 원리를 쓰는지를 증명 텍스트 수준에서 명시적으로 드러낸다.
+
+**정직한 한계.** 검사기가 보이는 것은 *그 증명이 직관논리 규칙으로는 타입검사되지 않음*이다. `dne`/`lem`/`pbc` 없이도 해당 명제가 도출 불가능하다는 것은 메타 주장이며, 검사기가 직접 확립하지 못한다. 그 비도출성을 *의미론적으로* 보이는 것은 matrix 모드와 이후 단계의 크립키 의미론의 몫이다(§9 참조 — `demos`).
 
 ---
 

@@ -1,0 +1,7 @@
+# Example: UndefinedSymbol diagnostic
+# 'missing' is referenced but never defined in this proof.
+theorem diag_undef:
+  assume h1: P -> Q
+  assume h2: P
+  have h3: Q by mp h1 missing
+  conclude Q by h3

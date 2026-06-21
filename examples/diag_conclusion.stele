@@ -1,0 +1,5 @@
+# Example: UnsupportedConclusion diagnostic
+# h1 is P, but the conclude line claims Q.
+theorem diag_conclusion:
+  assume h1: P
+  conclude Q by h1

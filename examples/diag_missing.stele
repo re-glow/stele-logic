@@ -1,0 +1,6 @@
+# Example: MissingHypothesis diagnostic
+# h2 is referenced before it is introduced.
+theorem diag_missing:
+  have h1: P by copy h2
+  assume h2: P
+  conclude P by h1

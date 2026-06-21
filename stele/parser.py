@@ -1,6 +1,6 @@
 import re
 from .ast import Var, Op
-from .proof import Assume, Have, Suppose, Conclude, Theorem
+from .proof import Assume, Have, Suppose, Conclude, Theorem, MatrixDirective
 from .errors import ParseError
 
 _TOKEN = re.compile(r"\s*(->|\(|\)|[A-Za-z_][A-Za-z0-9_]*)")
@@ -172,3 +172,41 @@ def _parse_conclude(text, n):
     if not m:
         raise ParseError("malformed conclude (expected 'conclude F by REF')", line=n)
     return Conclude(formula=parse_formula(m.group(1)), ref=m.group(2), line=n)
+
+
+def parse_matrix_file(text):
+    """Parse a matrix-mode .stele file into a list of MatrixDirective objects.
+
+    Supported directives (one per non-blank, non-comment line):
+      evaluate <formula>
+      tautology? <formula>
+      entails <premise>, ... |- <conclusion>
+    """
+    directives = []
+    for n, raw in enumerate(text.splitlines(), start=1):
+        code = raw.split("#", 1)[0].strip()
+        if not code:
+            continue
+        if code.startswith("evaluate "):
+            f = parse_formula(code[9:].strip())
+            directives.append(MatrixDirective("evaluate", (), f, n))
+        elif code.startswith("tautology? "):
+            f = parse_formula(code[11:].strip())
+            directives.append(MatrixDirective("tautology", (), f, n))
+        elif code.startswith("entails "):
+            rest = code[8:].strip()
+            if "|-" not in rest:
+                raise ParseError("entails directive requires '|-'", line=n)
+            prem_part, concl_part = rest.split("|-", 1)
+            prems = tuple(
+                parse_formula(p.strip())
+                for p in prem_part.split(",")
+                if p.strip()
+            )
+            conc = parse_formula(concl_part.strip())
+            directives.append(MatrixDirective("entails", prems, conc, n))
+        else:
+            raise ParseError(f"unknown matrix directive: {code!r}", line=n)
+    if not directives:
+        raise ParseError("empty matrix file")
+    return directives

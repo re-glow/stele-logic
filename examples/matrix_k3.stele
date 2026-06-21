@@ -1,0 +1,16 @@
+# K3 semantics: Strong Kleene three-valued logic
+# Designated value: T only.  Third value I = "indeterminate".
+#
+# Key result: P or not P is NOT a K3 tautology.
+# When P=I, not P = I (mirror), and I or I = I, which is not designated.
+
+tautology? P or not P
+
+# The set of reachable values shows I can appear:
+evaluate P or not P
+
+# Modus ponens is still valid:
+entails P -> Q, P |- Q
+
+# But P -> P is also not a tautology (P=I gives I->I = I):
+tautology? P -> P

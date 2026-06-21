@@ -65,7 +65,20 @@ class Logic:
 INTUITIONISTIC = Logic("intuitionistic_prop", dict(_SHARED))
 CLASSICAL = Logic("classical_prop", {**_SHARED, "dne": DNE, "lem": LEM, "pbc": PBC})
 
+class MatrixLogic:
+    """A many-valued matrix selectable under the same --logic namespace as proof logics."""
+    def __init__(self, matrix):
+        self.name = matrix.name
+        self.matrix = matrix
+        self.semantics = "matrix"
+
+
 LOGICS = {l.name: l for l in (INTUITIONISTIC, CLASSICAL)}
+
+# Register matrix logics so --logic K3 / LP / boolean dispatches to matrix mode.
+from .matrix import MATRICES as _MATRICES  # noqa: E402
+for _m in _MATRICES.values():
+    LOGICS[_m.name] = MatrixLogic(_m)
 
 
 def get_logic(name):

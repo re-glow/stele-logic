@@ -37,3 +37,11 @@ class Theorem:
     name: str
     logic: object
     lines: tuple
+
+
+@dataclass(frozen=True)
+class MatrixDirective:
+    kind: str      # "evaluate" | "tautology" | "entails"
+    premises: tuple  # formula tuple for entails; empty for evaluate/tautology
+    formula: object  # main formula (evaluate/tautology) or conclusion (entails)
+    line: int

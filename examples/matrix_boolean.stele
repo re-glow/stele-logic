@@ -1,0 +1,13 @@
+# Boolean (classical two-valued) semantics: designated = {T}
+
+# Classical tautologies:
+tautology? P or not P
+tautology? P -> P
+tautology? (P -> Q) -> (not Q -> not P)
+
+# Valid entailments:
+entails P -> Q, P |- Q
+entails P, not P |- Q
+
+# Evaluate: only T and F possible (no third value)
+evaluate P or not P

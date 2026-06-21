@@ -4,6 +4,19 @@ Development history of Stele Logic System.
 
 ---
 
+## [reframe] — 2026-06  `docs/reframe-verification-framework`
+
+- Reframed project primary identity as "Formal Verification Framework for Mathematical Reasoning."
+  - First impression is now: structured proof objects, rule-based checking, diagnostics, error localization.
+  - Logical pluralism / "유리학" demoted to background inspiration and optional semantic module motivation.
+  - Matrix semantics, K3/LP, rule soundness, world status, lattice demo are described as diagnostic support modules, not the project's primary identity.
+- Updated dependency policy: trusted `stele/` core remains stdlib-only; optional future ML/Lean/UI extensions may add isolated dependencies outside the trusted checking path.
+- Aligned roadmap with formal-verification trajectory: dependency graphs, proof-state tracking, error diagnostics, benchmarks, failure-mode taxonomy, optional ML/Lean bridge.
+- Honesty clause added: do not claim corpus sizes, model accuracy, or Lean integration before implementation and measurement.
+- DECISIONS.md: added reframing note (historical decisions preserved).
+
+---
+
 ## [stabilize] — 2026-06  `chore/stabilize-presentation-ready`
 
 - Renamed `tests.yml` → `ci.yml`; updated README CI reference.

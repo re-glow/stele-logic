@@ -633,7 +633,86 @@ print(has_cycle(g))       # False (검증된 증명은 비순환)
 
 ---
 
-## 15. 한계와 다음 단계
+## 15. 구조적 진단 (`diagnose`)
+
+### 15.1 개요
+
+`diagnose` 커맨드는 증명 파일의 구조적 문제를 **목록으로 수집**한다. 첫 번째 오류에서 멈추는 `check` 와 달리, 증명을 끝까지 분석해 발견된 모든 문제를 분류하여 보고한다.
+
+> **중요:** 진단은 **untrusted 분석 계층**이다. 트러스티드 커널(`kernel.py`)이 증명 유효성의 유일한 권위자다. 진단 결과가 통과해도 `check` 가 거부하면 증명은 무효다.
+
+```
+python -m stele.cli diagnose examples/diag_undef.stele
+python -m stele.cli diagnose examples/peirce.stele --logic classical_prop
+```
+
+출력 형식:
+```
+ERROR UndefinedSymbol line=6: cited label 'missing' does not exist in this proof
+WARNING UnusedAssumption line=5: assumption 'h2' does not contribute to the conclusion
+OK no diagnostics: peirce
+```
+
+종료 코드: `error` 진단이 하나라도 있으면 1, `warning` 만 있거나 없으면 0.
+
+### 15.2 v1 진단 코드
+
+| 코드 | 심각도 | 감지 내용 |
+|---|---|---|
+| `UndefinedSymbol` | error | 이 증명 어디에도 정의되지 않은 레이블 참조 |
+| `MissingHypothesis` | error | 존재하지만 현재 스코프 밖에 있는 레이블 참조 (전방 참조·닫힌 서브 증명 누출·결론 스코프 위반) |
+| `UnsupportedConclusion` | error | `conclude` 포뮬러가 참조 레이블의 포뮬러와 불일치 |
+| `CircularDependency` | error | 의존성 그래프에 방향 순환 감지 |
+| `UnusedAssumption` | warning | 결론에 기여하지 않는 `assume`/`suppose` 레이블 |
+
+코드 문자열은 안정적이다 — 테스트와 미래 벤치마크 데이터셋이 이 이름에 의존한다.
+
+### 15.3 `UndefinedSymbol` vs `MissingHypothesis`
+
+두 코드는 유사해 보이지만 구분이 중요하다:
+
+| 상황 | 코드 |
+|---|---|
+| `have h2: Q by mp h1 missing` — `missing` 자체가 없음 | `UndefinedSymbol` |
+| `have h1: P by copy h2` 이후에 `assume h2: P` — h2는 나중에 정의됨 | `MissingHypothesis` |
+| `conclude P by h2` — h2는 닫힌 서브 증명 내부에만 있음 | `MissingHypothesis` |
+
+### 15.4 `CircularDependency`와 그래프 분석
+
+`diagnose` 내부에서 `stele/proofgraph.py` 의 의존성 그래프를 자동으로 구성한다. 순환이 발견되면 `CircularDependency` 가 보고된다. 검증된 증명에서 순환은 발생하지 않아야 하므로, 이는 그래프 조작 도구를 위한 방어적 확인이다.
+
+### 15.5 Python API
+
+```python
+from stele.parser import parse_theorem
+from stele.diagnostics import diagnose_theorem, diagnose_graph, Diagnostic
+
+thm = parse_theorem(open("examples/diag_undef.stele").read())
+diags = diagnose_theorem(thm)
+for d in diags:
+    print(f"{d.severity.upper()} {d.code} line={d.line}: {d.message}")
+
+# 합성 그래프에 대한 직접 진단 (테스트 등)
+from stele.proofgraph import ProofGraph, ProofNode
+g = ProofGraph(name="test", conclusion="_c")
+g.nodes["a"] = ProofNode("a", "have", "P", None)
+g.nodes["b"] = ProofNode("b", "have", "Q", None)
+g.edges += [("a", "b"), ("b", "a")]
+print(diagnose_graph(g))   # [Diagnostic(code='CircularDependency', ...)]
+```
+
+### 15.6 v1 한계
+
+- **증명 수리 아님.** 진단은 문제를 위치추정할 뿐, 수정하지 않는다.
+- **정리증명 아님.** 올바른 규칙이나 포뮬러를 제안하지 않는다.
+- **파싱 실패 시:** 파스 오류 하나만 보고하고 구조적 진단은 수행하지 않는다.
+- **줄 번호는 best-effort.** 그래프 수준 진단(`CircularDependency`, `UnusedAssumption` 일부)은 `line=None` 일 수 있다.
+- **`MissingHypothesis` 스코프 누출 감지의 보수성:** 알 수 없는 규칙의 경우 쉬운 false negative가 발생할 수 있다. 스키마를 아는 논리의 일반 전제에 대해서는 정확히 감지한다.
+- **커널 검증이 권위자.** 진단이 문제없다고 해도 커널이 거부하면 증명은 무효다.
+
+---
+
+## 16. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

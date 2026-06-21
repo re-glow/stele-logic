@@ -1,0 +1,6 @@
+# Example: UnusedAssumption diagnostic
+# h2 is declared but never contributes to the conclusion.
+theorem diag_unused:
+  assume h1: P
+  assume h2: Q
+  conclude P by h1

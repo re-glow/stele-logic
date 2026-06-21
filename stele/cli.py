@@ -208,6 +208,33 @@ def cmd_graph(path, logic, dot_mode):
     return 0
 
 
+def cmd_diagnose(path, logic):
+    from .diagnostics import diagnose_theorem
+    from .errors import ParseError
+
+    text = open(path, encoding="utf-8").read()
+    try:
+        thm = parse_theorem(text)
+    except ParseError as e:
+        loc = f" (line {e.line})" if getattr(e, "line", None) else ""
+        print(f"X Parse error{loc}: {e}")
+        return 1
+
+    logic_name = logic or thm.logic or "intuitionistic_prop"
+    diags = diagnose_theorem(thm, logic_name)
+
+    if not diags:
+        print(f"OK no diagnostics: {thm.name}")
+        return 0
+
+    for d in diags:
+        line_s = f"line={d.line}" if d.line is not None else "line=?"
+        print(f"{d.severity.upper()} {d.code} {line_s}: {d.message}")
+
+    has_error = any(d.severity == "error" for d in diags)
+    return 1 if has_error else 0
+
+
 def cmd_demos():
     M.run_demos()
     return 0
@@ -244,6 +271,17 @@ def main(argv=None):
     gr.add_argument("--dot", action="store_true",
                     help="output DOT text instead of the human-readable summary")
 
+    dg = sub.add_parser(
+        "diagnose",
+        help="collect structural diagnostics without stopping at first error",
+    )
+    dg.add_argument("file")
+    dg.add_argument(
+        "--logic", default=None,
+        help="proof logic to use for schema-aware ref checking "
+             "(default: theorem's 'using' clause or intuitionistic_prop)",
+    )
+
     sub.add_parser("demos", help="run the many-valued semantics demonstrations")
 
     args = ap.parse_args(argv)
@@ -255,6 +293,8 @@ def main(argv=None):
         return cmd_lattice(args.formula)
     if args.cmd == "graph":
         return cmd_graph(args.file, args.logic, args.dot)
+    if args.cmd == "diagnose":
+        return cmd_diagnose(args.file, args.logic)
     if args.cmd == "demos":
         return cmd_demos()
     return 2

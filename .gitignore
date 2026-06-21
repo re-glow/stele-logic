@@ -22,6 +22,11 @@ env/
 .coverage
 htmlcov/
 
+# Generated corpora (only bench/generated/sample/ is committed)
+bench/generated/*/
+!bench/generated/sample/
+!bench/generated/sample/**
+
 # Editor / OS
 .DS_Store
 Thumbs.db

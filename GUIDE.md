@@ -424,7 +424,97 @@ s = status(parse_formula("Q"), w)   # PROVABLE
 
 ---
 
-## 11. 오류 카탈로그 (증명 모드)
+## 11. 세계 격자 데모 (`lattice`)
+
+### 11.1 lattice 명령
+
+`lattice <formula>` 명령은 하나의 식이 세 개의 세계에서 어떤 의미론적 지위를 갖는지 한눈에 보여 준다:
+
+```
+python -m stele.cli lattice x
+```
+
+출력 예:
+
+```
+lattice  [formula: x | matrix: boolean]
+  Gamma                       axioms: []                =>  INDEPENDENT
+  Gamma + x                   axioms: [x]               =>  PROVABLE
+  Gamma + not x               axioms: [not x]           =>  REFUTABLE
+```
+
+복합 식도 가능하다 (따옴표 필요):
+
+```
+python -m stele.cli lattice "P and Q"
+python -m stele.cli lattice "P or not P"
+```
+
+### 11.2 기본 세계 집합 (CH-스타일 독립성 패턴)
+
+`lattice`는 다음 세 세계를 자동으로 구성한다:
+
+| 세계 | 행렬 | 공리 | 역할 |
+|---|---|---|---|
+| Gamma | boolean | (없음) | 기저 세계 |
+| Gamma + φ | boolean | φ | 양의 확장 |
+| Gamma + ¬φ | boolean | ¬φ | 음의 확장 |
+
+모든 우발적 명제(neither tautology nor contradiction)는 이 세 세계에서 각각 INDEPENDENT / PROVABLE / REFUTABLE을 보인다.
+
+### 11.3 CH-스타일 독립성 패턴
+
+이 패턴은 **명제 논리적 독립성의 장난감 시연**이다. 진정한 연속체 가설(CH)이나 집합론적 강제법(forcing)과는 무관하다.
+
+**패턴이 의미하는 것:**
+
+```
+Gamma  ⊭ φ   (φ 가 귀결되지 않음)
+Gamma  ⊭ ¬φ  (¬φ 도 귀결되지 않음)
+Gamma ∪ {φ}  ⊨ φ   (양의 확장에서 φ 귀결)
+Gamma ∪ {¬φ} ⊨ ¬φ  (음의 확장에서 ¬φ 귀결)
+```
+
+**무엇이 아닌지:**
+- 증명 탐색(proof search) 결과가 아니다 — Stele 커널은 전혀 관여하지 않는다.
+- 집합론의 CH(연속체 가설)가 아니다.
+- 강제법(forcing)이나 모델 확장이 아니다.
+- 세계 격자 전체(world lattice)가 아니다 — 격자 구조는 로드맵 항목이다.
+
+### 11.4 Python API
+
+`stele/world.py`의 `lattice_status` 보조 함수를 직접 사용할 수도 있다:
+
+```python
+from stele.parser import parse_formula
+from stele.ast import Op
+from stele.world import World, lattice_status, PROVABLE, REFUTABLE, INDEPENDENT
+
+phi = parse_formula("P")
+neg = Op("not", (phi,))
+
+worlds = [
+    World("boolean", ()),
+    World("boolean", (phi,)),
+    World("boolean", (neg,)),
+]
+
+for w, s in lattice_status(phi, worlds):
+    print(w.axioms, "=>", s)
+# () => INDEPENDENT
+# (Var('P'),) => PROVABLE
+# (Op('not', (Var('P'),)),) => REFUTABLE
+```
+
+데모 스크립트 `examples/world_ch_style.py` 를 실행하면 동일한 패턴을 볼 수 있다:
+
+```
+python -m examples.world_ch_style
+```
+
+---
+
+## 12. 오류 카탈로그 (증명 모드)
 
 | 메시지 | 원인 | 해결 |
 |---|---|---|
@@ -439,7 +529,7 @@ s = status(parse_formula("Q"), w)   # PROVABLE
 
 ---
 
-## 12. 첫 증명 작성하기
+## 13. 첫 증명 작성하기
 
 목표: `(P → Q) → (P → Q)` 가 아니라, 간단히 **`P, P→Q ⊢ Q`** (mp) 를 증명해 보자.
 
@@ -462,7 +552,7 @@ OK Proof verified: first   [logic: intuitionistic_prop]
 
 ---
 
-## 13. 한계와 다음 단계
+## 14. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

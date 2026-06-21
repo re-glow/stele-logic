@@ -73,3 +73,8 @@ def status(formula, world):
     if neg_holds:
         return REFUTABLE
     return INDEPENDENT
+
+
+def lattice_status(formula, worlds):
+    """Return [(world, status_str)] for formula evaluated across each world in order."""
+    return [(w, status(formula, w)) for w in worlds]

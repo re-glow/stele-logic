@@ -6,6 +6,7 @@ form of the manifesto's claims about a third truth value, the Liar, and the
 locality of non-contradiction.
 """
 import itertools
+from dataclasses import dataclass
 from .ast import Var, Op
 
 
@@ -74,6 +75,40 @@ def entails(premises, conclusion, m):
 
 def negation_fixpoints(m):
     return [x for x in m.values if m.tables["not"][(x,)] == x]
+
+
+@dataclass
+class SoundnessResult:
+    name: str
+    status: str          # "sound" | "unsound" | "skipped"
+    counterexample: object = None  # dict metavar->value when status=="unsound"
+    reason: str = None   # human-readable when status=="skipped"
+
+
+def rule_soundness(schema, m):
+    """Check whether a RuleSchema preserves designation in matrix m.
+
+    v1 scope: only non-discharge rules (hyp_premises == ()).
+    Discharge rules are reported as skipped.
+
+    Each metavariable is treated as a fresh propositional atom and enumerated
+    over all matrix values.  Designation is preserved iff every valuation
+    where all ordinary premises are designated also makes the conclusion
+    designated.
+    """
+    if schema.hyp_premises:
+        return SoundnessResult(schema.name, "skipped",
+                               reason="discharge rules not checked in v1")
+
+    metavars = sorted(schema.metavars)
+    for combo in itertools.product(m.values, repeat=len(metavars)):
+        val = dict(zip(metavars, combo))
+        if not all(evaluate(p, val, m) in m.designated for p in schema.premises):
+            continue
+        if evaluate(schema.conclusion, val, m) not in m.designated:
+            return SoundnessResult(schema.name, "unsound", counterexample=val)
+
+    return SoundnessResult(schema.name, "sound")
 
 
 BOOLEAN = Matrix("boolean", ["F", "T"], {"T"})

@@ -1,0 +1,13 @@
+# LP semantics: Logic of Paradox (Priest's paraconsistent logic)
+# Designated values: T and B.  Third value B = "both true and false".
+#
+# Key result: explosion (ex contradictione quodlibet) fails in LP.
+# When P=B, both P and not P are designated, but Q=F is not — counterexample exists.
+
+entails P, not P |- Q
+
+# Note: modus ponens also fails in LP (P=B, Q=F gives P->Q=B designated, Q not).
+entails P -> Q, P |- Q
+
+# Non-contradiction holds at the designated level:
+tautology? not (P and not P)

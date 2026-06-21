@@ -216,7 +216,84 @@ OK Proof verified: peirce   [logic: classical_prop]
 
 ---
 
-## 8. 오류 카탈로그
+## 8. 행렬 모드 (matrix mode)
+
+Stele의 두 번째 평가 경로 — **행렬 의미론(`⊨` 측면)** — 을 `.stele` 파일과 CLI에서 직접 쓸 수 있다.
+
+### 8.1 논리 선택
+
+`--logic` 에 아래 행렬 이름 중 하나를 지정하면 check 명령이 자동으로 행렬 모드로 전환한다.
+
+| `--logic` | 지정값 | 세 번째 진리치 |
+|---|---|---|
+| `boolean` | `{T}` | 없음 (고전 2치) |
+| `K3` | `{T}` | `I` (정의되지 않음) |
+| `LP` | `{T, B}` | `B` (참이면서 거짓) |
+
+증명 모드 논리(`classical_prop`, `intuitionistic_prop`)와 행렬 모드 논리는 완전히 별개의 평가 경로다. 증명 파일을 행렬 논리에 넘기거나 행렬 파일을 증명 논리에 넘기면 파서 오류가 발생한다.
+
+### 8.2 행렬 지시문 문법
+
+행렬 모드 `.stele` 파일은 지시문(directive) 한 줄씩으로 구성된다. `#` 이후는 주석.
+
+**`evaluate <식>`** — 모든 변수 배정에 걸쳐 식이 취할 수 있는 진리치 집합을 보고한다.
+
+```
+evaluate P or not P
+```
+
+출력 예 (K3): `evaluate P or not P  =>  {I, T}`
+
+**`tautology? <식>`** — 모든 배정에서 식이 지정값이면 `yes`, 아니면 `no`.
+
+```
+tautology? P or not P
+```
+
+출력 예 (K3): `tautology? P or not P  =>  no`
+
+**`entails <전제>, ..., |- <결론>`** — 반례가 없으면 `yes`; 반례가 있으면 반례 배정과 함께 `no`.
+전제가 없으면 `|-` 만 쓴다.
+
+```
+entails P, not P |- Q
+entails |- P or not P
+```
+
+출력 예 (LP): `entails P, not P |- Q  =>  no  (counterexample: P=B, Q=F)`
+
+### 8.3 예시 실행
+
+```
+$ python -m stele.cli check examples/matrix_k3.stele --logic K3
+tautology? P or not P  =>  no
+evaluate P or not P  =>  {I, T}
+entails P -> Q, P |- Q  =>  yes
+tautology? P -> P  =>  no
+
+$ python -m stele.cli check examples/matrix_lp.stele --logic LP
+entails P, not P |- Q  =>  no  (counterexample: P=B, Q=F)
+...
+
+$ python -m stele.cli check examples/matrix_boolean.stele --logic boolean
+tautology? P or not P  =>  yes
+...
+```
+
+### 8.4 증명 모드와 행렬 모드의 관계
+
+| 기준 | 증명 모드 (`⊢`) | 행렬 모드 (`⊨`) |
+|---|---|---|
+| 선택 | `--logic classical_prop` 등 | `--logic K3` 등 |
+| 파일 문법 | `theorem … :` | `evaluate / tautology? / entails` |
+| 검사 방식 | 신뢰 커널이 규칙 인스턴스 확인 | `matrix.py` 가 진리표 계산 |
+| 주장 범위 | 특정 증명이 규칙에 맞는가 | 명제가 의미론적으로 타당한가 |
+
+두 모드는 직교한다. 직관논리에서 `dne` 없이 증명이 안 된다는 것은 증명 모드의 판정이다. 그 명제가 의미론적으로 도출 불가능하다는 것은 별개의 메타 주장이며, 행렬 모드가 반례 탐색으로 접근한다.
+
+---
+
+## 9. 오류 카탈로그 (증명 모드)
 
 | 메시지 | 원인 | 해결 |
 |---|---|---|
@@ -231,7 +308,7 @@ OK Proof verified: peirce   [logic: classical_prop]
 
 ---
 
-## 9. 첫 증명 작성하기
+## 10. 첫 증명 작성하기
 
 목표: `(P → Q) → (P → Q)` 가 아니라, 간단히 **`P, P→Q ⊢ Q`** (mp) 를 증명해 보자.
 

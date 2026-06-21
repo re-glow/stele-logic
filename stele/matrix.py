@@ -34,6 +34,8 @@ class Matrix:
 def evaluate(f, val, m):
     if isinstance(f, Var):
         return val[f.name]
+    if f.sym == "bot":          # Op("bot",()) = false; no table entry needed
+        return m.values[0]
     return m.tables[f.sym][tuple(evaluate(a, val, m) for a in f.args)]
 
 

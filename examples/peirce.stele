@@ -1,0 +1,13 @@
+# Peirce's law: ((P -> Q) -> P) -> P   (classical only)
+theorem peirce using classical_prop:
+  suppose h: (P -> Q) -> P
+    suppose hnp: not P
+      suppose hp: P
+        have hbot: false by neg_elim hp hnp
+        have hq: Q by ex_falso hbot
+      have hpq: P -> Q by imp_intro hp hq
+      have hp2: P by mp h hpq
+      have hbot2: false by neg_elim hp2 hnp
+    have hp3: P by pbc hnp hbot2
+  have h_thm: ((P -> Q) -> P) -> P by imp_intro h hp3
+  conclude ((P -> Q) -> P) -> P by h_thm

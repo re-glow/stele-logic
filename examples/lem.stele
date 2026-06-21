@@ -1,0 +1,3 @@
+theorem lem_demo using classical_prop:
+  have h: P or not P by lem
+  conclude P or not P by h

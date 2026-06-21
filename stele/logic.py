@@ -34,6 +34,9 @@ AND_INTRO      = RuleSchema("and_intro",      frozenset({"A", "B"}),    (A, B), 
 AND_ELIM_L     = RuleSchema("and_elim_left",  frozenset({"A", "B"}),    (_and(A, B),),     A)
 AND_ELIM_R     = RuleSchema("and_elim_right", frozenset({"A", "B"}),    (_and(A, B),),     B)
 DNE            = RuleSchema("dne",            frozenset({"A"}),         (_not(_not(A)),),  A)
+LEM            = RuleSchema("lem",            frozenset({"A"}),         (),                Op("or", (A, _not(A))))
+PBC            = RuleSchema("pbc",            frozenset({"A"}),         (),                A,
+                             ((_not(A), BOT),))
 NEG_ELIM       = RuleSchema("neg_elim",       frozenset({"A"}),         (A, _not(A)),      BOT)
 EX_FALSO       = RuleSchema("ex_falso",       frozenset({"A"}),         (BOT,),            A)
 OR_INTRO_LEFT  = RuleSchema("or_intro_left",  frozenset({"A", "B"}),    (A,),              Op("or", (A, B)))
@@ -60,7 +63,7 @@ class Logic:
 
 
 INTUITIONISTIC = Logic("intuitionistic_prop", dict(_SHARED))
-CLASSICAL = Logic("classical_prop", {**_SHARED, "dne": DNE})
+CLASSICAL = Logic("classical_prop", {**_SHARED, "dne": DNE, "lem": LEM, "pbc": PBC})
 
 LOGICS = {l.name: l for l in (INTUITIONISTIC, CLASSICAL)}
 

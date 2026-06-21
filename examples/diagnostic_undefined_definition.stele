@@ -1,0 +1,8 @@
+# Example: UndefinedDefinition diagnostic.
+# USE_MISSING references MISSING_DEF in its body,
+# but no definition named MISSING_DEF exists in this file.
+definition USE_MISSING := MISSING_DEF -> P
+
+theorem diagnostic_undefined_definition:
+  assume h: P
+  conclude P by h

@@ -1,0 +1,8 @@
+# Example: InvalidTransition diagnostic.
+# h2 is (P and R), not P. mp expects the second premise to match
+# the antecedent of h1 (which is P), so this rule application fails.
+theorem diagnostic_invalid_transition using intuitionistic_prop:
+  assume h1: P -> Q
+  assume h2: P and R
+  have h3: Q by mp h1 h2
+  conclude Q by h3

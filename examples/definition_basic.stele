@@ -1,0 +1,9 @@
+# Example: formula definitions as proof abbreviations.
+# MY_IMP is expanded to P -> Q before the kernel sees the proof.
+definition MY_IMP := P -> Q
+
+theorem definition_basic using intuitionistic_prop:
+  assume h: MY_IMP
+  assume hp: P
+  have hq: Q by mp h hp
+  conclude Q by hq

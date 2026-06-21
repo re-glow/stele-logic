@@ -1,6 +1,6 @@
 import re
 from .ast import Var, Op
-from .proof import Assume, Have, Suppose, Conclude, Theorem, MatrixDirective
+from .proof import Assume, Have, Suppose, Conclude, Theorem, MatrixDirective, Definition
 from .errors import ParseError
 
 _TOKEN = re.compile(r"\s*(->|\(|\)|[A-Za-z_][A-Za-z0-9_]*)")
@@ -96,6 +96,42 @@ _HEADER = re.compile(
 _ASSUME = re.compile(r"(assume|suppose)\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+)$")
 _HAVE = re.compile(r"have\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+?)\s+by\s+(.+)$")
 _CONCLUDE = re.compile(r"conclude\s+(.+?)\s+by\s+([A-Za-z_][A-Za-z0-9_]*)$")
+_DEFINITION = re.compile(
+    r"definition\s+([A-Za-z_][A-Za-z0-9_]*)\s*:=\s*(.+)$")
+
+
+def _expand_formula(formula, defs_dict, _seen=None):
+    """Expand definition Var nodes. Used during parse to give the kernel clean formulas."""
+    if _seen is None:
+        _seen = frozenset()
+    if isinstance(formula, Var):
+        if formula.name in defs_dict and formula.name not in _seen:
+            return _expand_formula(
+                defs_dict[formula.name].formula, defs_dict, _seen | {formula.name})
+        return formula
+    if isinstance(formula, Op):
+        new_args = tuple(_expand_formula(a, defs_dict, _seen) for a in formula.args)
+        return formula if new_args == formula.args else Op(formula.sym, new_args)
+    return formula
+
+
+def _expand_lines(lines, defs_dict):
+    """Recursively expand definition references in all proof node formulas."""
+    result = []
+    for node in lines:
+        if isinstance(node, Assume):
+            result.append(Assume(node.label, _expand_formula(node.formula, defs_dict), node.line))
+        elif isinstance(node, Have):
+            result.append(Have(node.label, _expand_formula(node.formula, defs_dict),
+                               node.rule, node.refs, node.line))
+        elif isinstance(node, Suppose):
+            result.append(Suppose(node.label, _expand_formula(node.formula, defs_dict),
+                                  tuple(_expand_lines(node.body, defs_dict)), node.line))
+        elif isinstance(node, Conclude):
+            result.append(Conclude(_expand_formula(node.formula, defs_dict), node.ref, node.line))
+        else:
+            result.append(node)
+    return result
 
 
 def parse_theorem(text):
@@ -108,6 +144,35 @@ def parse_theorem(text):
         items.append((n, indent, code.strip()))
     if not items:
         raise ParseError("empty proof file")
+
+    # Extract top-level definition lines (zero-indent, before the theorem header).
+    defs_dict = {}
+    def_list = []
+    i = 0
+    while i < len(items):
+        n, indent, text_ = items[i]
+        if indent != 0:
+            break
+        m = _DEFINITION.match(text_)
+        if not m:
+            break
+        def_name = m.group(1)
+        def_src = m.group(2).strip()
+        try:
+            def_formula = parse_formula(def_src)
+        except ParseError as e:
+            raise ParseError(f"in definition '{def_name}': {e}", line=n)
+        if def_name in defs_dict:
+            raise ParseError(f"duplicate definition '{def_name}'", line=n)
+        d = Definition(name=def_name, formula=def_formula, line=n)
+        defs_dict[def_name] = d
+        def_list.append(d)
+        i += 1
+
+    items = items[i:]
+    if not items:
+        raise ParseError("no theorem found" + (" after definitions" if def_list else ""))
+
     n0, _, head = items[0]
     m = _HEADER.match(head)
     if not m:
@@ -119,7 +184,11 @@ def parse_theorem(text):
     lines, idx = _parse_block(body, 0, body[0][1])
     if idx != len(body):
         raise ParseError("unexpected indentation", line=body[idx][0])
-    return Theorem(name=name, logic=logic, lines=tuple(lines))
+
+    # Expand definition references in theorem body so kernel sees resolved formulas.
+    expanded = _expand_lines(lines, defs_dict) if defs_dict else lines
+    return Theorem(name=name, logic=logic, lines=tuple(expanded),
+                   definitions=tuple(def_list))
 
 
 def _parse_block(items, idx, base):

@@ -712,7 +712,139 @@ print(diagnose_graph(g))   # [Diagnostic(code='CircularDependency', ...)]
 
 ---
 
-## 16. 한계와 다음 단계
+## 16. 포뮬러 정의와 정렬/타입 기초 (`definition`)
+
+### 16.1 포뮬러 정의 문법
+
+포뮬러 약어(formula abbreviation)를 `theorem` 앞에 선언한다:
+
+```
+definition NAME := <formula>
+```
+
+예시:
+
+```
+definition MY_IMP := P -> Q
+definition LEM_P := P or not P
+definition CHAIN := MY_IMP -> P
+```
+
+정의는 포뮬러 수준 매크로다.
+
+- **정의가 아닌 것:** 추론 규칙, 공리, 정리 증명. 증명 단계에서 명시적으로 사용될 때만 포뮬러로 참여한다.
+- **확장:** 파서가 정의를 파싱한 뒤, 후속 theorem 본문의 포뮬러에서 정의 이름을 출현하면 즉시 본문으로 치환(expand)한다. 신뢰 커널은 항상 완전히 확장된 포뮬러만 본다.
+- **재귀/순환:** 순환 정의는 확장 시 루프하지 않는다(사이클 보호 있음). v1에서는 순환 정의를 권장하지 않는다.
+
+사용 예:
+
+```
+definition MY_IMP := P -> Q
+
+theorem basic_def using intuitionistic_prop:
+  assume h: MY_IMP          # h의 포뮬러는 P -> Q 로 확장됨
+  assume hp: P
+  have hq: Q by mp h hp
+  conclude Q by hq
+```
+
+```
+python -m stele.cli check examples/definition_basic.stele
+# OK Proof verified: definition_basic   [logic: intuitionistic_prop]
+```
+
+### 16.2 포뮬러 정의의 한계 (v1)
+
+| 항목 | 상태 |
+|---|---|
+| 포뮬러 매크로 | ✓ 지원 |
+| 커널 내 공리로 사용 | ✗ (정의는 명시적 assume 없이 공리가 되지 않음) |
+| 새로운 추론 규칙으로 사용 | ✗ |
+| 항(term) 언어 지원 | ✗ (미래 계획) |
+| 의존 타입 | ✗ (미래 계획) |
+| 한정사(∀, ∃) | ✗ (로드맵 Phase 6) |
+| 정의 간 순서 의존 | 선형 순서로 정의; 순환은 확장 중단 |
+
+### 16.3 `UndefinedDefinition` 진단
+
+```
+WARNING UndefinedDefinition line=N: definition body references 'NAME' which is not a defined name in this file
+```
+
+정의 본문 안에서 **다른 정의 이름을 참조**했지만 그 정의가 파일에 없을 때 보고한다.
+
+```
+# 예: MISSING_DEF 가 정의되지 않았음
+definition USE_MISSING := MISSING_DEF -> P
+```
+
+**v1 한계·보수성:**
+- 단일 대문자 원자(`P`, `Q`, `R` 등)는 명제 변수로 보고 플래그하지 않는다.
+- 다중 문자 대문자 식별자(`LEM_P`, `DNE` 등)를 정의 이름으로 취급한다.
+- `PHI`, `PP` 같은 다중 문자 명제 변수는 오탐(false positive)이 날 수 있다 — v1 한계로 문서화.
+- 진단은 정의 본문만 스캔한다; theorem 본문의 포뮬러는 스캔하지 않는다.
+- 심각도: `warning` (휴리스틱 기반).
+
+### 16.4 `InvalidTransition` 진단
+
+```
+ERROR InvalidTransition line=N: rule 'mp': premise 2 expected P, but 'h2' is P and R
+```
+
+스코프 내 레이블을 사용했지만 규칙 적용이 유효하지 않은 경우 보고한다.
+
+- 전제가 올바른 형태가 아니거나(`mp` 의 두 번째 전제가 잘못된 경우)
+- 주장한 결론이 규칙의 산출물과 다를 때
+
+**구현:** `diagnose` 가 스코프 분석(`UndefinedSymbol`·`MissingHypothesis`)에서 오류를 찾지 못한 경우에만, 신뢰 커널을 실행해 `ProofError` 를 `InvalidTransition` 으로 분류한다. **커널은 여전히 유일한 검증 권위자다.** `InvalidTransition` 은 진단 레이어의 분류일 뿐이다.
+
+```
+python -m stele.cli diagnose examples/diagnostic_invalid_transition.stele
+# ERROR InvalidTransition line=7: rule 'mp': premise 2 expected P, but 'h2' is P and R
+```
+
+**v1 한계:**
+- 여러 규칙 오류가 있어도 첫 번째만 보고된다(커널이 첫 오류에서 중단).
+- 스코프 오류가 있으면 `InvalidTransition` 패스는 실행되지 않는다.
+
+### 16.5 `TypeMismatch` 진단 (기초 인프라, v1)
+
+코드 문자열은 안정적이며 미래 데이터셋이 이에 의존할 수 있다.
+
+```
+ERROR TypeMismatch ...: sort mismatch: formula expected, got term
+```
+
+**v1 현재 상태:** 모든 Stele 표현식은 `Sort.FORMULA` 정렬이다. 항(term) 언어가 없으므로 표면 수준 타입 불일치는 발생하지 않는다.
+
+`stele/types.py` 에 인프라가 있다:
+
+```python
+from stele.types import Sort, infer_sort, expand_defs
+
+infer_sort(Var("P"))       # Sort.FORMULA
+infer_sort(Op("and", ...)) # Sort.FORMULA
+expand_defs(formula, defs_dict)  # 정의 치환 유틸리티
+```
+
+미래: 산술·대수적 항 언어 도입 시 `Sort.TERM` 이 실제 사용된다.
+
+### 16.6 `diagnose` 커맨드 전체 코드 목록 (v1)
+
+| 코드 | 심각도 | 의미 |
+|---|---|---|
+| `UndefinedSymbol` | error | 증명 어디에도 없는 레이블 참조 |
+| `MissingHypothesis` | error | 스코프 밖 레이블 참조 |
+| `UnsupportedConclusion` | error | conclude 포뮬러 불일치 |
+| `CircularDependency` | error | 의존성 그래프 사이클 |
+| `UnusedAssumption` | warning | 결론에 기여 안 하는 가정 |
+| `UndefinedDefinition` | warning | 정의 본문의 미정의 이름 (v1 휴리스틱) |
+| `InvalidTransition` | error | 스코프 유효하나 규칙 적용 실패 |
+| `TypeMismatch` | error | 정렬 불일치 (v1 인프라만; 표면 트리거 없음) |
+
+---
+
+## 17. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

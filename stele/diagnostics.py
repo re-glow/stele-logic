@@ -7,6 +7,16 @@ These diagnostics are for user feedback and failure-mode taxonomy, not for proof
 Entry points:
   diagnose_theorem(thm, logic_name=None) -> list[Diagnostic]
   diagnose_graph(g, label_lines=None)    -> list[Diagnostic]  (for synthetic graph tests)
+
+Stable diagnostic codes (tests and benchmark datasets rely on these strings):
+  UndefinedSymbol      — ref not defined anywhere in the proof
+  MissingHypothesis    — ref exists but out of scope
+  UnsupportedConclusion — conclude formula does not match referenced label
+  CircularDependency   — directed cycle in proof dependency graph
+  UnusedAssumption     — assumption not contributing to conclusion
+  UndefinedDefinition  — definition body references an undefined name (v1: heuristic)
+  InvalidTransition    — in-scope refs but rule application fails (classified from kernel)
+  TypeMismatch         — sort-level mismatch (v1 machinery only; no surface trigger yet)
 """
 from dataclasses import dataclass
 from .ast import pretty
@@ -23,7 +33,8 @@ class Diagnostic:
 
     Stable code strings (relied on by tests and future benchmark datasets):
       UndefinedSymbol, MissingHypothesis, UnsupportedConclusion,
-      CircularDependency, UnusedAssumption
+      CircularDependency, UnusedAssumption,
+      UndefinedDefinition, InvalidTransition, TypeMismatch
     """
     code: str          # one of the stable code strings above
     message: str       # human-readable explanation
@@ -38,10 +49,11 @@ class Diagnostic:
 def diagnose_theorem(thm, logic_name=None):
     """Return a list of Diagnostic for structural issues in thm.
 
-    Does NOT call the trusted kernel. Does NOT stop at the first issue.
-    Performs two passes:
-      1. Scope analysis   → UndefinedSymbol, MissingHypothesis, UnsupportedConclusion
-      2. Graph analysis   → CircularDependency, UnusedAssumption
+    Does NOT stop at the first issue. Performs multiple passes:
+      Pass 0: Definition analysis  → UndefinedDefinition
+      Pass 1: Scope analysis       → UndefinedSymbol, MissingHypothesis, UnsupportedConclusion
+      Pass 2: Graph analysis       → CircularDependency, UnusedAssumption
+      Pass 3: Kernel classification → InvalidTransition (only when pass 1 is error-free)
     """
     diags = []
     all_labels = _collect_all_labels(thm.lines)
@@ -56,13 +68,24 @@ def diagnose_theorem(thm, logic_name=None):
     except Exception:
         pass  # fall back to permissive checking
 
+    # Pass 0: definition analysis (UndefinedDefinition)
+    _check_undef_definitions(thm, diags)
+
     # Pass 1: scope analysis
     _diagnose_block(thm.lines, {}, all_labels, [], diags, logic)
 
-    # Pass 2: graph analysis
+    # Snapshot errors after scope analysis (before graph analysis adds warnings).
+    scope_errors = [d for d in diags if d.severity == "error"]
+
+    # Pass 2: graph analysis (CircularDependency, UnusedAssumption)
     from .proofgraph import build_proof_graph
     g = build_proof_graph(thm)
     diags.extend(diagnose_graph(g, label_lines))
+
+    # Pass 3: InvalidTransition — classify kernel rule-failure errors.
+    # Only run when no scope errors; kernel errors would duplicate scope errors otherwise.
+    if not scope_errors and logic is not None and logic.semantics == "proof":
+        _check_invalid_transitions(thm, name, diags)
 
     return diags
 
@@ -266,3 +289,74 @@ def _check_conclude(node, env, all_labels, diags):
             node.line,
             "error",
         ))
+
+
+# ---------------------------------------------------------------------------
+# New diagnostic passes (v1 extension)
+# ---------------------------------------------------------------------------
+
+def _is_def_like_name(name):
+    """Heuristic: does this identifier look like a definition name rather than a prop variable?
+
+    Prop variables in Stele examples are typically single uppercase letters (P, Q, R, ...).
+    Definition names are multi-character identifiers, often containing underscores.
+
+    Rule: multi-char, all-uppercase (including underscores) and not a keyword.
+
+    v1 LIMITATION: multi-character prop variables such as 'PHI' or 'PP' will be treated
+    as potential definition names by this heuristic. Document this and only test clear cases.
+    """
+    if len(name) <= 1:
+        return False
+    # All chars uppercase or underscore, at least one letter
+    return name.upper() == name and any(c.isalpha() for c in name)
+
+
+def _scan_def_body_for_undef(formula, defs_dict, line, diags):
+    """Recursively scan a definition formula for undefined definition references."""
+    from .ast import Var, Op
+    if isinstance(formula, Var):
+        if _is_def_like_name(formula.name) and formula.name not in defs_dict:
+            diags.append(Diagnostic(
+                "UndefinedDefinition",
+                f"definition body references '{formula.name}' "
+                f"which is not a defined name in this file",
+                line,
+                "warning",
+            ))
+    elif isinstance(formula, Op):
+        for arg in formula.args:
+            _scan_def_body_for_undef(arg, defs_dict, line, diags)
+
+
+def _check_undef_definitions(thm, diags):
+    """Pass 0: scan definition bodies for references to missing definitions."""
+    if not thm.definitions:
+        return
+    defs_dict = {d.name: d for d in thm.definitions}
+    for defn in thm.definitions:
+        _scan_def_body_for_undef(defn.formula, defs_dict, defn.line, diags)
+
+
+def _check_invalid_transitions(thm, logic_name, diags):
+    """Pass 3: try the trusted kernel; classify rule-application failures as InvalidTransition.
+
+    Called only when scope analysis found no errors, so the kernel's exception is
+    not a scope issue (those are already covered by UndefinedSymbol/MissingHypothesis).
+
+    The kernel remains the sole authority — diagnostics only classify its output.
+    """
+    from .kernel import check_theorem
+    from .errors import ProofError
+    try:
+        check_theorem(thm, logic_name)
+    except ProofError as e:
+        msg = str(e)
+        line = getattr(e, "line", None)
+        # Classify as InvalidTransition: rule applied to valid refs but application failed.
+        # Kernel messages for rule failures contain "rule '" but NOT "is not available"
+        # (which indicates an unknown rule, a different category).
+        if "rule '" in msg and "is not available" not in msg:
+            diags.append(Diagnostic("InvalidTransition", msg, line, "error"))
+        # Other ProofError types (no conclude, duplicate label) are structural issues
+        # not covered by this pass.

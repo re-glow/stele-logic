@@ -154,6 +154,60 @@ def cmd_lattice(formula_str):
     return 0
 
 
+def cmd_graph(path, logic, dot_mode):
+    from .proofgraph import (build_proof_graph, to_dot,
+                              has_cycle, find_unused_assumptions, find_isolated_steps)
+
+    text = open(path, encoding="utf-8").read()
+    try:
+        thm = parse_theorem(text)
+    except ParseError as e:
+        loc = f" (line {e.line})" if getattr(e, "line", None) else ""
+        print(f"X Parse error{loc}: {e}")
+        return 1
+
+    logic_name = logic or thm.logic or "intuitionistic_prop"
+    try:
+        lg, _ = check_theorem(thm, logic_name)
+    except (ProofError, SteleError) as e:
+        print(f"X {type(e).__name__}: {e}")
+        print("  Graph not built: file must pass verification first.")
+        return 1
+
+    g = build_proof_graph(thm)
+
+    if dot_mode:
+        print(to_dot(g))
+        return 0
+
+    print(f"graph  [{thm.name} | logic: {lg.name}]")
+    print(f"  nodes ({len(g.nodes)}):")
+    for label, node in g.nodes.items():
+        rule_s = f"  [{node.rule}]" if node.rule else ""
+        print(f"    {label}: {node.formula}{rule_s}")
+    print(f"  edges ({len(g.edges)}):")
+    for src, tgt in g.edges:
+        print(f"    {src} -> {tgt}")
+
+    # Diagnostics
+    issues = []
+    if has_cycle(g):
+        issues.append("cycle detected in dependency graph")
+    unused = find_unused_assumptions(g)
+    if unused:
+        issues.append(f"unused: {', '.join(sorted(unused))}")
+    iso = find_isolated_steps(g)
+    if iso:
+        issues.append(f"isolated steps: {', '.join(sorted(iso))}")
+
+    if issues:
+        for msg in issues:
+            print(f"  [WARN] {msg}")
+    else:
+        print("  diagnostics: OK")
+    return 0
+
+
 def cmd_demos():
     M.run_demos()
     return 0
@@ -182,6 +236,14 @@ def main(argv=None):
     lt.add_argument("formula",
                     help="formula to evaluate (quote multi-word formulas: 'P or Q')")
 
+    gr = sub.add_parser("graph",
+                        help="build and analyse the proof dependency graph of a .stele file")
+    gr.add_argument("file")
+    gr.add_argument("--logic", default=None,
+                    help="proof logic to verify against before building the graph")
+    gr.add_argument("--dot", action="store_true",
+                    help="output DOT text instead of the human-readable summary")
+
     sub.add_parser("demos", help="run the many-valued semantics demonstrations")
 
     args = ap.parse_args(argv)
@@ -191,6 +253,8 @@ def main(argv=None):
         return cmd_soundness(args.logic, args.matrix)
     if args.cmd == "lattice":
         return cmd_lattice(args.formula)
+    if args.cmd == "graph":
+        return cmd_graph(args.file, args.logic, args.dot)
     if args.cmd == "demos":
         return cmd_demos()
     return 2

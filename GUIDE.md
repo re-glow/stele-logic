@@ -552,7 +552,88 @@ OK Proof verified: first   [logic: intuitionistic_prop]
 
 ---
 
-## 14. 한계와 다음 단계
+## 14. 증명 의존성 그래프 (`graph`)
+
+### 14.1 개요
+
+검증된 증명을 구조화된 유향 그래프로 표현할 수 있다. 각 라벨(가정·have 단계·결론)이 노드가 되고, 추론 규칙이 인용하는 이전 라벨이 의존성 간선(dep → step)이 된다.
+
+```
+python -m stele.cli graph examples/peirce.stele --logic classical_prop
+```
+
+출력 예 (일부):
+```
+graph  [peirce | logic: classical_prop]
+  nodes (11):
+    h: (P -> Q) -> P
+    hnp: not P
+    ...
+    h_thm: ((P -> Q) -> P) -> P  [imp_intro]
+    _conclude: ((P -> Q) -> P) -> P
+  edges (14):
+    hp -> hbot
+    hnp -> hbot
+    ...
+  diagnostics: OK
+```
+
+### 14.2 동작 방식
+
+1. 파일을 파싱한 후 **기존 proof 검사기로 먼저 검증**한다.
+2. 검증을 통과해야 그래프를 생성한다. 검증 실패 시 오류를 보고하고 종료한다.
+3. `Assume` → kind=assumption, `Suppose` → kind=suppose, `Have` → kind=have (규칙 이름 포함), `Conclude` → `_conclude` 노드.
+4. `Have` 노드의 모든 refs(일반 전제·방출 규칙 레이블 포함)가 의존성 간선이 된다.
+
+### 14.3 DOT 내보내기
+
+`--dot` 플래그를 추가하면 Graphviz DOT 텍스트를 출력한다:
+
+```
+python -m stele.cli graph examples/peirce.stele --logic classical_prop --dot
+```
+
+Graphviz가 설치돼 있으면 별도로 렌더링할 수 있다:
+```
+python -m stele.cli graph examples/peirce.stele --logic classical_prop --dot > peirce.dot
+dot -Tpng peirce.dot -o peirce.png
+```
+
+Graphviz는 **프로젝트 의존성이 아니다**. DOT 텍스트 출력만이 이 버전의 deliverable이다.
+
+### 14.4 진단
+
+그래프 커맨드는 세 가지 진단을 자동으로 실행한다:
+
+| 진단 | 의미 |
+|---|---|
+| 순환 감지 | 의존성 그래프에 방향 순환이 있으면 경고. 검증된 증명에서는 발생하지 않아야 한다(방어적 불변 확인). |
+| 미사용 가정 | 결론에 기여하지 않는 `assume`/`suppose` 노드를 보고. 방출된 가정도 인용됐으면 미사용으로 처리하지 않는다. |
+| 고립 단계 | 결론으로 이어지지 않는 `have` 단계를 보고. |
+
+### 14.5 Python API
+
+```python
+from stele.parser import parse_theorem
+from stele.proofgraph import build_proof_graph, to_dot, has_cycle
+
+thm = parse_theorem(open("examples/peirce.stele").read())
+g = build_proof_graph(thm)
+print(len(g.nodes), "nodes,", len(g.edges), "edges")
+print(to_dot(g))          # DOT 텍스트
+print(has_cycle(g))       # False (검증된 증명은 비순환)
+```
+
+### 14.6 한계
+
+- 그래프 분석은 **구조적**이다. 정리 증명이나 증명 탐색이 아니다.
+- 검증된 증명의 순환 감지는 대부분 방어적 확인이며, 미래의 그래프 조작 도구를 위한 것이다.
+- 정의(definition) 노드는 미구현(정의 문법이 없다).
+- 의존성 그래프의 더 깊은 분석(타입 불일치, 순환 의존성 위치추정 등)은 로드맵 항목이다.
+
+---
+
+## 15. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

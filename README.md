@@ -18,6 +18,9 @@
 python -m stele.web                                                  # 브라우저 UI
 python -m stele.cli check examples/dne.stele --logic classical_prop
 python -m stele.cli check examples/dne.stele --logic intuitionistic_prop
+python -m stele.cli check examples/matrix_k3.stele --logic K3      # 행렬 모드
+python -m stele.cli soundness --logic classical_prop --matrix K3   # 규칙 건전성
+python -m stele.cli lattice "P or Q"                               # 세계 격자 데모
 python -m stele.cli demos
 python -m pytest -q
 ```
@@ -34,6 +37,15 @@ python -m pytest -q
 python -m stele.cli check examples/dne.stele --logic classical_prop
 python -m stele.cli check examples/dne.stele --logic intuitionistic_prop
 
+# Matrix-mode semantic queries
+python -m stele.cli check examples/matrix_k3.stele --logic K3
+
+# Rule soundness report (do classical rules preserve designation in K3?)
+python -m stele.cli soundness --logic classical_prop --matrix K3
+
+# World lattice / CH-style independence demo
+python -m stele.cli lattice "P or Q"
+
 # Many-valued semantics demos
 python -m stele.cli demos
 
@@ -41,7 +53,7 @@ python -m stele.cli demos
 python -m stele.web
 ```
 
-CI runs on every push and pull request via GitHub Actions (`.github/workflows/tests.yml`), testing Python 3.10–3.12.
+CI runs on every push and pull request via GitHub Actions (`.github/workflows/ci.yml`), testing Python 3.10–3.12.
 
 ## 웹 UI
 
@@ -78,17 +90,32 @@ theorem NAME [using LOGIC]:
 
 ## 규칙
 
-| 규칙 | 형태 | 직관 | 고전 |
-|---|---|:---:|:---:|
-| `copy` | A ⊢ A | O | O |
-| `mp` (→E) | A→B, A ⊢ B | O | O |
-| `imp_intro` (→I) | [A]…B ⊢ A→B | O | O |
-| `and_intro` | A, B ⊢ A∧B | O | O |
-| `and_elim_left` | A∧B ⊢ A | O | O |
-| `and_elim_right` | A∧B ⊢ B | O | O |
-| `dne` | ¬¬A ⊢ A | X | **O** |
+공통 규칙 (`intuitionistic_prop` 및 `classical_prop`):
 
-두 논리는 `dne` 단 하나로 갈린다.
+| 규칙 | 형태 | 비고 |
+|---|---|---|
+| `copy` | A ⊢ A | |
+| `mp` (→E) | A→B, A ⊢ B | |
+| `imp_intro` (→I) | [A]…B ⊢ A→B | 가정 방출 |
+| `and_intro` | A, B ⊢ A∧B | |
+| `and_elim_left` | A∧B ⊢ A | |
+| `and_elim_right` | A∧B ⊢ B | |
+| `neg_elim` (¬E) | A, ¬A ⊢ ⊥ | |
+| `ex_falso` (⊥E) | ⊥ ⊢ A | |
+| `or_intro_left` | A ⊢ A∨B | |
+| `or_intro_right` | B ⊢ A∨B | |
+| `neg_intro` (¬I) | [A]…⊥ ⊢ ¬A | 가정 방출 |
+| `or_elim` (∨E) | A∨B, [A]…C, [B]…C ⊢ C | 가정 방출(2개) |
+
+`classical_prop`이 추가하는 규칙 (직관논리에는 없음):
+
+| 규칙 | 형태 | 비고 |
+|---|---|---|
+| `dne` | ¬¬A ⊢ A | 이중부정소거 |
+| `lem` | ⊢ A∨¬A | 배중률 |
+| `pbc` | [¬A]…⊥ ⊢ A | 귀류법, 가정 방출 |
+
+`classical_prop`은 `intuitionistic_prop`에 `dne`, `lem`, `pbc` 세 고전 규칙을 추가한 것이다. 두 논리는 공통 규칙을 모두 공유하며, 이 세 규칙의 가용성 여부만으로 갈린다.
 
 ## 다치 의미론 (matrix 모드, |=)
 
@@ -103,18 +130,33 @@ theorem NAME [using LOGIC]:
 ```
 stele/
   ast.py      식 표현(연결사 무지) + 출력기
-  proof.py    증명 노드
+  proof.py    증명 노드 + MatrixDirective
   parser.py   직접 구현한 토크나이저 + 재귀하강 파서
-  logic.py    RuleSchema, Logic, 내장 논리(고전/직관)
+  logic.py    RuleSchema, Logic, MatrixLogic; 내장 논리(고전/직관/K3/LP/boolean)
   kernel.py   신뢰 코어: 매처 + 증명트리 검사 (proof 모드)
-  matrix.py   다치 의미론: Matrix, K3/LP/boolean, 평가·항진성·귀결·고정점
-  cli.py      check / demos
+  matrix.py   다치 의미론: Matrix, K3/LP/boolean, 평가·항진성·귀결·고정점·건전성
+  world.py    World(matrix, axioms) + status(PROVABLE/REFUTABLE/BOTH/INDEPENDENT) + lattice_status
+  cli.py      check / soundness / lattice / demos
   web.py      로컬 웹 UI 서버(stdlib)
   webapp/index.html  단일 파일 프런트엔드
-examples/     검증·오류·상대성 예제
-tests/        19개 테스트
+examples/     증명·행렬·세계 예제 (.stele + .py)
+tests/        215개 테스트
 ```
 
-## 로드맵
+## 구현된 것 / 로드맵
 
-`stele_redesign.md` 참조. 다음: matrix 모드 표면문법 → 세계 격자(진리 위상) → 구조 규칙(초일관/선형) → 1차 논리 → Lean export(고전·직관 단편 한정) → LLM 튜터.
+**현재 구현:**
+- 자연연역 증명검증기 (proof 모드, 커널 신뢰 코어)
+- 공통 명제 규칙 전체 (`neg_elim`, `ex_falso`, `or_intro`, `neg_intro`, `or_elim` 포함)
+- 고전 전용 규칙 (`dne`, `lem`, `pbc`) + 상대성 데모
+- 다치 의미론 (K3, LP, boolean) + 행렬 모드 표면 문법 (`.stele` 지시문)
+- 규칙 건전성 자동 보고 (`soundness` 명령)
+- 의미론적 세계 `World(matrix, axioms)` + 4-상태 `status()` (PROVABLE/REFUTABLE/BOTH/INDEPENDENT)
+- 세계 격자 데모 — CH-스타일 명제 독립성 패턴 (`lattice` 명령)
+
+**다음 작업 (로드맵):**
+- 구조 규칙 정책 (약화·축약 제거 → 선형·관련성·초일관 세계)
+- 1차 논리 (한정사, 치환, freshness)
+- Lean 4 export (고전·직관 단편 한정)
+- 커널 Rust/OCaml 포팅 (sum type + 망라적 패턴매칭)
+- LLM 튜터 (커널이 재검사)

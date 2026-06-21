@@ -14,27 +14,49 @@
 
 ---
 
-## 2. 이미 구현된 것 (19개 테스트 통과)
+## 2. 이미 구현된 것 (215개 테스트 통과)
 
 ```
 stele/
   ast.py     uniform Formula: Var, Op(연결사 무지) + pretty()
-  proof.py   frozen dataclass: Assume/Have/Suppose/Conclude/Theorem (+line)
-  parser.py  직접 구현 토크나이저 + 재귀하강 파서(의존성 0), 들여쓰기 기반 증명 파서
-  logic.py   RuleSchema, Logic, 내장 논리 2종
+  proof.py   frozen dataclass: Assume/Have/Suppose/Conclude/Theorem (+line) + MatrixDirective
+  parser.py  직접 구현 토크나이저 + 재귀하강 파서(의존성 0) + parse_matrix_file()
+  logic.py   RuleSchema, Logic, MatrixLogic; 내장 논리 5종(intuitionistic/classical/K3/LP/boolean)
   kernel.py  ★신뢰 코어: match()(1차 구문) + instantiate() + 증명트리 검사 + discharge
   matrix.py  다치 의미론: Matrix, K3/LP/boolean, evaluate/is_tautology/entails/negation_fixpoints
-  cli.py     check <file> [--logic L] / demos
-  web.py     로컬 웹 UI 서버(stdlib http.server): GET / , /api/demos , /api/examples , POST /api/check
-  webapp/index.html  단일 파일 SPA(편집기 + 세계 토글 + 인장형 판정 + 진리표)
-examples/  dne, dne_law, valid_and, valid_imp_chain, imp_self, invalid_mp, invalid_scope
+             + SoundnessResult + rule_soundness()
+  world.py   World(matrix_name, axioms) frozen dataclass
+             + status(φ, world) → PROVABLE/REFUTABLE/BOTH/INDEPENDENT
+             + lattice_status(φ, worlds) — 교차 세계 상태 질의
+  cli.py     check / soundness / lattice / demos
+  web.py     로컬 웹 UI 서버(stdlib http.server)
+  webapp/index.html  단일 파일 SPA(편집기 + 세계 토글 + 진리표)
+examples/  proof: dne, dne_law, valid_*, invalid_*, peirce, lem, neg_intro, or_elim, ...
+           matrix: matrix_k3.stele, matrix_lp.stele, matrix_boolean.stele
+           world: world_ch_style.py
 tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
+           conclusion_directed / new_rules / generalized_discharge / discharge_rules
+           classical_principles / matrix_surface / rule_soundness / world / world_lattice
 ```
 
-- **proof 모드 규칙:** 공통 `copy`, `mp`(→E), `imp_intro`(→I, 방출), `and_intro`, `and_elim_left`, `and_elim_right`; **고전 전용 `dne`**(¬¬A⊢A). `imp_intro`는 두 세계 모두에서 가용(커널 특수처리).
-- **두 세계는 `dne` 단 하나로 갈린다.** `classical_prop = intuitionistic_prop + dne`. `using` 미지정 시 기본 `intuitionistic_prop`, `--logic`이 우선.
-- **matrix 모드:** K3{F,I,T} designated{T}, LP{F,B,T} designated{T,B}, boolean. 표는 값 순서에서 생성(¬=mirror, ∧=min, ∨=max, →=¬a∨b). `demos`/웹에서 배중률 K3 실패, 거짓말쟁이 고정점(K3=I/LP=B), LP 폭발 실패를 보임.
-- **상대성 데모:** 동일 증명이 `classical_prop`에서 검증, `intuitionistic_prop`에서 거부(`dne` 미가용). 웹 토글로 즉시 뒤집힘.
+- **proof 모드 공통 규칙:**
+  `copy`, `mp`(→E), `imp_intro`(→I, 방출), `and_intro`, `and_elim_left`, `and_elim_right`,
+  `neg_elim`(¬E: A, ¬A⊢⊥), `ex_falso`(⊥E: ⊥⊢A),
+  `or_intro_left`, `or_intro_right`,
+  `neg_intro`(¬I: [A]…⊥⊢¬A, 방출), `or_elim`(∨E: A∨B,[A]…C,[B]…C⊢C, 방출 2개).
+- **고전 전용 규칙:** `dne`(¬¬A⊢A), `lem`(⊢A∨¬A), `pbc`([¬A]…⊥⊢A, 방출).
+  `classical_prop = intuitionistic_prop + {dne, lem, pbc}`.
+- **matrix 모드:** K3/LP/boolean 행렬을 `--logic K3` 등으로 선택. `.stele` 파일에서
+  `evaluate`, `tautology?`, `entails ... |- ...`, `fixpoint not`, `liar` 지시문 사용 가능.
+- **규칙 건전성:** `python -m stele.cli soundness --logic L --matrix M` 으로
+  proof 논리 L의 각 비방출 규칙이 행렬 M에서 지정값을 보존하는지 보고.
+- **의미론적 세계:** `World(matrix_name, axioms)` + `status(φ, w)` —
+  φ가 세계의 공리 아래 귀결(`PROVABLE`), 부정만 귀결(`REFUTABLE`),
+  둘 다 귀결(`BOTH`, 초일관 LP), 둘 다 아님(`INDEPENDENT`).
+  *PROVABLE은 행렬 의미론적 귀결이며 증명 탐색이 아니다.*
+- **세계 격자 데모:** `python -m stele.cli lattice <φ>` — CH-스타일 명제 독립성 패턴
+  (Γ:INDEPENDENT → Γ+φ:PROVABLE, Γ+¬φ:REFUTABLE). 집합론적 강제법 아님.
+- **상대성 데모:** 동일 증명이 `classical_prop`에서 검증, `intuitionistic_prop`에서 거부(`dne`/`lem`/`pbc` 미가용). 웹 토글로 즉시 뒤집힘.
 
 ---
 
@@ -73,12 +95,14 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 
 ## 6. 알려진 한계 / TODO
 
-- **명제논리 단편**만. 1차 논리(한정사) 없음.
-- proof 규칙 집합이 작다: ⊥(falsum) 없음, ¬I/¬E·ex falso 없음(¬는 `dne`의 구문적 ¬¬소거로만 다뤄짐), `or` 도입/제거 규칙 없음 → `or`/`not`은 식엔 쓰이나 proof 규칙 부재.
-- **상대성 = 규칙 가용성 수준**(의미론적 비도출성 아님).
-- matrix 모드에 **표면 문법 없음**(데모/웹 전용). `.stele`로 다치 평가 작성 불가.
-- 세계 격자(진리 위상), 구조 규칙(선형/관련성/초일관), Lean export, LLM 튜터 모두 미구현.
-- pretty-printer 괄호는 근사적(메시지용으로 충분, 왕복 정규형 아님).
+- **명제논리 단편**만. 1차 논리(한정사·치환) 없음.
+- **상대성 = 규칙 가용성 수준**(의미론적 비도출성 자체를 커널이 확립하지 않음). 완전한 비도출성 증명은 matrix/크립키 의미론의 몫.
+- `world.py`의 PROVABLE은 행렬 의미론적 귀결이며 증명 탐색이 아니다. 두 가지를 혼동하지 말 것.
+- CH-스타일 독립성 패턴은 명제 수준의 장난감 시연이며 집합론적 강제법이 아니다.
+- 구조 규칙 정책(약화·축약 제거 → 선형/관련성/초일관 세계) 미구현.
+- 세계 격자 전체(세계들 사이의 포함·비교 관계) 미구현(로드맵).
+- Lean 4 export, LLM 튜터 미구현.
+- pretty-printer 괄호는 근사적(메시지용; 왕복 정규형 아님).
 - 증명 탐색/자동화 없음(설계상 — 검사기≠증명기).
 - 웹 UI는 단일 로컬 사용자(영속성·계정 없음).
 
@@ -86,14 +110,14 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 
 ## 7. 권장 다음 작업 (우선순위 순)
 
-1. **명제 규칙 집합 완성** — ⊥, ¬I/¬E(또는 ¬A:=A→⊥), ⊥E(직관+고전), or_intro_left/right, or_elim 추가. 직관 vs 고전 대비가 풍부해지고(예: LEM가 고전에서 도출) 의미 있는 정리의 전제. 테스트·예제 동반.
-2. **matrix 표면 문법** — `evaluate F` / `valid? F` / `entails Γ |- F` 지시문 + 거짓말쟁이 데모, CLI·web 지원. 더불어 **규칙 건전성 자동검사**(선언된 proof 규칙이 선언된 행렬에서 건전한지).
-3. **세계 격자(진리 위상)** — `World=(logic, axioms)`, `status(φ,W)∈{provable,refutable,independent}`(깊이 제한 도출 탐색은 untrusted, 커널 재검사), 교차 세계 질의 + 명제판 CH 데모. 대표 연구 기능.
-4. **구조 규칙 정책** — 약화/축약/교환을 논리별 선언으로 → 선형·관련성·초일관 세계가 공짜.
-5. **커널 Rust/OCaml 포팅** — 파서·CLI·web은 Python 유지; 공유 테스트 코퍼스로 동작 잠금.
-6. **1차 논리** — Bind 노드, 포획회피 치환, freshness, α-동치, 이후 고차 매칭.
-7. **Lean 4 export** — 고전·직관 단편 **한정**.
-8. (마지막) **LLM 튜터** — 세계/증명/논리정의 제안, 전부 커널 검증.
+1~3은 완료됨 (명제 규칙 전체, matrix 표면 문법, 세계/격자 데모). 이후:
+
+1. **구조 규칙 정책** — 약화/축약/교환을 논리별 선언으로 → 선형·관련성·초일관 세계.
+2. **커널 Rust/OCaml 포팅** — 파서·CLI·web은 Python 유지; 공유 테스트 코퍼스로 동작 잠금.
+3. **1차 논리** — Bind 노드, 포획회피 치환, freshness, α-동치.
+4. **Lean 4 export** — 고전·직관 단편 **한정**.
+5. **세계 격자 전체** — 세계 포함 관계, 크립키 의미론 기반.
+6. (마지막) **LLM 튜터** — 세계/증명/논리정의 제안, 전부 커널 검증.
 
 ---
 

@@ -366,7 +366,65 @@ soundness  [logic: classical_prop | matrix: K3]
 
 ---
 
-## 10. 오류 카탈로그 (증명 모드)
+## 10. 의미론적 세계 (`World`)
+
+### 10.1 World란
+
+`World`는 행렬과 공리 집합의 쌍이다:
+
+```
+World(matrix_name, axioms)
+```
+
+- `matrix_name`: 등록된 행렬 이름 (`"K3"`, `"LP"`, `"boolean"`)
+- `axioms`: 지정된 전제로 작용하는 식들의 튜플 (기본값 `()`)
+
+```python
+from stele.world import World, status, PROVABLE, REFUTABLE, BOTH, INDEPENDENT
+from stele.parser import parse_formula
+
+w = World("boolean", (parse_formula("P -> Q"), parse_formula("P")))
+s = status(parse_formula("Q"), w)   # PROVABLE
+```
+
+### 10.2 세계 상태 (Semantic Status)
+
+`status(φ, world)` 는 행렬 귀결(`stele/matrix.py`)을 두 번 호출해 φ 와 ¬φ 의 귀결 여부를 조합한다:
+
+| 상태 | 의미 |
+|---|---|
+| `PROVABLE` | `axioms ⊨ φ` 이지만 `axioms ⊭ ¬φ` |
+| `REFUTABLE` | `axioms ⊭ φ` 이지만 `axioms ⊨ ¬φ` |
+| `BOTH` | `axioms ⊨ φ` **이고** `axioms ⊨ ¬φ` — 초일관 행렬에서 가능 |
+| `INDEPENDENT` | `axioms ⊭ φ` **이고** `axioms ⊭ ¬φ` |
+
+**중요한 구별**: `PROVABLE`은 *세계의 공리 아래 행렬 지정값 보존으로 의미론적 귀결*이 성립함을 뜻한다. 증명 탐색이나 커널 검사와는 무관하다. Stele의 신뢰 커널은 이 계산에 전혀 관여하지 않는다.
+
+### 10.3 흥미로운 사례
+
+**Boolean 빈 세계:**
+- `P or not P` → `PROVABLE` (항진식)
+- `P` → `INDEPENDENT` (우발적 명제)
+- `P and not P` → `REFUTABLE` (항위식)
+
+**K3 빈 세계:**
+- `P or not P` → `INDEPENDENT` (I가 비지정값이므로 항진도 항위도 아님)
+- `P -> P` → `INDEPENDENT` (P=I 이면 I→I=I, 비지정값)
+
+**LP 초일관 세계 (공리: P, not P):**
+- `P` → `BOTH` — 공리 P와 ¬P 가 동시에 지정되는 배정(P=B)이 존재하며, 그 아래 P도 ¬P도 지정됨
+- `BOTH` 상태는 LP의 초일관성 — 모순이 폭발로 이어지지 않음 — 을 직접 보여 준다.
+
+### 10.4 한계
+
+- `PROVABLE`은 의미론적 귀결이며 증명검색(proof search)의 결과가 아니다.
+- 공리가 행렬에서 결코 동시에 지정될 수 없으면(`ex_falso`처럼), 귀결이 공허하게 성립해 모든 식이 `PROVABLE`이 될 수 있다.
+- 세계 격자(world lattice) — 세계들 사이의 포함·비교 관계 — 는 미구현(로드맵).
+- 증명-이론적 상태(증명 커널 기반)는 별도의 미래 작업이다.
+
+---
+
+## 11. 오류 카탈로그 (증명 모드)
 
 | 메시지 | 원인 | 해결 |
 |---|---|---|
@@ -381,7 +439,7 @@ soundness  [logic: classical_prop | matrix: K3]
 
 ---
 
-## 11. 첫 증명 작성하기
+## 12. 첫 증명 작성하기
 
 목표: `(P → Q) → (P → Q)` 가 아니라, 간단히 **`P, P→Q ⊢ Q`** (mp) 를 증명해 보자.
 
@@ -404,7 +462,7 @@ OK Proof verified: first   [logic: intuitionistic_prop]
 
 ---
 
-## 12. 한계와 다음 단계
+## 13. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

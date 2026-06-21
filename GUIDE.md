@@ -1002,7 +1002,38 @@ python bench/generate.py --corpus all --n 50 --out bench/generated/test --valida
 
 자세한 내용: [`docs/corpus-generation.md`](docs/corpus-generation.md)
 
-## 19. 한계와 다음 단계
+## 19. ML 기준선 (`stele_ml`)
+
+신뢰 코어(`stele/`)와 완전히 격리된 선택적 ML 패키지가 제공된다.
+
+```bash
+# 기본 기준선 훈련 (400개 생성 예제, 의존성 없음)
+python -m stele_ml.train --out stele_ml/artifacts/baseline
+
+# 평가
+python -m stele_ml.eval \
+    --model stele_ml/artifacts/baseline \
+    --data bench/generated/sample \
+    --report stele_ml/reports/baseline_report.json
+
+# 단일 추론
+python -m stele_ml.infer --model stele_ml/artifacts/baseline \
+    --file examples/dne.stele --json
+```
+
+커밋된 기준선 측정값(`stele_ml/reports/baseline_report.json`에서 생성됨):
+
+- **유효성 정확도:** 0.85 (40개 샘플 평가)
+- **정확 일치:** 0.60
+- **마이크로 F1:** 0.50
+
+> **정직성:** 위 수치는 소형 합성 코퍼스에서의 실측값이며 최종 성능 주장이 아니다.
+> 심볼릭 체커(`stele/kernel.py`)가 권위 있는 검증자이며 ML은 근사 기준선이다.
+> scikit-learn은 선택 사항(`stele_ml/requirements-ml.txt`)이며 핵심 CI에 필요 없다.
+
+자세한 내용: [`stele_ml/README.md`](stele_ml/README.md)
+
+## 20. 한계와 다음 단계
 
 - 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

@@ -1,0 +1,16 @@
+# Optional ML dependencies for stele_ml
+#
+# The baseline classifier works WITHOUT these (pure stdlib Naive Bayes).
+# Install these for a stronger sklearn-backed baseline or for development tooling.
+#
+# Install: pip install -r stele_ml/requirements-ml.txt
+
+# scikit-learn: TF-IDF + LogisticRegression / LinearSVC alternative to the
+# built-in Multinomial Naive Bayes.  Optional upgrade only.
+scikit-learn>=1.0
+
+# numpy: required by scikit-learn
+numpy>=1.21
+
+# For development / report generation (optional)
+# pandas>=1.3

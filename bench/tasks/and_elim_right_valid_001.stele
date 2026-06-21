@@ -1,0 +1,4 @@
+theorem and_elim_right_valid_001 using intuitionistic_prop:
+  assume h1: P and Q
+  have h2: Q by and_elim_right h1
+  conclude Q by h2

@@ -1,0 +1,5 @@
+theorem neg_elim_valid_001 using intuitionistic_prop:
+  assume h_p: P
+  assume h_np: not P
+  have h_bot: false by neg_elim h_p h_np
+  conclude false by h_bot

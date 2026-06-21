@@ -1,0 +1,5 @@
+definition USE_MISSING := MISSING_DEF -> P
+
+theorem undef_definition_001:
+  assume h: P
+  conclude P by h

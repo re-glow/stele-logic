@@ -1,0 +1,3 @@
+theorem unsupported_conclusion_001:
+  assume h1: P
+  conclude Q by h1

@@ -1,0 +1,6 @@
+theorem pbc_valid_001 using classical_prop:
+  assume hnnp: not not P
+  suppose hnp: not P
+    have hbot: false by neg_elim hnp hnnp
+  have hp: P by pbc hnp hbot
+  conclude P by hp

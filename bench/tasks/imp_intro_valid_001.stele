@@ -1,0 +1,5 @@
+theorem imp_intro_valid_001 using intuitionistic_prop:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P -> P by imp_intro h1 h2
+  conclude P -> P by h3

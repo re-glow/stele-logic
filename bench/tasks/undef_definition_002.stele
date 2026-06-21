@@ -1,0 +1,6 @@
+definition GOOD_DEF := P -> Q
+definition BAD_DEF := UNDEFINED_NAME -> P
+
+theorem undef_definition_002:
+  assume h: P
+  conclude P by h

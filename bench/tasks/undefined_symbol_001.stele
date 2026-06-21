@@ -1,0 +1,4 @@
+theorem undefined_symbol_001 using intuitionistic_prop:
+  assume h1: P -> Q
+  have h2: Q by mp h1 missing
+  conclude Q by h2

@@ -1,0 +1,5 @@
+theorem missing_hyp_003 using intuitionistic_prop:
+  assume h_pq: P -> Q
+  suppose hp: P
+    have hq: Q by mp h_pq hp
+  conclude Q by hq

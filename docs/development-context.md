@@ -32,10 +32,11 @@ Hypothesis 없이 `python -m pytest -q`는 항상 통과한다.
 
 ---
 
-## 2. 이미 구현된 것 (888개 테스트 통과, Hypothesis 포함)
+## 2. 이미 구현된 것 (v1.0: 1,298개 테스트 수집됨; 1,294개 통과, 4 skipped without Hypothesis)
 
 ```
 stele/
+  __version__.py  버전 문자열 ("1.0.0")
   ast.py     uniform Formula: Var, Op(연결사 무지) + pretty()
   proof.py   frozen dataclass: Assume/Have/Suppose/Conclude/Theorem (+line) + MatrixDirective
   parser.py  직접 구현 토크나이저 + 재귀하강 파서(의존성 0) + parse_matrix_file()
@@ -46,26 +47,45 @@ stele/
   world.py   World(matrix_name, axioms) frozen dataclass
              + status(φ, world) → PROVABLE/REFUTABLE/BOTH/INDEPENDENT
              + lattice_status(φ, worlds) — 교차 세계 상태 질의
-  cli.py     check / soundness / lattice / demos
-  web.py     로컬 웹 UI 서버(stdlib http.server)
-  webapp/index.html  단일 파일 SPA(편집기 + 세계 토글 + 진리표)
+  diagnostics.py  ★UNTRUSTED 다중 패스 구조적 진단 (UndefinedSymbol, MissingHypothesis 등)
+  proofgraph.py   증명 의존성 그래프 — 단계 간 의존 관계 + DOT 출력
+  browser.py      browser_check() / browser_diagnose() / browser_graph() — Pyodide 브리지
+  errors.py       ProofError, DiagnosticCode, 오류 타입 정의
+  types.py        타입 앨리어스, 공통 타입 정의
+  eval.py         벤치마크 평가 하네스 (bench/labels.jsonl 기반 metrics 계산)
+  cli.py     check / soundness / lattice / graph / diagnose / demos / elaborate
+  web.py     Stele Studio HTTP 서버(stdlib http.server) + JSON API 엔드포인트
+  webapp/index.html  단일 파일 Stele Studio SPA
 examples/  proof: dne, dne_law, valid_*, invalid_*, peirce, lem, neg_intro, or_elim, ...
            matrix: matrix_k3.stele, matrix_lp.stele, matrix_boolean.stele
            world: world_ch_style.py
-stele/core/   terms.py / typing.py / reduce.py / term_parser.py
+           diag_*: diagnostics 예제 (unused assumption, undefined symbol 등)
+stele/core/   terms.py / typing.py / reduce.py / term_parser.py / debruijn.py / fol.py
               — 증명항 계산법: TVar/Lam/App/Pair/Fst/Snd/Inl/Inr/Case/Abort
               — 양방향 타입 검사(infer/check) + β-환원(step/normalize/is_normal)
+              — de Bruijn 바인더 표현(debruijn.py, 증명 변수만)
+              — 1차 논리 단편(fol.py): ForallIntro/Elim/ExistsIntro/Elim (experimental)
               — 표면 문법 파서(parse_term)
-stele/elaborate.py  — 스크립트 → 증명항 정교화(crosscheck_theorem)
+stele/elaborate.py  — 스크립트 → 증명항 정교화(crosscheck_theorem), 직관 논리만 지원
+site/             — 공개 사이트 (HTML/CSS/JS, Pyodide 기반)
+  index.html        랜딩페이지: 튜토리얼·갤러리·Studio
+  examples_gallery.json  갤러리 정직성 테스트 소스 (15개 항목)
+stele_ml/    — ML 기준선 (optional, isolated, experimental)
+stele_lean/  — Lean 4 브릿지 (optional, isolated, experimental)
 docs/semantics.md   — 형식 문법(BNF/EBNF) + 타입 규칙 + 환원 규칙 참조 명세
 docs/metatheory.md  — 7개 메타이론 주장과 현황(주체 환원·정규화·합류성·일관성 등)
 docs/proof-terms.md — 증명항 API + 정교화 가이드 + CLI 사용법
+docs/release-checklist.md  — 릴리스 전 체크리스트
+bench/       — 벤치마크 평가 데이터셋 + stele.eval 리포트
+packaging/   — PyInstaller 독립 실행 앱 빌드
+tools/       — Pyodide 사이트 빌드, 단일 파일 HTML 빌드
 tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
            conclusion_directed / new_rules / generalized_discharge / discharge_rules
            classical_principles / matrix_surface / rule_soundness / world / world_lattice
-           test_proof_terms / test_elaboration / test_reduction
+           test_proof_terms / test_elaboration / test_reduction / test_debruijn / test_fol
            test_proof_term_properties (선택적, Hypothesis 필요)
-           test_docs_and_deps
+           test_docs_and_deps / test_regression_invariants / test_pyodide_site
+           test_gallery (갤러리 정직성 + 접근성)
 ```
 
 - **proof 모드 공통 규칙:**
@@ -135,26 +155,32 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 
 ---
 
-## 7. 권장 다음 작업 (우선순위 순)
+## 7. v1.0 이후 권장 다음 작업
 
-**검증 코어 강화:**
-1. **의존성 그래프** — 증명 단계 간 의존 관계 추출·시각화.
-2. **증명 상태 추적** — 열린 목표·해소된 가정을 명시적으로 추적.
-3. **오류 진단 강화** — 미정의 기호, 타입 불일치, 빠진 가설, 순환 의존성 위치추정.
-4. **1차 논리** — Bind 노드, 포획회피 치환, freshness, α-동치.
-5. **구조 규칙 정책** — 약화/축약/교환을 논리별 선언으로 → 선형·관련성·초일관 세계.
+**v1.0에서 완료된 항목 (참고용):**
+- 의존성 그래프 (`proofgraph.py`, `--graph` CLI, Studio Graph 패널) ✓
+- 구조적 진단 (`diagnostics.py`, UndefinedSymbol/MissingHypothesis/UnusedAssumption 등) ✓
+- 공개 사이트 (GitHub Pages, Pyodide Studio, 튜토리얼, 갤러리) ✓
+- 독립 실행 앱 패키징 (PyInstaller, `packaging/`) ✓
+- 단일 파일 HTML 배포 (`tools/build_single_html.py`, CDN 필요) ✓
+- 벤치마크 평가 하네스 (`stele.eval`, `bench/`) ✓
+- ML 기준선 격리 (`stele_ml/`, optional) ✓
+- Lean 브릿지 격리 (`stele_lean/`, optional) ✓
+- 증명항 코어 — terms/typing/reduce/debruijn/FOL 단편 (`stele/core/`) ✓
 
-**벤치마크·평가:**
-6. **정리 스타일 벤치마크 작업** — 정형화된 증명 검증 태스크.
-7. **실패 모드 분류** — 오류 유형 taxonomy + 회귀 테스트 인프라.
+**v1.0 이후 — 검증 코어 강화:**
+1. **증명 상태 추적** — 열린 목표·해소된 가정을 명시적으로 추적.
+2. **오류 진단 강화** — 순환 의존성, 더 정밀한 위치 추정, 코드 범위 확장.
+3. **1차 논리 표면 문법** — Stele-Light에 한정사(`forall`, `exists`) 추가; 현재 proof-term 코어에만 experimental 구현.
+4. **구조 규칙 정책** — 약화/축약/교환을 논리별 선언으로 → 선형·관련성·초일관 세계.
+5. **de Bruijn FOL 완성** — `to_debruijn_fol` (객체 변수까지 DB 인덱스화).
 
-**선택적 확장 (신뢰 코어 밖):**
-8. **비형식 → 형식 스케치 변환** — 비형식 증명을 형식 구조로 변환 보조 (선택적).
-9. **ML/SLM 증명검증 보조** — 커널이 재검사하는 untrusted 보조자 (선택적).
-10. **Lean 4 브릿지** — 고전·직관 단편 한정 (선택적).
-11. **커널 Rust/OCaml 포팅** — 파서·CLI·web은 Python 유지.
+**v1.0 이후 — 선택적 확장 (신뢰 코어 밖):**
+6. **ML/SLM 증명검증 보조 고도화** — 커널이 재검사하는 untrusted 보조자 (`stele_ml/` 확장).
+7. **Lean 4 브릿지 고도화** — 고전·직관 단편 export 확장 (`stele_lean/` 확장).
+8. **커널 Rust/OCaml 포팅** — 파서·CLI·web은 Python 유지.
 
-주의: 8–10번은 미구현이며 측정된 메트릭·코퍼스·정확도가 없다. 구현·측정 전까지 주장하지 말 것.
+주의: ML/Lean 선택적 확장은 구현·측정 전까지 core 기능으로 주장하지 말 것.
 
 ---
 

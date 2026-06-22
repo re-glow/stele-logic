@@ -4,6 +4,92 @@ Development history of Stele Logic System.
 
 ---
 
+## [v1.0.0] — 2026-06-22  `release/v1.0-freeze`
+
+Public v1.0 freeze. No new features — release engineering, documentation
+synchronization, CI stabilization, and claim audit only.
+
+### Added
+
+- `stele/__version__.py` — version string `"1.0.0"`; exposed via `stele.__version__`.
+- `docs/release-checklist.md` — pre-tag and post-tag release checklist.
+- Capability matrix in README (v1.0 status table for all subsystems).
+- "First five minutes" section in `GUIDE.md` (§0) with tutorial map and gallery reference.
+- Gallery honesty tests (`tests/test_gallery.py`, 65 tests) verifying that every
+  `site/examples_gallery.json` entry label (`pass`/`fail`/`warn`) matches the
+  actual kernel result on every CI run.
+- Interactive 6-step tutorial and 15-entry verified example gallery on the public site
+  (`site/index.html`, `site/assets/stele-pyodide.js`).
+
+### Changed
+
+- README restructured to be public-first: public site URL, capability matrix,
+  distribution modes, limitations, development notes.
+- Test count references updated throughout (1,298 tests collected; ~1,294 pass,
+  4 skipped pending `hypothesis`).
+- `docs/development-context.md` updated: added missing modules (`browser.py`,
+  `diagnostics.py`, `proofgraph.py`, `errors.py`, `eval.py`, `types.py`);
+  corrected test count; updated roadmap to reflect completed items (dependency
+  graph, structural diagnostics, corpus generator, public site, packaging).
+
+### Fixed
+
+- Removed outdated roadmap item "LLM 튜터" from README (not implemented; moved to
+  optional future work in development context).
+- Corrected stale test-count claims: "226개 이상" / "888개" → "1,298개 수집됨".
+
+### Documentation
+
+- `CHANGELOG.md` — this v1.0.0 entry.
+- `docs/release-checklist.md` — new.
+- README: capability matrix, limitations section, public site URL, corrected claims.
+- `GUIDE.md` §0: "First five minutes" orientation section.
+- `docs/development-context.md`: corrected module list, test count, roadmap.
+
+### CI / Packaging
+
+- Workflows verified: `ci.yml` (Python 3.10–3.12), `pages.yml` (Pyodide site →
+  GitHub Pages), `release.yml` (executables + `stele.html` on tag push).
+- All actions use current stable major versions (checkout@v4, setup-python@v5,
+  upload-pages-artifact@v3, deploy-pages@v4, upload-artifact@v4).
+- Release workflow confirms `stele.html` excludes `stele_ml/`, `stele_lean/`,
+  and `/api/` calls.
+
+### Known limitations (v1.0)
+
+- Proof-script language covers propositional logic only (no first-order quantifiers
+  at the Stele-Light surface level).
+- Relativity is at rule-availability level; semantic non-derivability requires
+  matrix/Kripke semantics (not the kernel).
+- Single-file `stele.html` requires internet for Pyodide CDN (~8 MB, cached after
+  first load); full offline mode is out of scope for v1.
+- Proof-term core is intuitionistic only; classical rules are excluded by design.
+- de Bruijn layer covers proof-variable binders only; FOL object-variable binders
+  remain name-based (full `to_debruijn_fol` is future work).
+- ML baseline (`stele_ml/`) and Lean bridge (`stele_lean/`) are optional, isolated,
+  and experimental — not part of the trusted checking path.
+
+---
+
+## [onboarding-tutorial-gallery] — 2026-06  `feat/onboarding-tutorial-gallery`
+
+- Interactive 6-step tutorial on the public landing page (proof format, error
+  diagnosis, dependency graph, classical vs intuitionistic, semantic tools,
+  next steps). Prev/next navigation, dot indicators, `aria-live` counter, skip link.
+- Verified example gallery: 15 curated proof entries with category tags
+  (intuitionistic / classical-only / diagnostics) and expected-outcome badges
+  (✓ Valid / ⚠ Warning / ✗ Error).
+- `site/examples_gallery.json`: source of truth for gallery honesty tests.
+  Each `expected` label (`pass`/`fail`/`warn`) verified against the real kernel.
+- `tests/test_gallery.py` (65 tests): gallery JSON structure, honesty (actual
+  kernel results match labels), tutorial HTML structure, site accessibility
+  markers, JS rendering invariants.
+- Accessibility improvements: `aria-live` on result panels, `aria-current` on
+  tutorial dots, `aria-controls` on tab buttons, `aria-hidden` on decorative icons.
+- `GUIDE.md` §0 "First five minutes" section added.
+
+---
+
 ## [reframe] — 2026-06  `docs/reframe-verification-framework`
 
 - Reframed project primary identity as "Formal Verification Framework for Mathematical Reasoning."

@@ -9,6 +9,15 @@
 
 언어 가이드: `GUIDE.md` · 결정·근거: `DECISIONS.md` · 실행 결과: `RESULTS.md` · 증명항 코어: [`docs/proof-terms.md`](docs/proof-terms.md) · 형식 언어 명세: [`docs/semantics.md`](docs/semantics.md) · 메타이론 현황: [`docs/metatheory.md`](docs/metatheory.md) · Claude Code 컨텍스트: `CLAUDE.md`
 
+## Distribution modes
+
+| Mode | Description | Requires |
+|------|-------------|----------|
+| **Website** | Hosted public site (GitHub Pages) | Browser + internet |
+| **Single-file HTML** | Portable `stele.html` — share or open from disk | Browser + internet (CDN, v1) |
+| **Standalone app** | Pre-built executable | Nothing |
+| **Local Python** | `python -m stele` | Python 3.10+ |
+
 ## Quickstart
 
 ### 1 — Browser Studio (no install, no Python)
@@ -30,7 +39,31 @@ python -m http.server --directory dist/site 8000
 **What runs in the browser:** full proof checking, structural diagnostics, dependency graph, rule soundness, world lattice.
 **Excluded from browser build:** `stele_ml/`, `stele_lean/`, benchmark runner (`stele.eval`), tests, `__pycache__`.
 
-### 2 — Standalone app (no Python needed)
+### 2 — Single-file HTML (`stele.html`)
+
+Generate a self-contained single HTML file that embeds the Stele core source and loads Pyodide from CDN:
+
+```bash
+python tools/build_single_html.py
+# produces dist/stele.html (~135 KB)
+```
+
+Then double-click `dist/stele.html` to open in your browser.
+
+> **`file://` caveat:** Some browsers restrict `fetch()` from `file://` origins.
+> If opening fails, serve it locally:
+> ```bash
+> python -m http.server --directory dist 8000
+> # open http://localhost:8000/stele.html
+> ```
+
+**Limitations (v1):**
+- Requires an internet connection to load Pyodide from CDN (~8 MB, cached after first load).
+- Full offline mode (self-contained, no CDN) is out of scope for v1. See `--pyodide-local` flag in the build script for a manual offline path.
+
+**What's embedded:** same Stele core as the browser site (`stele_ml/`, `stele_lean/`, tests excluded).
+
+### 3 — Standalone app (no Python needed)
 
 Download the pre-built executable from [GitHub Actions](../../actions/workflows/release.yml) or a tagged release, then run:
 
@@ -41,10 +74,20 @@ SteleStudio.exe      # Windows
 
 The browser opens automatically to the local Studio. No Python, no install.
 
-### 3 — Local Python
+**Build it yourself:**
+```bash
+pip install -r packaging/requirements-packaging.txt
+python packaging/build_app.py --onefile
+# Output: dist/SteleStudio  (or dist/SteleStudio.exe)
+```
+
+### 4 — Local Python
 
 ```bash
 python -m stele        # launches Stele Studio at http://127.0.0.1:8000
+python -m stele --port 8080
+python -m stele --no-browser
+python -m stele --help
 ```
 
 No runtime dependencies. Requires Python 3.10+.
@@ -52,15 +95,6 @@ No runtime dependencies. Requires Python 3.10+.
 ```bash
 python -m pip install -U pip pytest
 python -m pytest -q              # run the test suite
-python -m stele                  # launch Studio
-```
-
-### Build the standalone app yourself
-
-```bash
-pip install -r packaging/requirements-packaging.txt
-python packaging/build_app.py --onefile
-# Output: dist/SteleStudio  (or dist/SteleStudio.exe)
 ```
 
 ---

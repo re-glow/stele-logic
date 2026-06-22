@@ -325,14 +325,22 @@ class TestDocumentation:
             "docs/development-context.md should mention Pyodide"
 
     def test_readme_browser_option_before_python(self):
-        """Browser quickstart must appear before the local Python option."""
+        """Browser quickstart section heading must appear before the Local Python section heading."""
         txt = README.read_text(encoding="utf-8")
-        browser_pos = txt.find("Browser Studio")
-        python_pos  = txt.find("Local Python")
-        assert browser_pos != -1, "README should have a 'Browser Studio' heading"
-        assert python_pos  != -1, "README should have a 'Local Python' heading"
+        # Look for the section headings (lines starting with ### or ##)
+        import re as _re
+        headings = [(m.start(), m.group(0)) for m in
+                    _re.finditer(r'^#{2,4}\s+.*(?:Browser Studio|Local Python).*$',
+                                 txt, _re.MULTILINE)]
+        names = [h[1] for h in headings]
+        assert any("Browser Studio" in h for h in names), \
+            f"README should have a Browser Studio heading. Found: {names}"
+        assert any("Local Python" in h for h in names), \
+            f"README should have a Local Python heading. Found: {names}"
+        browser_pos = next(pos for pos, h in headings if "Browser Studio" in h)
+        python_pos  = next(pos for pos, h in headings if "Local Python" in h)
         assert browser_pos < python_pos, \
-            "README: Browser Studio section should appear before Local Python"
+            "README: Browser Studio section heading should appear before Local Python"
 
 
 # ── Public site landing-page checks ─────────────────────────────────────────

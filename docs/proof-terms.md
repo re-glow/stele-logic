@@ -440,7 +440,72 @@ python -m stele.cli term-normalize --term "fun x: A => fst(pair(x, x))"
 
 ---
 
-## 9. 제외 범위 (재확인)
+## 9. 바인더, α-동치, de Bruijn 치환
+
+### 9.1 이름 있는 바인더와 α-동치
+
+`Lam("x", A, TVar("x"))`와 `Lam("y", A, TVar("y"))`는 구조적으로 다르지만
+**α-동치(α-equivalent)**이다 — 바인더 이름만 다르고 구조가 같다.
+
+`stele.core.debruijn` 모듈은 이를 결정하는 내부 표현을 제공한다:
+
+```python
+from stele.core.debruijn import alpha_equiv
+from stele.core.terms import Lam, TVar
+from stele.ast import Var
+
+A = Var("A")
+alpha_equiv(Lam("x", A, TVar("x")), Lam("y", A, TVar("y")))   # True
+alpha_equiv(Lam("x", A, TVar("x")), Lam("x", A, TVar("y")))   # False — body differs
+```
+
+### 9.2 de Bruijn 표현
+
+내부적으로 바인더는 **de Bruijn 인덱스**로 표현된다.
+인덱스 `k`는 k번째 둘러싼 바인더를 지칭한다(0 = 가장 안쪽).
+
+```python
+from stele.core.debruijn import to_debruijn, DBLam, DBBound
+
+# 두 항 모두 DBLam(A, DBBound(0))으로 변환됨
+to_debruijn(Lam("x", A, TVar("x")))   # DBLam(A, DBBound(0))
+to_debruijn(Lam("y", A, TVar("y")))   # DBLam(A, DBBound(0))
+```
+
+### 9.3 이동(Shift)과 치환(Substitution)
+
+de Bruijn 치환은 포착을 **구조적으로 회피**한다:
+바인더를 통과할 때마다 대체항을 1 이동시킨다.
+
+```python
+from stele.core.debruijn import shift, subst, subst_top, DBBound, DBFree
+
+# shift: 인덱스 조정 (항을 새 바인더 아래로 옮길 때)
+shift(DBBound(0), 1, 0)   # → DBBound(1)  (인덱스 증가)
+shift(DBBound(0), 1, 1)   # → DBBound(0)  (cutoff 아래: 내부 바인더; 변경 없음)
+
+# subst: β-환원 단계
+# (DBLam(A, body)) arg  →  subst_top(arg, body)  =  subst(body, 0, arg)
+subst(DBBound(0), 0, DBFree("a"))       # → DBFree("a")  (identity)
+subst_top(DBFree("a"), DBBound(0))      # → DBFree("a")  (alias)
+```
+
+### 9.4 사용자 대면 구문에 미치는 영향 없음
+
+de Bruijn 표현은 순수 내부 구현이다.
+사용자는 항상 이름 있는 구문으로 작성하고, 파서와 타입 검사기는 기존대로 동작한다.
+`to_debruijn` / `from_debruijn` / `alpha_equiv`는 고급 사용자를 위한 공개 API이지만
+일반 증명 검증 워크플로에서는 직접 호출할 필요가 없다.
+
+### 9.5 미래 1차 논리 바인더
+
+`forall`/`exists` 한정기호는 현재 미구현이다(1차 논리 전체가 v1 제외 범위).
+추가될 때 별도 **객체 바인더(object binder)** 인덱스 공간이 사용될 예정이다.
+증명 바인더(lambda, case)와 객체 바인더는 서로 다른 환경에서 추적된다.
+
+---
+
+## 10. 제외 범위 (재확인)
 
 | 항목 | 이유 |
 |------|------|

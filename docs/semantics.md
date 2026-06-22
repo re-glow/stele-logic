@@ -356,14 +356,81 @@ K3·LP·boolean의 `evaluate`·`is_tautology`·`entails` 함수는 `stele.matrix
 
 ---
 
-## 7. v1 제외 범위
+## 7. 바인더 표현: 이름 있는 vs. 이름 없는(de Bruijn)
+
+### 7.1 사용자 대면 구문 (이름 있는 표현)
+
+사용자는 항상 이름 있는(named) 바인더로 작성한다:
+
+```
+fun x: A => fun y: B => x
+case e of inl x => x | inr y => y
+```
+
+이름 있는 표현은 `stele.core.terms`의 `Lam`·`Case` 생성자로 파서가 생성한다.
+바인더 이름은 구조적 동치에 영향을 미친다(`Lam("x", A, TVar("x")) ≠ Lam("y", A, TVar("y"))`).
+
+### 7.2 내부 de Bruijn 표현
+
+`stele.core.debruijn` 모듈은 내부 바인더를 **비이름(nameless) de Bruijn 인덱스**로 표현한다.
+
+**규칙:**
+- `DBBound(k)` — k번째 둘러싼 바인더에 묶인 변수 (0 = 가장 안쪽)
+- `DBFree("x")` — 자유(free) 변수; 이름으로 식별
+
+**예시:**
+
+| 이름 있는 표현 | de Bruijn 표현 |
+|----------------|----------------|
+| `fun x: A => x` | `DBLam(A, DBBound(0))` |
+| `fun y: A => y` | `DBLam(A, DBBound(0))` ← 동일 |
+| `fun x: A => fun y: B => x` | `DBLam(A, DBLam(B, DBBound(1)))` |
+| `fun x: A => fun x: B => x` | `DBLam(A, DBLam(B, DBBound(0)))` ← 내부 x |
+
+**case 바인더:** 각 분기는 독립적인 바인더를 갖는다.
+`case e of inl x => x | inr y => y`에서
+- 좌분기 body: `DBBound(0)` (= x)
+- 우분기 body: `DBBound(0)` (= y)
+
+### 7.3 α-동치
+
+두 이름 있는 항은 **α-동치(α-equivalent)**이면 de Bruijn 표현이 동일하다.
+`alpha_equiv(t1, t2)` = `to_debruijn(t1) == to_debruijn(t2)`.
+
+### 7.4 이동(Shift)과 치환(Substitution)
+
+```
+shift(t, amount, cutoff)   — cutoff 이상의 자유 인덱스를 amount만큼 증가
+subst(t, k, s)             — DBBound(k)를 s로 치환; k 초과 인덱스를 1 감소
+subst_top(arg, body)       — β-환원 단계: subst(body, 0, arg)
+```
+
+이동은 항을 새 바인더 아래로 옮길 때 자유 인덱스 참조를 올바르게 유지한다.
+치환은 포착을 구조적으로 회피한다: 바인더를 통과할 때마다 대체항을 1 이동시킨다.
+
+### 7.5 미래 1차 논리 바인더 (예정: Prompt 25B)
+
+현재 de Bruijn 층은 **증명 바인더(proof binders)**만 다룬다(lambda, case 분기).
+1차 논리 한정기호(`forall`/`exists`)가 추가될 때 **객체 바인더(object binders)**가
+별도 인덱스 공간으로 추가될 예정이다:
+
+| 바인더 종류 | 묶는 대상 | 현황 |
+|-------------|-----------|------|
+| 증명 바인더 | 증명항 변수 (lambda, case) | v1 구현됨 |
+| 객체 바인더 | 1차 논리 항 변수 (forall, exists) | Prompt 25B 예정 |
+
+이 두 바인더는 별도 환경(env)으로 추적되며, 같은 인덱스 번호라도 다른 종류의 변수를 지칭한다.
+
+---
+
+## 8. v1 제외 범위
 
 | 항목 | 설명 |
 |------|------|
 | 고전 증명항 | `dne`, `lem`, `pbc` 연산자가 필요; 별도 설계 필요 |
 | 제어 연산자 | `callcc`, `shift/reset` 등 |
 | η-환원 | β-정규형 이후 추가 정규화; v1 미구현 |
-| 한정 기호 | 1차 논리 전용; 명제논리 단편 밖 |
+| 한정 기호 | 1차 논리 전용; 명제논리 단편 밖 (Prompt 25B 예정) |
 | 의존 타입 | 프로포지션으로서의 타입; 명제논리 단편 밖 |
 | K3 / LP 증명항 | K3·LP는 의미론 모듈; 증명항 구조 없음 |
 | 증명 탐색 / 자동화 | Stele는 검증기이지 증명기가 아님 |

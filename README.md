@@ -13,8 +13,27 @@
 
 요구사항: Python 3.10+ (런타임 의존성 없음; 테스트에만 `pytest`)
 
+### Stele Studio (로컬 웹 인터페이스)
+
+```bash
+python -m stele                   # Stele Studio 실행 (기본 포트 8000, 브라우저 자동 열림)
+python -m stele --port 8080       # 포트 지정
+python -m stele --no-browser      # 브라우저 자동 열기 생략
+python -m stele --help            # 사용법
 ```
-python -m stele.web                                                  # 브라우저 UI
+
+Stele Studio는 로컬 전용 인터페이스로, 다음 기능을 단일 화면에서 제공한다:
+- **VERIFY** — 증명 편집기 + 논리 선택 + 즉시 판정
+- **DIAGNOSTICS** — 다중 패스 구조적 진단 (UndefinedSymbol, MissingHypothesis 등)
+- **GRAPH** — 증명 의존성 그래프 시각화 + DOT 출력
+- **METRICS** — 벤치마크 평가 리포트 (`bench/reports/latest.json`)
+- **PLURALISM** — 규칙 건전성 · 세계 격자 · 다치 진리표 플레이그라운드
+
+외부 의존성 없음. 인증·데이터베이스·클라우드 없음.
+
+### CLI 명령 (자동화·스크립트용)
+
+```bash
 python -m stele.cli check examples/dne.stele --logic classical_prop
 python -m stele.cli check examples/dne.stele --logic intuitionistic_prop
 python -m stele.cli check examples/matrix_k3.stele --logic K3      # 행렬 모드
@@ -32,6 +51,12 @@ Requirements: Python 3.10+, `pytest` (test-only dependency, no runtime deps).
 # Run the test suite
 python -m pytest -q
 
+# Launch Stele Studio (local web interface)
+python -m stele
+
+# Or use the legacy web server entry point
+python -m stele.web
+
 # Check a proof against a specific logic
 python -m stele.cli check examples/dne.stele --logic classical_prop
 python -m stele.cli check examples/dne.stele --logic intuitionistic_prop
@@ -47,16 +72,21 @@ python -m stele.cli lattice "P or Q"
 
 # Many-valued semantics demos
 python -m stele.cli demos
-
-# Local web UI (port 8765)
-python -m stele.web
 ```
 
 CI runs on every push and pull request via GitHub Actions (`.github/workflows/ci.yml`), testing Python 3.10–3.12.
 
-## 웹 UI
+## Stele Studio
 
-`python -m stele.web` 를 실행하면 로컬 서버(기본 포트 8765)가 뜨고 브라우저가 열린다. 증명 편집기에서 예제를 불러오고 **논리 세계 토글**을 바꾸면 같은 증명의 판정이 즉시 뒤집히며, 하단에 K3/LP/고전 진리표와 배중률·거짓말쟁이·폭발원리 결과가 표시된다. 백엔드는 표준 라이브러리만 쓰며 기존 Python 커널을 그대로 호출한다(검사 로직 중복 없음).
+`python -m stele` launches Stele Studio, a local web interface (default port 8000). It is not hosted or deployed — it runs entirely on your machine and requires no internet connection. The trusted kernel (`stele/kernel.py`) remains the sole authority for proof validity; the Studio is an untrusted interface layer that calls the same Python modules as the CLI.
+
+Web API endpoints (all local, no auth):
+- `POST /api/check` — proof verification
+- `POST /api/diagnose` — structural diagnostics
+- `POST /api/graph` — dependency graph + DOT
+- `GET /api/soundness?logic=...&matrix=...` — rule soundness report
+- `GET /api/lattice?formula=...` — CH-style world lattice
+- `GET /api/metrics` — benchmark report from `bench/reports/latest.json`
 
 ## 다논리 검증 데모
 
@@ -136,6 +166,7 @@ theorem NAME [using LOGIC]:
 
 ```
 stele/
+  __main__.py  python -m stele 진입점 (Stele Studio 실행)
   ast.py      식 표현(연결사 무지) + 출력기
   proof.py    증명 노드 + MatrixDirective
   parser.py   직접 구현한 토크나이저 + 재귀하강 파서
@@ -143,11 +174,11 @@ stele/
   kernel.py   신뢰 코어: 매처 + 증명트리 검사 (proof 모드)
   matrix.py   다치 의미론: Matrix, K3/LP/boolean, 평가·항진성·귀결·고정점·건전성
   world.py    World(matrix, axioms) + status(PROVABLE/REFUTABLE/BOTH/INDEPENDENT) + lattice_status
-  cli.py      check / soundness / lattice / demos
-  web.py      로컬 웹 UI 서버(stdlib)
-  webapp/index.html  단일 파일 프런트엔드
+  cli.py      check / soundness / lattice / graph / diagnose / demos
+  web.py      Stele Studio HTTP 서버(stdlib) + JSON API 엔드포인트
+  webapp/index.html  Stele Studio 단일 파일 프런트엔드
 examples/     증명·행렬·세계 예제 (.stele + .py)
-tests/        215개 테스트
+tests/        226개 이상 테스트
 ```
 
 ## 구현된 것 / 로드맵

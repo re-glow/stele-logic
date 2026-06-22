@@ -1,16 +1,18 @@
-"""Local web UI for Stele -- a thin stdlib HTTP server over the existing checker.
+"""Local web UI for Stele — Stele Studio HTTP server.
 
 No third-party dependencies. The Python kernel remains the single source of
 truth: this server only parses requests and calls check_theorem / the matrix
 helpers, exactly as the CLI does.
 
-Run:  python -m stele.web  [port]
+Preferred launch:  python -m stele  [--port PORT] [--no-browser]
+Legacy launch:     python -m stele.web  [PORT]
 """
 import json
 import os
 import sys
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, parse_qs
 
 from .parser import parse_theorem
 from .kernel import check_theorem
@@ -22,7 +24,14 @@ from .ast import Var, Op
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEBAPP = os.path.join(HERE, "webapp")
 EXAMPLES = os.path.normpath(os.path.join(HERE, "..", "examples"))
+BENCH_REPORT = os.path.normpath(
+    os.path.join(HERE, "..", "bench", "reports", "latest.json")
+)
 
+
+# ---------------------------------------------------------------------------
+# JSON helper builders (pure functions — no I/O side effects)
+# ---------------------------------------------------------------------------
 
 def _matrix_json(m):
     vals = list(m.values)
@@ -73,7 +82,12 @@ def _examples_json():
     return out
 
 
+# ---------------------------------------------------------------------------
+# API handler functions (importable for testing)
+# ---------------------------------------------------------------------------
+
 def check_source(source, logic):
+    """Verify a proof. Returns a dict with ok/error/name/logic."""
     try:
         thm = parse_theorem(source)
     except ParseError as e:
@@ -89,6 +103,156 @@ def check_source(source, logic):
     return {"ok": True, "name": thm.name, "logic": lg.name}
 
 
+def diagnose_source(source, logic):
+    """Run multi-pass structural diagnostics. Returns diagnostics list."""
+    try:
+        thm = parse_theorem(source)
+    except ParseError as e:
+        return {"ok": False, "kind": "parse", "error": str(e),
+                "line": getattr(e, "line", None), "diagnostics": []}
+    from .diagnostics import diagnose_theorem
+    logic_name = logic or thm.logic or "intuitionistic_prop"
+    diags = diagnose_theorem(thm, logic_name)
+    return {
+        "ok": True,
+        "name": thm.name,
+        "logic": logic_name,
+        "diagnostics": [
+            {"code": d.code, "message": d.message,
+             "line": d.line, "severity": d.severity}
+            for d in diags
+        ],
+    }
+
+
+def graph_source(source, logic):
+    """Build the proof dependency graph. Returns nodes, edges, DOT text."""
+    try:
+        thm = parse_theorem(source)
+    except ParseError as e:
+        return {"ok": False, "kind": "parse", "error": str(e),
+                "line": getattr(e, "line", None)}
+    from .proofgraph import (build_proof_graph, to_dot,
+                              has_cycle, find_unused_assumptions,
+                              find_isolated_steps)
+    logic_name = logic or thm.logic or "intuitionistic_prop"
+    try:
+        lg, _ = check_theorem(thm, logic_name)
+    except (ProofError, SteleError) as e:
+        return {"ok": False, "kind": "proof", "error": str(e), "name": thm.name}
+    g = build_proof_graph(thm)
+    issues = []
+    if has_cycle(g):
+        issues.append("cycle detected in dependency graph")
+    unused = find_unused_assumptions(g)
+    if unused:
+        issues.append(f"unused assumptions: {', '.join(sorted(unused))}")
+    iso = find_isolated_steps(g)
+    if iso:
+        issues.append(f"isolated steps: {', '.join(sorted(iso))}")
+    return {
+        "ok": True,
+        "name": thm.name,
+        "logic": lg.name,
+        "nodes": [
+            {"label": n.label, "kind": n.kind,
+             "formula": n.formula, "rule": n.rule}
+            for n in g.nodes.values()
+        ],
+        "edges": [{"src": s, "tgt": t} for s, t in g.edges],
+        "diagnostics": issues,
+        "dot": to_dot(g),
+    }
+
+
+def soundness_json(logic_name, matrix_name):
+    """Return per-rule soundness report for a proof logic against a matrix."""
+    if not logic_name:
+        return {"ok": False, "error": "missing logic parameter"}
+    if not matrix_name:
+        return {"ok": False, "error": "missing matrix parameter"}
+    from .logic import get_logic
+    from .matrix import MATRICES, rule_soundness
+    try:
+        logic = get_logic(logic_name)
+    except SteleError as e:
+        return {"ok": False, "error": str(e)}
+    if logic.semantics != "proof":
+        return {"ok": False,
+                "error": f"'{logic_name}' is a matrix logic; use a proof logic"}
+    if matrix_name not in MATRICES:
+        return {"ok": False,
+                "error": f"unknown matrix '{matrix_name}'; "
+                         f"available: {', '.join(sorted(MATRICES))}"}
+    m = MATRICES[matrix_name]
+    rules = []
+    for name, schema in sorted(logic.rules.items()):
+        r = rule_soundness(schema, m)
+        entry = {"rule": name, "status": r.status}
+        if r.status == "unsound" and r.counterexample:
+            entry["counterexample"] = r.counterexample
+        if r.status == "skipped" and r.reason:
+            entry["reason"] = r.reason
+        rules.append(entry)
+    return {"ok": True, "logic": logic_name, "matrix": matrix_name, "rules": rules}
+
+
+def lattice_json(formula_str):
+    """Return CH-style world lattice status for a formula string."""
+    if not formula_str:
+        return {"ok": False, "error": "missing formula parameter"}
+    from .parser import parse_formula
+    from .ast import Op, pretty
+    from .world import World, lattice_status
+    try:
+        phi = parse_formula(formula_str)
+    except ParseError as e:
+        return {"ok": False, "error": str(e)}
+    neg = Op("not", (phi,))
+    phi_s = pretty(phi)
+    neg_s = pretty(neg)
+    labelled = [
+        ("Gamma",             World("boolean", ())),
+        (f"Gamma + {phi_s}",  World("boolean", (phi,))),
+        (f"Gamma + {neg_s}",  World("boolean", (neg,))),
+    ]
+    worlds = [w for _, w in labelled]
+    rows = []
+    for (label, w), (_, s) in zip(labelled, lattice_status(phi, worlds)):
+        rows.append({
+            "label": label,
+            "axioms": [pretty(a) for a in w.axioms],
+            "status": s,
+        })
+    return {"ok": True, "formula": phi_s, "rows": rows}
+
+
+def metrics_json():
+    """Load bench/reports/latest.json or return a clear not-found response."""
+    if not os.path.isfile(BENCH_REPORT):
+        return {
+            "ok": False,
+            "error": "no benchmark report found",
+            "hint": (
+                "Generate a report with:\n"
+                "  python -m stele.eval bench "
+                "--labels bench/labels.jsonl "
+                "--tasks bench "
+                "--report bench/reports/latest.json"
+            ),
+        }
+    try:
+        with open(BENCH_REPORT, encoding="utf-8") as f:
+            data = json.load(f)
+        return {"ok": True, "report": data}
+    except Exception as e:
+        return {"ok": False, "error": f"failed to read report: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# HTTP handler
+# ---------------------------------------------------------------------------
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, code, body, ctype="application/json"):
         data = body if isinstance(body, bytes) else json.dumps(body).encode("utf-8")
@@ -102,21 +266,35 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+    def _path_qs(self):
+        parsed = urlparse(self.path)
+        qs = {k: v[0] for k, v in parse_qs(parsed.query).items()}
+        return parsed.path, qs
+
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        path, qs = self._path_qs()
+        if path in ("/", "/index.html"):
             with open(os.path.join(WEBAPP, "index.html"), "rb") as f:
                 self._send(200, f.read(), "text/html")
-        elif self.path == "/api/demos":
+        elif path == "/api/demos":
             self._send(200, _demos_json())
-        elif self.path == "/api/examples":
+        elif path == "/api/examples":
             self._send(200, _examples_json())
+        elif path == "/api/soundness":
+            self._send(200, soundness_json(
+                qs.get("logic", ""), qs.get("matrix", "")))
+        elif path == "/api/lattice":
+            formula = qs.get("formula", "")
+            if not formula:
+                self._send(400, {"error": "missing formula parameter"})
+            else:
+                self._send(200, lattice_json(formula))
+        elif path == "/api/metrics":
+            self._send(200, metrics_json())
         else:
             self._send(404, {"error": "not found"})
 
     def do_POST(self):
-        if self.path != "/api/check":
-            self._send(404, {"error": "not found"})
-            return
         n = int(self.headers.get("Content-Length", 0))
         raw = self.rfile.read(n).decode("utf-8") if n else "{}"
         try:
@@ -124,19 +302,34 @@ class Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             self._send(400, {"error": "bad json"})
             return
-        self._send(200, check_source(req.get("source", ""), req.get("logic")))
+        path, _ = self._path_qs()
+        if path == "/api/check":
+            self._send(200, check_source(
+                req.get("source", ""), req.get("logic")))
+        elif path == "/api/diagnose":
+            self._send(200, diagnose_source(
+                req.get("source", ""), req.get("logic")))
+        elif path == "/api/graph":
+            self._send(200, graph_source(
+                req.get("source", ""), req.get("logic")))
+        else:
+            self._send(404, {"error": "not found"})
 
 
-def main(argv=None):
-    argv = argv if argv is not None else sys.argv[1:]
-    port = int(argv[0]) if argv else 8765
+# ---------------------------------------------------------------------------
+# Server entry point
+# ---------------------------------------------------------------------------
+
+def main(port=8765, open_browser=True):
+    """Start the Stele Studio local web server."""
     srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
-    print(f"Stele web UI running at {url}   (Ctrl+C to stop)")
-    try:
-        webbrowser.open(url)
-    except Exception:
-        pass
+    print(f"Stele Studio  ·  {url}   (Ctrl+C to stop)")
+    if open_browser:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
@@ -145,4 +338,6 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    argv = sys.argv[1:]
+    port = int(argv[0]) if argv else 8765
+    main(port=port)

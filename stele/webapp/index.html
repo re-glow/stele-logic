@@ -1,381 +1,1173 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stele — proof checker</title>
+<title>Stele Studio</title>
 <style>
-  :root{
-    --stone:#EDEAE2;      /* limestone ground */
-    --panel:#F6F4EE;      /* inscribed face */
-    --ink:#211E19;        /* carved ink */
-    --muted:#736E64;      /* weathered text */
-    --rule:#D6D1C6;       /* hairline incision */
-    --cinnabar:#BE4326;   /* seal / correction red */
-    --cinnabar-soft:#f3ddd4;
-    --verdigris:#2C6A5C;  /* patinated bronze green */
-    --verdigris-soft:#d9e7e2;
-    --gold:#8a6d2f;
-    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
-    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0}
-  body{
-    background:var(--stone); color:var(--ink);
-    font-family:var(--sans); line-height:1.5;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:1080px; margin:0 auto; padding:28px 22px 56px}
+/* ── variables ──────────────────────────────────────────────── */
+:root {
+  --bg:      #07090f;
+  --surface: #0d1220;
+  --surf2:   #111826;
+  --border:  #1c2840;
+  --bord2:   #263450;
+  --text:    #b8cce0;
+  --muted:   #46586d;
+  --dim:     #283a54;
+  --cyan:    #00e8ff;
+  --violet:  #b06aff;
+  --green:   #00ff9f;
+  --red:     #ff3566;
+  --amber:   #ffb347;
+  --mono: ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+}
 
-  /* masthead */
-  .masthead{
-    display:flex; flex-wrap:wrap; gap:18px 28px;
-    align-items:flex-end; justify-content:space-between;
-    padding-bottom:18px; border-bottom:2px solid var(--ink);
-  }
-  .brand h1{
-    font-family:var(--mono); font-size:38px; letter-spacing:.18em;
-    margin:0; font-weight:600; text-transform:uppercase;
-  }
-  .brand .tagline{margin:6px 0 0; color:var(--muted); font-size:13.5px; max-width:46ch}
-  .world{display:flex; flex-direction:column; gap:7px; align-items:flex-start}
-  .world-label{
-    font-family:var(--mono); font-size:11px; letter-spacing:.18em;
-    text-transform:uppercase; color:var(--muted);
-  }
-  .seg{display:flex; border:1.5px solid var(--ink); background:var(--panel)}
-  .seg-btn{
-    font-family:var(--mono); font-size:12.5px; letter-spacing:.04em;
-    padding:9px 15px; border:0; background:transparent; color:var(--muted);
-    cursor:pointer; transition:background .12s,color .12s;
-  }
-  .seg-btn + .seg-btn{border-left:1.5px solid var(--ink)}
-  .seg-btn.is-active{background:var(--ink); color:var(--stone)}
-  .seg-btn:focus-visible{outline:2px solid var(--cinnabar); outline-offset:2px}
+/* ── reset ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--mono); line-height:1.55; min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
 
-  /* grid */
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:24px}
-  @media(max-width:840px){ .grid{grid-template-columns:1fr} }
-  .pane{background:var(--panel); border:1px solid var(--rule)}
-  .pane-head{
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px; padding:12px 16px; border-bottom:1px solid var(--rule);
-  }
-  .pane h2{
-    font-family:var(--mono); font-size:12px; letter-spacing:.2em;
-    text-transform:uppercase; margin:0; color:var(--muted); font-weight:600;
-  }
+/* ── scanline overlay (disabled on reduced-motion) ─────────── */
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(
+    0deg, transparent 0px, transparent 3px,
+    rgba(0,232,255,.011) 3px, rgba(0,232,255,.011) 4px
+  );
+}
+@media(prefers-reduced-motion:reduce){body::before{display:none}}
 
-  /* examples */
-  .examples{display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end}
-  .chip{
-    font-family:var(--mono); font-size:11px; color:var(--ink);
-    background:transparent; border:1px solid var(--rule);
-    padding:4px 8px; cursor:pointer; border-radius:2px;
-  }
-  .chip:hover{border-color:var(--ink)}
-  .chip.invalid{color:var(--cinnabar); border-color:var(--cinnabar-soft)}
+/* ── accessibility ──────────────────────────────────────────── */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
-  /* editor */
-  .editor-wrap{display:flex; font-family:var(--mono); font-size:14px}
-  .gutter{
-    flex:0 0 auto; padding:14px 10px 14px 14px; text-align:right;
-    color:var(--muted); user-select:none; background:#efece5;
-    border-right:1px solid var(--rule); overflow:hidden; min-width:42px;
-  }
-  .gutter div{height:1.55em; white-space:pre}
-  .gutter div.err{color:var(--cinnabar); font-weight:700; position:relative}
-  .gutter div.err::after{content:"\25C0"; position:absolute; right:-3px; font-size:9px}
-  #src{
-    flex:1; resize:vertical; min-height:240px; border:0; outline:0;
-    padding:14px 16px; line-height:1.55; font:inherit; color:var(--ink);
-    background:transparent; tab-size:2;
-  }
-  .actions{
-    display:flex; align-items:center; gap:14px;
-    padding:12px 16px; border-top:1px solid var(--rule);
-  }
-  .btn-primary{
-    font-family:var(--mono); font-size:13px; letter-spacing:.06em;
-    background:var(--ink); color:var(--stone); border:0;
-    padding:10px 20px; cursor:pointer;
-  }
-  .btn-primary:hover{background:#000}
-  .btn-primary:focus-visible{outline:2px solid var(--cinnabar); outline-offset:2px}
-  .hint{font-family:var(--mono); font-size:11px; color:var(--muted)}
+/* ── studio shell ───────────────────────────────────────────── */
+.studio{display:flex;flex-direction:column;min-height:100vh;
+  max-width:1280px;margin:0 auto}
 
-  /* verdict */
-  .verdict-pane .body{padding:18px 16px; min-height:240px}
-  .verdict-idle{color:var(--muted); font-size:13.5px}
-  .seal{
-    display:inline-flex; align-items:center; gap:9px;
-    font-family:var(--mono); font-size:12px; letter-spacing:.22em;
-    text-transform:uppercase; padding:7px 13px; border:2px solid;
-  }
-  .seal .glyph{font-size:15px}
-  .seal.ok{color:var(--verdigris); border-color:var(--verdigris); background:var(--verdigris-soft)}
-  .seal.fail{color:var(--cinnabar); border-color:var(--cinnabar); background:var(--cinnabar-soft)}
-  .verdict-line{margin:16px 0 0; font-size:15px}
-  .verdict-line b{font-family:var(--mono)}
-  .rubric{
-    margin-top:14px; border-left:3px solid var(--cinnabar);
-    padding:8px 0 8px 14px; background:#faf0ec;
-  }
-  .rubric .where{
-    font-family:var(--mono); font-size:11px; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--cinnabar); display:block; margin-bottom:3px;
-  }
-  .rubric .msg{font-family:var(--mono); font-size:13px; color:var(--ink)}
-  .note{margin-top:16px; color:var(--muted); font-size:12.5px; line-height:1.55}
-  .fade{animation:fade .18s ease}
-  @keyframes fade{from{opacity:0; transform:translateY(2px)} to{opacity:1; transform:none}}
-  @media(prefers-reduced-motion:reduce){ .fade{animation:none} }
+/* ── header ─────────────────────────────────────────────────── */
+.hud-header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:10px;padding:14px 20px 12px;
+  border-bottom:1px solid var(--bord2);background:var(--surface);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-glyph{
+  font-size:28px;color:var(--cyan);line-height:1;user-select:none;
+  text-shadow:0 0 18px rgba(0,232,255,.45);
+}
+.brand-name{font-size:17px;font-weight:700;letter-spacing:.22em;color:var(--cyan);line-height:1.2}
+.brand-sub{font-size:11px;color:var(--muted);letter-spacing:.04em;margin-top:2px}
+.hud-status{display:flex;align-items:center;gap:7px;
+  font-size:10px;letter-spacing:.18em;color:var(--muted)}
+.status-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--muted);
+  transition:background .2s,box-shadow .2s;
+}
+@media(prefers-reduced-motion:reduce){.status-dot{transition:none}}
+.hud-status.running .status-dot{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.hud-status.ok  .status-dot{background:var(--green);box-shadow:0 0 8px var(--green)}
+.hud-status.err .status-dot{background:var(--red);box-shadow:0 0 8px var(--red)}
 
-  /* semantics */
-  .semantics{margin-top:30px; border-top:1px solid var(--rule); padding-top:22px}
-  .sem-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px}
-  .sem-head h2{
-    font-family:var(--mono); font-size:13px; letter-spacing:.2em;
-    text-transform:uppercase; margin:0; font-weight:600;
-  }
-  .sem-head p{margin:0; color:var(--muted); font-size:12.5px}
-  .sem-results{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0 24px}
-  @media(max-width:840px){ .sem-results{grid-template-columns:1fr} }
-  .card{background:var(--panel); border:1px solid var(--rule); padding:13px 14px}
-  .card h3{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px; color:var(--muted)}
-  .card .row{display:flex; justify-content:space-between; font-family:var(--mono); font-size:12.5px; padding:2px 0}
-  .card .row .v{font-weight:700}
-  .tone-ok{color:var(--verdigris)} .tone-fail{color:var(--cinnabar)}
-  .card .gloss{margin-top:9px; color:var(--muted); font-size:11.5px; line-height:1.5}
+/* ── tab nav ─────────────────────────────────────────────────── */
+.tab-nav{
+  display:flex;flex-wrap:wrap;border-bottom:1px solid var(--border);
+  background:var(--surface);padding:0 12px;
+}
+.tab-btn{
+  background:transparent;border:0;outline:0;
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;
+  color:var(--muted);padding:11px 15px;cursor:pointer;
+  border-bottom:2px solid transparent;
+  position:relative;top:1px;
+  transition:color .15s,border-color .15s;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.is-active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab-btn:focus-visible{outline:2px solid var(--violet);outline-offset:-2px}
+@media(prefers-reduced-motion:reduce){.tab-btn{transition:none}}
 
-  .sem-tables{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
-  @media(max-width:840px){ .sem-tables{grid-template-columns:1fr} }
-  .mx h3{font-family:var(--mono); font-size:12px; letter-spacing:.1em; margin:0 0 3px}
-  .mx .des{font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:9px}
-  .mx-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-  table.tt{border-collapse:collapse; font-family:var(--mono); font-size:11.5px; width:100%}
-  table.tt caption{text-align:left; color:var(--muted); padding-bottom:3px; font-size:11px}
-  table.tt th,table.tt td{border:1px solid var(--rule); padding:3px 0; text-align:center; width:25%}
-  table.tt th{background:#efece5; color:var(--muted); font-weight:600}
-  td.des{background:var(--verdigris-soft); color:var(--verdigris); font-weight:700}
-  .corner{color:var(--gold)}
-  footer{margin-top:34px; color:var(--muted); font-family:var(--mono); font-size:11px; letter-spacing:.06em}
+/* ── main area ───────────────────────────────────────────────── */
+main{flex:1;padding:18px 20px}
+.panel{display:none}
+.panel.is-active{display:block}
+
+/* ── verify: 2-column ─────────────────────────────────────────── */
+.verify-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.verify-layout{grid-template-columns:1fr}}
+
+/* ── panes ───────────────────────────────────────────────────── */
+.pane{background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column}
+.pane-head{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);
+}
+.pane-title{font-size:9.5px;letter-spacing:.22em;color:var(--muted);font-weight:700}
+
+/* ── controls ────────────────────────────────────────────────── */
+.logic-sel{
+  font-family:var(--mono);font-size:11px;letter-spacing:.03em;
+  background:var(--surf2);color:var(--text);
+  border:1px solid var(--bord2);padding:4px 7px;appearance:none;cursor:pointer;
+}
+.logic-sel:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+.btn-primary{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;
+  background:var(--cyan);color:#000;border:0;padding:7px 16px;cursor:pointer;
+}
+.btn-primary:hover{background:#26f0ff}
+.btn-primary:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.btn-secondary{
+  font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+  background:transparent;color:var(--muted);border:1px solid var(--bord2);
+  padding:5px 12px;cursor:pointer;
+}
+.btn-secondary:hover{color:var(--text);border-color:var(--dim)}
+.btn-secondary:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+/* ── samples row ─────────────────────────────────────────────── */
+.samples-row{
+  display:flex;flex-wrap:wrap;gap:5px;
+  padding:7px 14px;border-bottom:1px solid var(--border);
+}
+.sample-btn{
+  font-family:var(--mono);font-size:10px;letter-spacing:.02em;
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:3px 7px;cursor:pointer;
+}
+.sample-btn:hover{color:var(--text);border-color:var(--dim)}
+.sample-btn.invalid{color:var(--red);border-color:#2a1018}
+.sample-btn.invalid:hover{border-color:var(--red)}
+.sample-btn:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+/* ── editor ──────────────────────────────────────────────────── */
+.editor-wrap{display:flex;flex:1;font-size:13px;min-height:260px}
+.gutter{
+  flex:0 0 auto;padding:14px 8px 14px 12px;text-align:right;
+  color:var(--muted);font-size:11.5px;user-select:none;
+  background:var(--surf2);border-right:1px solid var(--border);
+  overflow:hidden;min-width:38px;
+}
+.gutter div{height:1.55em;white-space:pre}
+.gutter div.err{color:var(--red);font-weight:700;position:relative}
+.gutter div.err::after{content:"◀";position:absolute;right:-3px;font-size:8px}
+.editor-textarea{
+  flex:1;resize:vertical;min-height:260px;border:0;outline:0;
+  padding:14px 14px;line-height:1.55;font:inherit;font-size:13px;
+  color:var(--text);background:transparent;tab-size:2;
+}
+.editor-textarea::placeholder{color:var(--muted)}
+.editor-textarea:focus-visible{outline:1px solid var(--violet);outline-offset:-1px}
+.editor-actions{
+  display:flex;align-items:center;gap:12px;
+  padding:9px 14px;border-top:1px solid var(--border);
+}
+.kbd-hint{font-size:10.5px;color:var(--muted)}
+
+/* ── verdict ─────────────────────────────────────────────────── */
+.pane-body{padding:14px;flex:1}
+.idle-msg{color:var(--muted);font-size:12px}
+.verdict-seal{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;letter-spacing:.2em;font-weight:700;
+  padding:6px 13px;border:1.5px solid;
+}
+.verdict-seal.ok{color:var(--green);border-color:var(--green)}
+.verdict-seal.fail{color:var(--red);border-color:var(--red)}
+.verdict-detail{margin-top:12px;font-size:12.5px}
+.verdict-detail b{color:var(--cyan)}
+.error-block{
+  margin-top:10px;padding:9px 12px;
+  border-left:2px solid var(--red);background:#150810;
+}
+.error-where{font-size:9.5px;letter-spacing:.18em;color:var(--red);display:block;margin-bottom:3px}
+.error-msg{color:var(--text);font-size:12px}
+.verify-note{margin-top:10px;font-size:11px;color:var(--muted)}
+
+.fade{animation:fadeIn .17s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.fade{animation:none}}
+
+/* ── panel toolbar ───────────────────────────────────────────── */
+.panel-toolbar{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;
+}
+.panel-title{font-size:9.5px;letter-spacing:.22em;color:var(--muted);font-weight:700;flex:0 0 auto}
+.toolbar-row{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.toolbar-label{font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+
+/* ── diagnostics ─────────────────────────────────────────────── */
+.diag-summary{font-size:11px;color:var(--muted);margin-bottom:10px}
+.diag-group{margin-bottom:14px}
+.diag-group-hdr{
+  font-size:9.5px;letter-spacing:.2em;font-weight:700;
+  padding:3px 0;margin-bottom:5px;border-bottom:1px solid var(--border);
+}
+.diag-group-hdr.error-h{color:var(--red)}
+.diag-group-hdr.warning-h{color:var(--amber)}
+.diag-group-hdr.info-h{color:var(--cyan)}
+.diag-item{
+  display:grid;grid-template-columns:auto 1fr;gap:0 10px;
+  padding:6px 10px;margin-bottom:3px;
+  background:var(--surf2);border-left:2px solid transparent;
+}
+.diag-item.error{border-left-color:var(--red)}
+.diag-item.warning{border-left-color:var(--amber)}
+.diag-item.info{border-left-color:var(--cyan)}
+.diag-item.has-line{cursor:pointer}
+.diag-item.has-line:hover{background:var(--surface)}
+.diag-item.has-line:focus-visible{outline:2px solid var(--violet)}
+.diag-code{font-size:10.5px;letter-spacing:.05em;font-weight:700;grid-row:1}
+.diag-lineno{font-size:9.5px;color:var(--muted);grid-row:2}
+.diag-msg{font-size:11.5px;color:var(--muted);line-height:1.45;grid-row:1/3;grid-column:2}
+
+/* ── graph ───────────────────────────────────────────────────── */
+.graph-info{margin-bottom:10px}
+.graph-stat{font-size:11.5px;color:var(--muted)}
+.graph-stat b{color:var(--text)}
+.graph-warn{
+  margin-top:5px;padding:5px 9px;
+  border-left:2px solid var(--amber);background:#14100a;
+  font-size:11px;color:var(--amber);
+}
+.graph-svg-wrap{margin:10px 0;overflow-x:auto}
+.graph-legend{font-size:9.5px;color:var(--muted);margin-top:4px}
+.dot-label{font-size:9px;letter-spacing:.15em;color:var(--muted);margin:12px 0 4px}
+.dot-pre{
+  background:var(--surf2);border:1px solid var(--border);
+  padding:9px 11px;overflow-x:auto;font-size:11px;
+  color:var(--muted);max-height:160px;white-space:pre;
+}
+
+/* ── metrics ─────────────────────────────────────────────────── */
+.metrics-card{
+  background:var(--surf2);border:1px solid var(--border);
+  padding:12px 14px;margin-bottom:10px;
+}
+.metrics-card-title{
+  font-size:9.5px;letter-spacing:.18em;color:var(--muted);
+  font-weight:700;margin-bottom:9px;
+}
+.metric-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:3px 0;border-bottom:1px solid var(--border);font-size:12px;
+}
+.metric-row:last-child{border-bottom:0}
+.mv{color:var(--cyan);font-weight:700}
+.mv-good{color:var(--green);font-weight:700}
+.mv-dim{color:var(--muted)}
+.no-report{
+  background:var(--surf2);border:1px solid var(--border);
+  padding:20px;text-align:center;
+}
+.no-report h3{font-size:11.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:9px}
+.no-report code{
+  display:block;margin-top:9px;padding:9px;
+  background:var(--bg);border:1px solid var(--border);
+  font-size:11px;color:var(--violet);text-align:left;
+}
+
+/* ── pluralism ───────────────────────────────────────────────── */
+.plural-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:800px){.plural-grid{grid-template-columns:1fr}}
+.plural-wide{grid-column:1/-1}
+.plural-section{
+  background:var(--surface);border:1px solid var(--border);padding:13px;
+}
+.section-label{
+  font-size:9.5px;letter-spacing:.2em;color:var(--violet);
+  font-weight:700;margin-bottom:8px;
+}
+.section-desc{font-size:11px;color:var(--muted);margin-bottom:8px}
+.section-body{margin-top:9px}
+.formula-input{
+  font-family:var(--mono);font-size:11.5px;
+  background:var(--surf2);color:var(--text);
+  border:1px solid var(--bord2);padding:4px 8px;width:150px;
+}
+.formula-input:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+/* Soundness table */
+.snd-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.snd-table th{
+  text-align:left;font-size:9px;letter-spacing:.14em;color:var(--muted);
+  padding:4px 8px;border-bottom:1px solid var(--border);
+}
+.snd-table td{padding:4px 8px;border-bottom:1px solid var(--border)}
+.snd-sound{color:var(--green)}
+.snd-unsound{color:var(--red)}
+.snd-skipped{color:var(--muted)}
+
+/* Lattice table */
+.lattice-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.lattice-table th{
+  font-size:9px;letter-spacing:.12em;color:var(--muted);
+  padding:4px 9px;text-align:left;border-bottom:1px solid var(--border);
+}
+.lattice-table td{padding:5px 9px;border-bottom:1px solid var(--border)}
+.lat-PROVABLE{color:var(--green);font-weight:700}
+.lat-REFUTABLE{color:var(--red);font-weight:700}
+.lat-BOTH{color:var(--violet);font-weight:700}
+.lat-INDEPENDENT{color:var(--amber);font-weight:700}
+
+/* Matrix truth tables */
+.mx-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:9px}
+table.tt{border-collapse:collapse;font-size:11px;width:100%;margin-bottom:6px}
+table.tt caption{text-align:left;color:var(--muted);font-size:9.5px;margin-bottom:2px}
+table.tt th,table.tt td{
+  border:1px solid var(--border);padding:3px 0;
+  text-align:center;min-width:22px;
+}
+table.tt th{background:var(--surf2);color:var(--muted);font-weight:600}
+td.des{background:#0b1e14;color:var(--green);font-weight:700}
+.corner{color:var(--violet)}
+
+/* ── api error ───────────────────────────────────────────────── */
+.api-error{
+  padding:10px 12px;border-left:2px solid var(--red);
+  background:#140810;font-size:11.5px;color:var(--red);margin-top:6px;
+}
+
+/* ── footer ──────────────────────────────────────────────────── */
+.studio-footer{
+  padding:10px 20px;border-top:1px solid var(--border);
+  font-size:9.5px;letter-spacing:.1em;color:var(--muted);
+  background:var(--surface);
+}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="studio">
 
-  <header class="masthead">
-    <div class="brand">
-      <h1>Stele</h1>
-      <p class="tagline">증명을 새기고, 세계를 바꾸면, 판정이 달라진다. 동일한 증명이 어느 논리에서 유효한지는 선택한 세계에 달려 있다.</p>
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  HEADER                                   ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<header class="hud-header">
+  <div class="brand">
+    <span class="brand-glyph" aria-hidden="true">⊢</span>
+    <div>
+      <h1 class="brand-name">STELE STUDIO</h1>
+      <p class="brand-sub">Formal verification workspace for mathematical reasoning</p>
     </div>
-    <div class="world">
-      <span class="world-label">논리 세계 · object logic</span>
-      <div class="seg" id="seg" role="group" aria-label="object logic">
-        <button class="seg-btn is-active" data-logic="intuitionistic_prop">직관 · intuitionistic</button>
-        <button class="seg-btn" data-logic="classical_prop">고전 · classical</button>
-      </div>
-    </div>
-  </header>
+  </div>
+  <div class="hud-status" id="hud-status">
+    <span class="status-dot"></span>
+    <span class="status-text" aria-live="polite">READY</span>
+  </div>
+</header>
 
-  <main class="grid">
-    <section class="pane editor-pane">
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TABS                                     ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<nav class="tab-nav" role="tablist" aria-label="Studio panels">
+  <button class="tab-btn is-active" role="tab" id="tab-verify"
+          aria-selected="true" aria-controls="panel-verify"
+          data-tab="verify">VERIFY</button>
+  <button class="tab-btn" role="tab" id="tab-diagnose"
+          aria-selected="false" aria-controls="panel-diagnose"
+          data-tab="diagnose" tabindex="-1">DIAGNOSTICS</button>
+  <button class="tab-btn" role="tab" id="tab-graph"
+          aria-selected="false" aria-controls="panel-graph"
+          data-tab="graph" tabindex="-1">GRAPH</button>
+  <button class="tab-btn" role="tab" id="tab-metrics"
+          aria-selected="false" aria-controls="panel-metrics"
+          data-tab="metrics" tabindex="-1">METRICS</button>
+  <button class="tab-btn" role="tab" id="tab-pluralism"
+          aria-selected="false" aria-controls="panel-pluralism"
+          data-tab="pluralism" tabindex="-1">PLURALISM</button>
+</nav>
+
+<main>
+
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TAB 1 — VERIFY                           ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<div id="panel-verify" role="tabpanel" aria-labelledby="tab-verify"
+     class="panel is-active">
+  <div class="verify-layout">
+
+    <section class="pane">
       <div class="pane-head">
-        <h2>증명 · proof</h2>
-        <div class="examples" id="examples"></div>
+        <h2 class="pane-title">PROOF SOURCE</h2>
+        <div style="display:flex;align-items:center;gap:7px">
+          <label for="logic-sel" class="sr-only">Object logic</label>
+          <select id="logic-sel" class="logic-sel">
+            <option value="intuitionistic_prop">intuitionistic_prop</option>
+            <option value="classical_prop">classical_prop</option>
+          </select>
+        </div>
       </div>
+      <div class="samples-row" id="samples-row" aria-label="Example proofs"></div>
       <div class="editor-wrap">
-        <div class="gutter" id="gutter"><div>1</div></div>
-        <textarea id="src" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+        <div class="gutter" id="gutter" aria-hidden="true"><div>1</div></div>
+        <label for="src" class="sr-only">Proof source code</label>
+        <textarea id="src" class="editor-textarea"
+                  spellcheck="false" autocapitalize="off" autocorrect="off"
+                  placeholder="Write a Stele-Light proof here…"></textarea>
       </div>
-      <div class="actions">
-        <button class="btn-primary" id="check">증명 검사 · check</button>
-        <span class="hint">⌘ / Ctrl + Enter</span>
+      <div class="editor-actions">
+        <button class="btn-primary" id="btn-verify">VERIFY</button>
+        <span class="kbd-hint">Ctrl + Enter</span>
       </div>
     </section>
 
-    <section class="pane verdict-pane">
-      <div class="pane-head"><h2>판정 · verdict</h2></div>
-      <div class="body" id="verdict">
-        <p class="verdict-idle">증명을 검사하면 결과가 여기에 새겨집니다. 세계 토글을 바꾸면 즉시 다시 판정됩니다.</p>
+    <section class="pane" aria-live="polite" aria-atomic="true">
+      <div class="pane-head"><h2 class="pane-title">VERDICT</h2></div>
+      <div class="pane-body" id="verdict">
+        <p class="idle-msg">Write a proof and press VERIFY — or load a sample above.</p>
       </div>
     </section>
-  </main>
 
-  <section class="semantics">
-    <div class="sem-head">
-      <h2>다치 의미론 · matrix semantics</h2>
-      <p>유리학의 ⊨ 측면 — 진리치 표를 직접 적재 (유리학개론 pp.4–5의 클레이니 강한 표)</p>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TAB 2 — DIAGNOSTICS                      ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<div id="panel-diagnose" role="tabpanel" aria-labelledby="tab-diagnose"
+     class="panel" hidden>
+  <div class="panel-toolbar">
+    <span class="panel-title">DIAGNOSTICS</span>
+    <div class="toolbar-row">
+      <label for="diag-logic" class="toolbar-label">Logic</label>
+      <select id="diag-logic" class="logic-sel">
+        <option value="intuitionistic_prop">intuitionistic_prop</option>
+        <option value="classical_prop">classical_prop</option>
+      </select>
+      <button class="btn-primary" id="btn-diagnose">RUN DIAGNOSTICS</button>
     </div>
-    <div class="sem-results" id="sem-results"></div>
-    <div class="sem-tables" id="sem-tables"></div>
-  </section>
+  </div>
+  <div id="diag-output" aria-live="polite">
+    <p class="idle-msg">Runs multi-pass structural analysis on the current proof (from the VERIFY tab).</p>
+  </div>
+</div>
 
-  <footer>STELE LOGIC SYSTEM · trusted kernel = stele/kernel.py · proof checker, not prover</footer>
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TAB 3 — DEPENDENCY GRAPH                 ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<div id="panel-graph" role="tabpanel" aria-labelledby="tab-graph"
+     class="panel" hidden>
+  <div class="panel-toolbar">
+    <span class="panel-title">DEPENDENCY GRAPH</span>
+    <div class="toolbar-row">
+      <label for="graph-logic" class="toolbar-label">Logic</label>
+      <select id="graph-logic" class="logic-sel">
+        <option value="intuitionistic_prop">intuitionistic_prop</option>
+        <option value="classical_prop">classical_prop</option>
+      </select>
+      <button class="btn-primary" id="btn-graph">BUILD GRAPH</button>
+    </div>
+  </div>
+  <div id="graph-output" aria-live="polite">
+    <p class="idle-msg">Visualizes proof-step dependencies. Proof must pass verification first.</p>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TAB 4 — METRICS                          ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<div id="panel-metrics" role="tabpanel" aria-labelledby="tab-metrics"
+     class="panel" hidden>
+  <div class="panel-toolbar">
+    <span class="panel-title">BENCHMARK METRICS</span>
+    <button class="btn-secondary" id="btn-metrics">RELOAD</button>
+  </div>
+  <div id="metrics-output" aria-live="polite">
+    <p class="idle-msg">Loading…</p>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TAB 5 — PLURALISM PLAYGROUND             ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<div id="panel-pluralism" role="tabpanel" aria-labelledby="tab-pluralism"
+     class="panel" hidden>
+  <div class="plural-grid">
+
+    <!-- Rule Soundness -->
+    <section class="plural-section">
+      <h2 class="section-label">RULE SOUNDNESS</h2>
+      <p class="section-desc">Check whether proof rules preserve designation in a many-valued matrix.</p>
+      <div class="toolbar-row">
+        <label for="snd-logic" class="toolbar-label">Logic</label>
+        <select id="snd-logic" class="logic-sel">
+          <option value="classical_prop">classical_prop</option>
+          <option value="intuitionistic_prop">intuitionistic_prop</option>
+        </select>
+        <label for="snd-matrix" class="toolbar-label">Matrix</label>
+        <select id="snd-matrix" class="logic-sel">
+          <option value="K3">K3</option>
+          <option value="LP">LP</option>
+          <option value="boolean">boolean</option>
+        </select>
+        <button class="btn-secondary" id="btn-soundness">CHECK</button>
+      </div>
+      <div id="soundness-output" class="section-body" aria-live="polite">
+        <p class="idle-msg">Select a logic and matrix, then check soundness.</p>
+      </div>
+    </section>
+
+    <!-- World Lattice -->
+    <section class="plural-section">
+      <h2 class="section-label">WORLD LATTICE</h2>
+      <p class="section-desc">CH-style independence demo: formula status across base world and its positive/negative extensions.</p>
+      <div class="toolbar-row">
+        <label for="lattice-formula" class="toolbar-label">Formula</label>
+        <input id="lattice-formula" class="formula-input" type="text"
+               value="P or Q" placeholder="e.g. P or Q" />
+        <button class="btn-secondary" id="btn-lattice">QUERY</button>
+      </div>
+      <div id="lattice-output" class="section-body" aria-live="polite">
+        <p class="idle-msg">Enter a formula and run the lattice demo.</p>
+      </div>
+    </section>
+
+    <!-- Matrix truth tables -->
+    <section class="plural-section plural-wide">
+      <h2 class="section-label">MATRIX TRUTH TABLES</h2>
+      <p class="section-desc">Many-valued matrices: K3 (Kleene strong 3-valued) · LP (Priest's logic of paradox) · boolean (classical 2-valued)</p>
+      <div class="toolbar-row">
+        <label for="mx-sel" class="toolbar-label">Matrix</label>
+        <select id="mx-sel" class="logic-sel">
+          <option value="K3">K3 — Kleene strong 3-valued</option>
+          <option value="LP">LP — Priest's logic of paradox</option>
+          <option value="boolean">boolean — classical 2-valued</option>
+        </select>
+      </div>
+      <div id="mx-output" class="section-body" aria-live="polite"></div>
+    </section>
+
+  </div>
+</div>
+
+</main>
+
+<footer class="studio-footer">
+  STELE STUDIO · trusted kernel = stele/kernel.py · proof checker, not prover
+</footer>
 </div>
 
 <script>
-const state = { logic: "intuitionistic_prop", lastSource: null };
-const $ = (id) => document.getElementById(id);
-const srcEl = $("src"), gutterEl = $("gutter");
+'use strict';
 
-/* ---------- gutter ---------- */
-function renderGutter(errLine){
-  const n = Math.max(1, srcEl.value.split("\n").length);
-  let html = "";
-  for(let i=1;i<=n;i++){
-    html += `<div${errLine===i?' class="err"':''}>${i}</div>`;
-  }
-  gutterEl.innerHTML = html;
-  gutterEl.scrollTop = srcEl.scrollTop;
+/* ════════════════════════════════════════════════════════ utilities */
+const $ = id => document.getElementById(id);
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
-srcEl.addEventListener("input", ()=>renderGutter());
-srcEl.addEventListener("scroll", ()=>{ gutterEl.scrollTop = srcEl.scrollTop; });
+function setHUD(state, text) {
+  const el = $('hud-status');
+  el.className = 'hud-status ' + (state || '');
+  el.querySelector('.status-text').textContent = text;
+}
 
-/* ---------- world toggle ---------- */
-$("seg").addEventListener("click",(e)=>{
-  const b = e.target.closest(".seg-btn"); if(!b) return;
-  [...$("seg").children].forEach(x=>x.classList.toggle("is-active", x===b));
-  state.logic = b.dataset.logic;
-  if(state.lastSource !== null) check();   // re-judge same proof in the new world
+/* ════════════════════════════════════════════════════════ tab logic */
+const tabBtns = [...document.querySelectorAll('.tab-btn')];
+const tabPanels = [...document.querySelectorAll('.panel')];
+
+function switchTab(name) {
+  tabBtns.forEach(b => {
+    const active = b.dataset.tab === name;
+    b.classList.toggle('is-active', active);
+    b.setAttribute('aria-selected', active ? 'true' : 'false');
+    b.tabIndex = active ? 0 : -1;
+  });
+  tabPanels.forEach(p => {
+    const active = p.id === 'panel-' + name;
+    p.classList.toggle('is-active', active);
+    p.hidden = !active;
+  });
+  if (name === 'metrics' && !metricsLoaded) loadMetrics();
+  if (name === 'pluralism' && !mxDataLoaded) loadMxData();
+}
+
+document.querySelector('.tab-nav').addEventListener('click', e => {
+  const b = e.target.closest('.tab-btn');
+  if (!b) return;
+  switchTab(b.dataset.tab);
+  b.focus();
 });
 
-/* ---------- check ---------- */
-async function check(){
-  const source = srcEl.value;
-  state.lastSource = source;
+document.querySelector('.tab-nav').addEventListener('keydown', e => {
+  const cur = tabBtns.findIndex(b => b === document.activeElement);
+  if (cur < 0) return;
+  let next = -1;
+  if (e.key === 'ArrowRight') next = (cur + 1) % tabBtns.length;
+  if (e.key === 'ArrowLeft')  next = (cur - 1 + tabBtns.length) % tabBtns.length;
+  if (e.key === 'Home') next = 0;
+  if (e.key === 'End')  next = tabBtns.length - 1;
+  if (next >= 0) {
+    e.preventDefault();
+    switchTab(tabBtns[next].dataset.tab);
+    tabBtns[next].focus();
+  }
+});
+
+/* ════════════════════════════════════════════════════════ gutter */
+function renderGutter(errLine) {
+  const lines = $('src').value.split('\n');
+  $('gutter').innerHTML = lines.map((_, i) => {
+    const n = i + 1;
+    return `<div${errLine === n ? ' class="err"' : ''}>${n}</div>`;
+  }).join('');
+}
+$('src').addEventListener('input', () => renderGutter());
+$('src').addEventListener('scroll', () => { $('gutter').scrollTop = $('src').scrollTop; });
+
+/* ════════════════════════════════════════════════════════ verify */
+async function verify() {
+  const source = $('src').value;
+  const logic  = $('logic-sel').value;
+  setHUD('running', 'VERIFYING');
   let r;
-  try{
-    const res = await fetch("/api/check",{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({source, logic: state.logic})
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({source, logic}),
     });
     r = await res.json();
-  }catch(err){
-    $("verdict").innerHTML = `<p class="verdict-idle">서버에 연결할 수 없습니다. <code>python -m stele.web</code> 가 실행 중인지 확인하세요.</p>`;
+  } catch {
+    $('verdict').innerHTML =
+      '<p class="api-error">Could not reach server. Ensure <code>python -m stele</code> is running.</p>';
+    setHUD('err', 'OFFLINE');
     return;
   }
   renderVerdict(r);
+  setHUD(r.ok ? 'ok' : 'err', r.ok ? 'VERIFIED' : 'FAILED');
 }
-$("check").addEventListener("click", check);
-srcEl.addEventListener("keydown",(e)=>{
-  if((e.metaKey||e.ctrlKey) && e.key==="Enter"){ e.preventDefault(); check(); }
+
+$('btn-verify').addEventListener('click', verify);
+$('src').addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); verify(); }
 });
 
-function esc(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
-
-function renderVerdict(r){
-  const v = $("verdict");
-  if(r.ok){
+function renderVerdict(r) {
+  const el = $('verdict');
+  if (r.ok) {
     renderGutter();
-    v.innerHTML = `
-      <span class="seal ok fade"><span class="glyph">⊢</span> verified</span>
-      <p class="verdict-line">정리 <b>${esc(r.name)}</b> 가 <b>${esc(r.logic)}</b> 세계에서 검증되었습니다.</p>
-      <p class="note">같은 증명을 다른 세계에서 다시 검사해 보세요. 고전 전용 규칙(<code>dne</code>)에 의존하는 증명은 직관 세계에서 거부됩니다.</p>`;
-  }else{
-    const line = r.line ? Number(r.line) : null;
+    el.innerHTML = `
+      <span class="verdict-seal ok fade">⊢ VERIFIED</span>
+      <p class="verdict-detail fade">Theorem <b>${esc(r.name)}</b> verified under <b>${esc(r.logic)}</b>.</p>
+      <p class="verify-note">Toggle the logic and re-verify: classical-only rules
+        (<code>dne</code>, <code>lem</code>, <code>pbc</code>) are rejected by intuitionistic_prop.</p>`;
+  } else {
+    const line = r.line != null ? Number(r.line) : null;
     renderGutter(line);
-    const where = line ? `line ${line}` : (r.kind==="parse" ? "parse" : "error");
-    const name = r.name ? `정리 <b>${esc(r.name)}</b> — ` : "";
-    v.innerHTML = `
-      <span class="seal fail fade"><span class="glyph">⊬</span> not derivable</span>
-      <p class="verdict-line">${name}${esc(state.logic)} 세계에서 이 증명은 통과하지 못했습니다.</p>
-      <div class="rubric fade">
-        <span class="where">${esc(where)}</span>
-        <span class="msg">${esc(r.error)}</span>
+    const where = line ? `line ${line}` : (r.kind === 'parse' ? 'parse error' : 'error');
+    const nameHtml = r.name ? `Theorem <b>${esc(r.name)}</b> — ` : '';
+    el.innerHTML = `
+      <span class="verdict-seal fail fade">⊬ NOT DERIVABLE</span>
+      <p class="verdict-detail fade">${nameHtml}not derivable in
+        <b>${esc($('logic-sel').value)}</b>.</p>
+      <div class="error-block fade">
+        <span class="error-where">${esc(where)}</span>
+        <span class="error-msg">${esc(r.error)}</span>
       </div>`;
   }
 }
 
-/* ---------- examples ---------- */
-async function loadExamples(){
-  let ex; try{ ex = await (await fetch("/api/examples")).json(); }catch{ return; }
-  const order = ["dne.stele","dne_law.stele","valid_imp_chain.stele","valid_and.stele",
-                 "imp_self.stele","invalid_mp.stele","invalid_scope.stele"];
-  const names = Object.keys(ex).sort((a,b)=>{
-    const ia=order.indexOf(a), ib=order.indexOf(b);
-    return (ia<0?99:ia)-(ib<0?99:ib);
+/* ════════════════════════════════════════════════════════ samples */
+const BUILTIN = [
+  { label:'mp chain', invalid:false, logic:'intuitionistic_prop',
+    src:`theorem chain:\n  assume h1: P -> Q\n  assume h2: Q -> R\n  assume h3: P\n  have h4: Q by mp h1 h3\n  have h5: R by mp h2 h4\n  conclude R by h5` },
+  { label:'dne (classical)', invalid:false, logic:'classical_prop',
+    src:`theorem dne_consequent:\n  assume h1: not not P\n  have h2: P by dne h1\n  conclude P by h2` },
+  { label:'invalid · bad mp', invalid:true, logic:'intuitionistic_prop',
+    src:`theorem bad_mp:\n  assume h1: P -> Q\n  assume h2: R\n  have h3: Q by mp h1 h2\n  conclude Q by h3` },
+];
+
+async function loadSamples() {
+  let exMap = {};
+  try { exMap = await (await fetch('/api/examples')).json(); } catch {}
+
+  const items = [...BUILTIN];
+  const seen = new Set(BUILTIN.map(s => s.src.trim()));
+  ['dne_law.stele','neg_intro.stele','or_elim.stele','invalid_scope.stele'].forEach(fn => {
+    if (exMap[fn] && !seen.has(exMap[fn].trim())) {
+      items.push({
+        label: fn.replace('.stele',''),
+        invalid: fn.startsWith('invalid'),
+        logic: (fn==='dne_law.stele'||fn.includes('classical')) ? 'classical_prop' : 'intuitionistic_prop',
+        src: exMap[fn],
+      });
+    }
   });
-  const box = $("examples");
-  box.innerHTML = "";
-  names.forEach(n=>{
-    const b = document.createElement("button");
-    b.className = "chip" + (n.startsWith("invalid")?" invalid":"");
-    b.textContent = n.replace(".stele","");
-    b.title = n;
-    b.onclick = ()=>{ srcEl.value = ex[n].replace(/\n$/,""); renderGutter(); check(); };
-    box.appendChild(b);
+
+  const row = $('samples-row');
+  row.innerHTML = '';
+  items.forEach(item => {
+    const b = document.createElement('button');
+    b.className = 'sample-btn' + (item.invalid ? ' invalid' : '');
+    b.type = 'button';
+    b.textContent = item.label;
+    b.addEventListener('click', () => {
+      $('src').value = item.src.trim();
+      $('logic-sel').value = item.logic;
+      renderGutter();
+      verify();
+    });
+    row.appendChild(b);
   });
-  // preload the flagship relativism example
-  if(ex["dne.stele"]){ srcEl.value = ex["dne.stele"].replace(/\n$/,""); renderGutter(); check(); }
+
+  // Preload the flagship relativism demo
+  if (exMap['dne.stele']) {
+    $('src').value = exMap['dne.stele'].trim();
+    $('logic-sel').value = 'classical_prop';
+    renderGutter();
+    verify();
+  } else {
+    $('src').value = BUILTIN[0].src.trim();
+    renderGutter();
+  }
 }
 
-/* ---------- semantics ---------- */
-function bool(x){ return x ? '<span class="v tone-ok">참 (true)</span>' : '<span class="v tone-fail">거짓 (false)</span>'; }
+/* ════════════════════════════════════════════════════════ diagnostics */
+$('btn-diagnose').addEventListener('click', runDiagnostics);
 
-function renderSemantics(d){
-  const R = d.results;
-  $("sem-results").innerHTML = `
-    <div class="card">
-      <h3>배중률 P ∨ ¬P</h3>
-      <div class="row"><span>K3 항진식?</span>${bool(R.lem_k3)}</div>
-      <div class="row"><span>고전 항진식?</span>${bool(R.lem_classical)}</div>
-      <p class="gloss">K3에서 P=I 이면 (P ∨ ¬P) = <b>${R.lem_value_at_I}</b> — designated 아님. 배중률은 국소적이다.</p>
-    </div>
-    <div class="card">
-      <h3>거짓말쟁이 L ≡ ¬L</h3>
-      <div class="row"><span>K3 고정점</span><span class="v">${R.liar_k3.join(", ")}</span></div>
-      <div class="row"><span>LP 고정점</span><span class="v">${R.liar_lp.join(", ")}</span></div>
-      <p class="gloss">¬v = v 를 만족하는 진리치. K3에서는 I(미정), LP에서는 B(참이면서 거짓).</p>
-    </div>
-    <div class="card">
-      <h3>폭발원리 {P, ¬P} ⊨ Q</h3>
-      <div class="row"><span>LP 성립?</span>${bool(R.explosion_lp)}</div>
-      <div class="row"><span>고전 성립?</span>${bool(R.explosion_classical)}</div>
-      <p class="gloss">LP 반례: P=${R.explosion_lp_counterexample.P}, Q=${R.explosion_lp_counterexample.Q}. 모순을 허용해도 폭발하지 않는다(초일관).</p>
+async function runDiagnostics() {
+  const source = $('src').value;
+  const logic  = $('diag-logic').value;
+  setHUD('running', 'DIAGNOSING');
+  let r;
+  try {
+    const res = await fetch('/api/diagnose', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({source, logic}),
+    });
+    r = await res.json();
+  } catch {
+    $('diag-output').innerHTML = '<p class="api-error">Server unavailable.</p>';
+    setHUD('err', 'OFFLINE');
+    return;
+  }
+  renderDiagnostics(r);
+  setHUD('ok', 'DONE');
+}
+
+function renderDiagnostics(r) {
+  const el = $('diag-output');
+  if (!r.ok) {
+    el.innerHTML = `<div class="error-block">
+      <span class="error-where">${esc(r.kind||'error')}</span>
+      <span class="error-msg">${esc(r.error)}</span>
     </div>`;
-
-  const wrap = $("sem-tables");
-  wrap.innerHTML = "";
-  d.matrices.forEach(m=>{
-    const des = new Set(m.designated);
-    const unary = (sym,label)=>{
-      let head = `<tr><th>${label}</th>${m.values.map(v=>`<th>${v}</th>`).join("")}</tr>`;
-      let row = `<tr><th>·</th>${m.values.map(v=>{
-        const r=m.tables[sym][v]; return `<td class="${des.has(r)?'des':''}">${r}</td>`;
-      }).join("")}</tr>`;
-      return `<table class="tt"><caption>${label}</caption>${head}${row}</table>`;
-    };
-    const binary = (sym,label)=>{
-      let head = `<tr><th class="corner">${label}</th>${m.values.map(v=>`<th>${v}</th>`).join("")}</tr>`;
-      let body = m.values.map(a=>{
-        return `<tr><th>${a}</th>${m.values.map(b=>{
-          const r=m.tables[sym][a][b]; return `<td class="${des.has(r)?'des':''}">${r}</td>`;
-        }).join("")}</tr>`;
-      }).join("");
-      return `<table class="tt"><caption>${label}</caption>${head}${body}</table>`;
-    };
-    const div = document.createElement("div");
-    div.className = "mx";
-    div.innerHTML = `
-      <h3>${m.name}</h3>
-      <div class="des">designated: ${m.designated.join(", ")} · 값: ${m.values.join(" &lt; ")}</div>
-      <div class="mx-grid">
-        ${unary("not","¬ a")}
-        ${binary("imp","a → b")}
-        ${binary("and","a ∧ b")}
-        ${binary("or","a ∨ b")}
+    return;
+  }
+  const diags = r.diagnostics || [];
+  if (diags.length === 0) {
+    el.innerHTML = `<p class="idle-msg" style="color:var(--green)">
+      ✓ No diagnostics — <b>${esc(r.name)}</b> passes structural analysis under ${esc(r.logic)}.</p>`;
+    return;
+  }
+  const bySev = {};
+  diags.forEach(d => (bySev[d.severity] = bySev[d.severity]||[]).push(d));
+  const order = ['error','warning','info'];
+  const labels = {error:'ERRORS',warning:'WARNINGS',info:'INFO'};
+  let html = `<p class="diag-summary">${diags.length} diagnostic(s) in
+    ${esc(r.name)} [${esc(r.logic)}]</p>`;
+  for (const sev of order) {
+    const items = bySev[sev]; if (!items) continue;
+    html += `<div class="diag-group">
+      <div class="diag-group-hdr ${sev}-h">${labels[sev]} (${items.length})</div>`;
+    items.forEach(d => {
+      const hasLine = d.line != null;
+      html += `<div class="diag-item ${sev}${hasLine?' has-line':''}"
+                    ${hasLine?`data-line="${d.line}" tabindex="0" role="button"
+                    title="Jump to line ${d.line}"`:''}>
+        <span class="diag-code">${esc(d.code)}</span>
+        <span class="diag-lineno">${hasLine?'line '+d.line:''}</span>
+        <span class="diag-msg">${esc(d.message)}</span>
       </div>`;
-    wrap.appendChild(div);
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
+
+  el.querySelectorAll('.has-line').forEach(item => {
+    const jump = () => {
+      const line = parseInt(item.dataset.line, 10);
+      if (isNaN(line)) return;
+      switchTab('verify');
+      renderGutter(line);
+      const ta = $('src');
+      const lh = ta.scrollHeight / Math.max(1, ta.value.split('\n').length);
+      ta.scrollTop = Math.max(0, (line - 3) * lh);
+      ta.focus();
+    };
+    item.addEventListener('click', jump);
+    item.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') jump(); });
   });
 }
 
-(async function init(){
+/* ════════════════════════════════════════════════════════ graph */
+$('btn-graph').addEventListener('click', buildGraph);
+
+async function buildGraph() {
+  const source = $('src').value;
+  const logic  = $('graph-logic').value;
+  setHUD('running', 'BUILDING GRAPH');
+  let r;
+  try {
+    const res = await fetch('/api/graph', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({source, logic}),
+    });
+    r = await res.json();
+  } catch {
+    $('graph-output').innerHTML = '<p class="api-error">Server unavailable.</p>';
+    setHUD('err', 'OFFLINE');
+    return;
+  }
+  renderGraph(r);
+  setHUD(r.ok ? 'ok' : 'err', r.ok ? 'GRAPH READY' : 'FAILED');
+}
+
+function renderGraph(r) {
+  const el = $('graph-output');
+  if (!r.ok) {
+    el.innerHTML = `<div class="error-block">
+      <span class="error-where">${esc(r.kind||'error')}</span>
+      <span class="error-msg">${esc(r.error)}${r.name?' · '+esc(r.name):''}</span><br>
+      <span style="font-size:11px;color:var(--muted)">Proof must pass verification before the graph can be built.</span>
+    </div>`;
+    return;
+  }
+  const warns = (r.diagnostics||[]).map(w=>
+    `<div class="graph-warn">⚠ ${esc(w)}</div>`).join('');
+  const info = `<div class="graph-info">
+    <p class="graph-stat">Theorem <b>${esc(r.name)}</b> · logic <b>${esc(r.logic)}</b>
+       · <b>${r.nodes.length}</b> nodes · <b>${r.edges.length}</b> edges</p>
+    ${warns}</div>`;
+  const svgHtml = buildGraphSVG(r.nodes, r.edges);
+  const dotHtml = `<div>
+    <p class="dot-label">DOT SOURCE — render with <code>dot -Tpng out.dot -o out.png</code></p>
+    <pre class="dot-pre">${esc(r.dot)}</pre>
+  </div>`;
+  el.innerHTML = info + svgHtml + dotHtml;
+}
+
+function buildGraphSVG(nodes, edges) {
+  if (!nodes || nodes.length === 0) return '';
+
+  /* level assignment via BFS */
+  const adj = {}; const inDeg = {};
+  nodes.forEach(n => { adj[n.label] = []; inDeg[n.label] = 0; });
+  edges.forEach(e => {
+    if (adj[e.src]) adj[e.src].push(e.tgt);
+    inDeg[e.tgt] = (inDeg[e.tgt]||0) + 1;
+  });
+  const level = {};
+  const queue = nodes.filter(n => !inDeg[n.label]).map(n => n.label);
+  queue.forEach(l => level[l] = 0);
+  let qi = 0;
+  while (qi < queue.length) {
+    const cur = queue[qi++];
+    for (const nxt of (adj[cur]||[])) {
+      const nl = (level[cur]??0) + 1;
+      if (level[nxt] === undefined || level[nxt] < nl) {
+        level[nxt] = nl;
+        if (!queue.includes(nxt)) queue.push(nxt);
+      }
+    }
+  }
+  nodes.forEach(n => { if (level[n.label] === undefined) level[n.label] = 0; });
+
+  const byLev = {};
+  nodes.forEach(n => (byLev[level[n.label]] = byLev[level[n.label]]||[]).push(n));
+  const lvls = Object.keys(byLev).map(Number).sort((a,b)=>a-b);
+
+  /* layout */
+  const NW=148, NH=52, HG=28, VG=64;
+  const maxRow = Math.max(...lvls.map(l=>byLev[l].length));
+  const SW = Math.max(380, maxRow*(NW+HG)+40);
+  const SH = lvls.length*(NH+VG)+24;
+  const pos = {};
+  for (const l of lvls) {
+    const row = byLev[l];
+    const totalW = row.length*(NW+HG) - HG;
+    const sx = (SW-totalW)/2;
+    const y  = l*(NH+VG)+14;
+    row.forEach((n,i) => {
+      const x = sx + i*(NW+HG);
+      pos[n.label] = {x,y, cx:x+NW/2, cy:y+NH/2, bx:x+NW/2, by:y+NH};
+    });
+  }
+
+  const kFill   = {assumption:'#001f28',suppose:'#14082a',have:'#0c1622',conclude:'#011a12'};
+  const kStroke = {assumption:'#006e88',suppose:'#6030a0',have:'#253650',conclude:'#006640'};
+  const kColor  = {assumption:'#00e8ff',suppose:'#b06aff',have:'#b8cce0',conclude:'#00ff9f'};
+
+  let edgeSvg = '';
+  for (const e of edges) {
+    const p1=pos[e.src], p2=pos[e.tgt];
+    if (!p1||!p2) continue;
+    const cy = (p1.by+p2.y)/2;
+    edgeSvg += `<path d="M${p1.bx},${p1.by} C${p1.bx},${cy} ${p2.cx},${cy} ${p2.cx},${p2.y}"
+      fill="none" stroke="#182c44" stroke-width="1.5" marker-end="url(#arr)"/>`;
+  }
+
+  let nodeSvg = '';
+  for (const n of nodes) {
+    const p=pos[n.label]; if (!p) continue;
+    const fill  = kFill[n.kind]  || '#0c1622';
+    const stk   = kStroke[n.kind]|| '#253650';
+    const col   = kColor[n.kind] || '#b8cce0';
+    const lbl   = n.label.length>16 ? n.label.slice(0,15)+'…' : n.label;
+    const fml   = (n.formula||'').length>22 ? (n.formula||'').slice(0,21)+'…' : (n.formula||'');
+    const rstr  = n.rule ? `[${n.rule}]` : n.kind;
+    nodeSvg += `
+    <rect x="${p.x}" y="${p.y}" width="${NW}" height="${NH}" rx="3"
+          fill="${fill}" stroke="${stk}" stroke-width="1.5"/>
+    <text x="${p.cx}" y="${p.y+15}" font-family="ui-monospace,monospace" font-size="11"
+          fill="${col}" text-anchor="middle" font-weight="bold">${esc(lbl)}</text>
+    <text x="${p.cx}" y="${p.y+29}" font-family="ui-monospace,monospace" font-size="9.5"
+          fill="#415870" text-anchor="middle">${esc(fml)}</text>
+    <text x="${p.cx}" y="${p.y+43}" font-family="ui-monospace,monospace" font-size="9"
+          fill="#263a54" text-anchor="middle">${esc(rstr)}</text>`;
+  }
+
+  return `<div class="graph-svg-wrap">
+  <svg viewBox="0 0 ${SW} ${SH}" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;max-height:520px;background:#070b10;border:1px solid var(--border);display:block"
+       role="img" aria-label="Proof dependency constellation graph">
+    <defs>
+      <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L9,3 z" fill="#182c44"/>
+      </marker>
+    </defs>
+    ${edgeSvg}
+    ${nodeSvg}
+  </svg>
+  <p class="graph-legend">
+    <span style="color:var(--cyan)">■</span> assumption &nbsp;
+    <span style="color:var(--violet)">■</span> suppose &nbsp;
+    <span style="color:var(--text)">■</span> have &nbsp;
+    <span style="color:var(--green)">■</span> conclude
+  </p></div>`;
+}
+
+/* ════════════════════════════════════════════════════════ metrics */
+let metricsLoaded = false;
+
+async function loadMetrics() {
+  setHUD('running', 'LOADING METRICS');
+  let r;
+  try {
+    r = await (await fetch('/api/metrics')).json();
+  } catch {
+    $('metrics-output').innerHTML = '<p class="api-error">Server unavailable.</p>';
+    setHUD('err', 'OFFLINE');
+    return;
+  }
+  renderMetrics(r);
+  metricsLoaded = !!r.ok;
+  setHUD(r.ok ? 'ok' : 'err', r.ok ? 'METRICS LOADED' : 'NO REPORT');
+}
+
+$('btn-metrics').addEventListener('click', () => { metricsLoaded = false; loadMetrics(); });
+
+function renderMetrics(r) {
+  const el = $('metrics-output');
+  if (!r.ok) {
+    el.innerHTML = `<div class="no-report">
+      <h3>NO BENCHMARK REPORT FOUND</h3>
+      <p style="font-size:11.5px;color:var(--muted)">
+        Run the evaluation harness to generate validity accuracy and diagnostic metrics.
+      </p>
+      <code>${esc(r.hint||'python -m stele.eval bench --labels bench/labels.jsonl --tasks bench --report bench/reports/latest.json')}</code>
+    </div>`;
+    return;
+  }
+  const m = r.report.metrics || r.report;
+  let html = '';
+
+  if (m.n_tasks !== undefined) {
+    const pct = v => (typeof v==='number' && v<=1) ? (v*100).toFixed(1)+'%' : String(v??'—');
+    const good = v => (typeof v==='number' && v>=0.9) ? 'mv-good' : 'mv';
+    html += `<div class="metrics-card">
+      <div class="metrics-card-title">SUMMARY</div>
+      <div class="metric-row"><span>Tasks evaluated</span><span class="mv-dim">${esc(String(m.n_tasks))}</span></div>
+      <div class="metric-row"><span>Valid expected</span><span class="mv-dim">${esc(String(m.n_valid_expected??'—'))}</span></div>
+      <div class="metric-row"><span>Invalid expected</span><span class="mv-dim">${esc(String(m.n_invalid_expected??'—'))}</span></div>
+      <div class="metric-row"><span>Validity accuracy</span>
+        <span class="${good(m.n_valid_match/m.n_tasks)}">${pct(m.n_valid_match!=null?m.n_valid_match/m.n_tasks:undefined)}</span></div>
+      <div class="metric-row"><span>Exact match rate</span>
+        <span class="${good(m.exact_match_rate)}">${pct(m.exact_match_rate)}</span></div>
+      <div class="metric-row"><span>Macro F1</span>
+        <span class="${good(m.macro?.f1)}">${pct(m.macro?.f1)}</span></div>
+    </div>`;
+  }
+
+  const pc = m.per_code;
+  if (pc && Object.keys(pc).length > 0) {
+    html += `<div class="metrics-card"><div class="metrics-card-title">PER-CODE METRICS</div>`;
+    for (const [code, cm] of Object.entries(pc)) {
+      const f1 = typeof cm.f1==='number' ? (cm.f1*100).toFixed(1)+'%' : '—';
+      const sup = cm.support != null ? ` (n=${cm.support})` : '';
+      html += `<div class="metric-row">
+        <span>${esc(code)}${esc(sup)}</span>
+        <span class="${cm.f1>=0.9?'mv-good':'mv'}">F1 ${esc(f1)}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  if (!html) {
+    html = `<div class="metrics-card"><div class="metrics-card-title">REPORT DATA</div>
+      <pre style="font-size:11px;color:var(--muted);white-space:pre-wrap;
+           max-height:400px;overflow-y:auto">${esc(JSON.stringify(r.report,null,2))}</pre>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════════════ pluralism */
+let mxDataLoaded = false;
+let mxData = null;
+
+async function loadMxData() {
+  try {
+    mxData = await (await fetch('/api/demos')).json();
+    mxDataLoaded = true;
+    renderMxTable();
+  } catch {}
+}
+
+$('mx-sel').addEventListener('change', renderMxTable);
+
+function renderMxTable() {
+  const el = $('mx-output');
+  if (!mxData) { el.innerHTML = '<p class="idle-msg">Loading matrix data…</p>'; return; }
+  const name = $('mx-sel').value;
+  const m = mxData.matrices.find(x => x.name === name);
+  if (!m) return;
+  const des = new Set(m.designated);
+
+  function unary(sym, lbl) {
+    const head = `<tr><th>${esc(lbl)}</th>${m.values.map(v=>`<th>${esc(v)}</th>`).join('')}</tr>`;
+    const row  = `<tr><th>·</th>${m.values.map(v => {
+      const rv=m.tables[sym][v];
+      return `<td class="${des.has(rv)?'des':''}">${esc(rv)}</td>`;
+    }).join('')}</tr>`;
+    return `<table class="tt"><caption>${esc(lbl)}</caption>${head}${row}</table>`;
+  }
+  function binary(sym, lbl) {
+    const head = `<tr><th class="corner">${esc(lbl)}</th>${m.values.map(v=>`<th>${esc(v)}</th>`).join('')}</tr>`;
+    const body = m.values.map(a =>
+      `<tr><th>${esc(a)}</th>${m.values.map(b => {
+        const rv=m.tables[sym][a][b];
+        return `<td class="${des.has(rv)?'des':''}">${esc(rv)}</td>`;
+      }).join('')}</tr>`
+    ).join('');
+    return `<table class="tt"><caption>${esc(lbl)}</caption>${head}${body}</table>`;
+  }
+
+  el.innerHTML = `<p style="font-size:11px;color:var(--muted);margin:6px 0 9px">
+    <b style="color:var(--text)">${esc(m.name)}</b>
+    · values: ${m.values.map(v=>`<code>${esc(v)}</code>`).join(' &lt; ')}
+    · designated: <span style="color:var(--green)">${m.designated.map(v=>`<code>${esc(v)}</code>`).join(', ')}</span>
+  </p>
+  <div class="mx-wrap">
+    <div>${unary('not','¬ a')}</div>
+    <div>${binary('imp','a → b')}</div>
+    <div>${binary('and','a ∧ b')}</div>
+    <div>${binary('or','a ∨ b')}</div>
+  </div>`;
+}
+
+/* soundness */
+$('btn-soundness').addEventListener('click', async () => {
+  const logic  = $('snd-logic').value;
+  const matrix = $('snd-matrix').value;
+  let r;
+  try {
+    r = await (await fetch(
+      `/api/soundness?logic=${encodeURIComponent(logic)}&matrix=${encodeURIComponent(matrix)}`
+    )).json();
+  } catch {
+    $('soundness-output').innerHTML = '<p class="api-error">Server unavailable.</p>';
+    return;
+  }
+  renderSoundness(r);
+});
+
+function renderSoundness(r) {
+  const el = $('soundness-output');
+  if (!r.ok) {
+    el.innerHTML = `<div class="api-error">${esc(r.error)}</div>`;
+    return;
+  }
+  const rows = r.rules.map(rule => {
+    let cls = rule.status==='sound' ? 'snd-sound'
+              : rule.status==='unsound' ? 'snd-unsound' : 'snd-skipped';
+    let extra = '';
+    if (rule.counterexample) {
+      const cx = Object.entries(rule.counterexample)
+        .map(([k,v])=>`${esc(k)}=${esc(v)}`).join(', ');
+      extra = ` <span style="color:var(--muted)">· ${cx}</span>`;
+    } else if (rule.reason) {
+      extra = ` <span style="color:var(--muted)">· ${esc(rule.reason)}</span>`;
+    }
+    return `<tr><td>${esc(rule.rule)}</td><td class="${cls}">${esc(rule.status)}${extra}</td></tr>`;
+  }).join('');
+  el.innerHTML = `<p style="font-size:11px;color:var(--muted);margin-bottom:7px">
+    ${esc(r.logic)} rules vs ${esc(r.matrix)} matrix</p>
+  <table class="snd-table">
+    <thead><tr><th>RULE</th><th>STATUS</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* lattice */
+$('btn-lattice').addEventListener('click', runLattice);
+$('lattice-formula').addEventListener('keydown', e => { if(e.key==='Enter') runLattice(); });
+
+async function runLattice() {
+  const formula = $('lattice-formula').value.trim();
+  if (!formula) return;
+  let r;
+  try {
+    r = await (await fetch(`/api/lattice?formula=${encodeURIComponent(formula)}`)).json();
+  } catch {
+    $('lattice-output').innerHTML = '<p class="api-error">Server unavailable.</p>';
+    return;
+  }
+  renderLattice(r);
+}
+
+function renderLattice(r) {
+  const el = $('lattice-output');
+  if (!r.ok) { el.innerHTML = `<div class="api-error">${esc(r.error)}</div>`; return; }
+  const rows = r.rows.map(row => {
+    const axioms = row.axioms.length ? row.axioms.map(a=>esc(a)).join(', ') : '∅';
+    return `<tr>
+      <td>${esc(row.label)}</td>
+      <td>[${axioms}]</td>
+      <td class="lat-${esc(row.status)}">${esc(row.status)}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<p style="font-size:11px;color:var(--muted);margin-bottom:7px">
+    Formula: <b style="color:var(--text)">${esc(r.formula)}</b> · matrix: boolean</p>
+  <table class="lattice-table">
+    <thead><tr><th>WORLD</th><th>AXIOMS</th><th>STATUS</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ════════════════════════════════════════════════════════ init */
+(async function init() {
   renderGutter();
-  await loadExamples();
-  try{ renderSemantics(await (await fetch("/api/demos")).json()); }catch{}
+  await loadSamples();
 })();
 </script>
 </body>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele v[[STELE_VERSION]] — Formal Proof Verification</title>
+<meta name="description"
+  content="Stele formal verification studio — single-file portable edition. All proof checking runs locally in the browser via Pyodide/WASM.">
+<!-- Inline CSS: injected by tools/build_single_html.py -->
+<!-- STELE:CSS -->
+<style>
+/* Single-file extras */
+.sf-notice-bar {
+  padding: 9px 18px;
+  background: rgba(255,179,71,.05);
+  border-bottom: 1px solid rgba(255,179,71,.18);
+  font-size: .74rem;
+  color: var(--amber, #ffb347);
+  display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap;
+}
+.sf-notice-bar strong { color: var(--text, #b8cce0); }
+.sf-notice-dismiss {
+  margin-left: auto; font-size: .7rem; cursor: pointer;
+  color: var(--muted, #46586d); background: none; border: none;
+  padding: 0 4px;
+}
+.sf-notice-dismiss:hover { color: var(--text, #b8cce0); }
+.sf-app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 50px;
+  background: rgba(7,9,15,.95);
+  border-bottom: 1px solid var(--border, #1c2840);
+}
+.sf-brand {
+  font-size: .9rem; font-weight: 700; letter-spacing: .16em;
+  color: var(--cyan, #00e8ff);
+  text-shadow: 0 0 8px rgba(0,232,255,.3);
+  text-decoration: none;
+}
+.sf-meta { font-size: .7rem; color: var(--muted, #46586d); }
+.sf-header-links { display: flex; gap: 10px; font-size: .75rem; }
+.sf-header-links a { color: var(--muted, #46586d); }
+.sf-header-links a:hover { color: var(--text, #b8cce0); }
+.sf-main { max-width: 1200px; margin: 0 auto; padding: 20px 18px 60px; }
+.sf-studio-wrap { margin-top: 6px; }
+.sf-footer {
+  margin-top: 40px; padding-top: 18px;
+  border-top: 1px solid var(--border, #1c2840);
+  font-size: .73rem; color: var(--dim, #283a54);
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+}
+.sf-footer a { color: var(--muted, #46586d); }
+.sf-footer a:hover { color: var(--text, #b8cce0); }
+</style>
+</head>
+<body>
+
+<!-- ── App header ─────────────────────────────────────────────────────────── -->
+<header class="sf-app-header">
+  <div style="display:flex;align-items:baseline;gap:12px">
+    <span class="sf-brand">STELE</span>
+    <span class="sf-meta">v[[STELE_VERSION]] · [[BUILD_DATE]]</span>
+  </div>
+  <div class="sf-header-links">
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub ↗</a>
+    <a href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
+       target="_blank" rel="noopener">Guide ↗</a>
+  </div>
+</header>
+
+<!-- ── File distribution notice ──────────────────────────────────────────── -->
+<div class="sf-notice-bar" id="sf-notice" role="note">
+  <span>
+    <strong>Single-file portable edition</strong>
+    &nbsp;·&nbsp;
+    Stele source is embedded in this file.
+    Pyodide runtime (~8 MB) is loaded from CDN
+    <code style="font-size:.7rem">cdn.jsdelivr.net</code>
+    on first use — an internet connection is required.
+    After that, all proof checking runs locally with no data sent anywhere.
+    &nbsp;·&nbsp;
+    If this file opened via <code style="font-size:.7rem">file://</code> and loading fails,
+    serve it: <code style="font-size:.7rem">python -m http.server --directory . 8000</code>
+  </span>
+  <button class="sf-notice-dismiss" aria-label="Dismiss notice"
+          onclick="document.getElementById('sf-notice').style.display='none'">✕</button>
+</div>
+
+<!-- ── Studio ─────────────────────────────────────────────────────────────── -->
+<main class="sf-main">
+  <div class="sf-studio-wrap">
+
+    <!-- Loading banner -->
+    <div id="studio-loading" class="studio-loading-banner" role="status" aria-live="polite">
+      <div class="studio-loading-inner">
+        <span id="loading-step" class="studio-loading-msg">
+          Loading Pyodide runtime from CDN (~8 MB on first visit)…
+        </span>
+        <div class="loading-bar-wrap">
+          <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <span class="studio-loading-note">
+          All verification runs locally · no data sent to any server
+        </span>
+      </div>
+    </div>
+
+    <!-- Studio chrome -->
+    <div class="studio-chrome" id="studio-chrome">
+
+      <!-- Privacy notice -->
+      <div class="privacy-bar" role="note">
+        <strong>100% local</strong>
+        — All proof checking runs in this browser via Pyodide/WASM.
+        No proof text is transmitted to any server. No backend.
+        <span class="privacy-badge">WASM · LOCAL</span>
+      </div>
+
+      <!-- Status bar -->
+      <div id="status-bar" class="studio-status-bar" style="display:none"></div>
+
+      <!-- Tab bar -->
+      <nav class="tab-bar" role="tablist" aria-label="Studio panels">
+        <button class="tab-btn active" role="tab" aria-selected="true"
+                data-tab="verify">VERIFY</button>
+        <button class="tab-btn" role="tab" aria-selected="false"
+                data-tab="diagnose">DIAGNOSE</button>
+        <button class="tab-btn" role="tab" aria-selected="false"
+                data-tab="graph">GRAPH</button>
+        <button class="tab-btn" role="tab" aria-selected="false"
+                data-tab="semantics">SEMANTICS</button>
+        <button class="tab-btn" role="tab" aria-selected="false"
+                data-tab="examples">EXAMPLES</button>
+      </nav>
+
+      <!-- ── Panels ────────────────────────────────────────────────────────── -->
+      <div class="main">
+
+        <!-- Verify -->
+        <section id="panel-verify" class="panel active" role="tabpanel">
+          <div class="toolbar">
+            <label for="logic-select">Logic:</label>
+            <select id="logic-select">
+              <option value="intuitionistic_prop">Intuitionistic</option>
+              <option value="classical_prop">Classical</option>
+            </select>
+            <button class="btn btn-primary" id="btn-check" data-stele
+                    aria-label="Run proof check (Ctrl+Enter)">
+              ▶ Run Check
+            </button>
+            <span class="kbd-hint">Ctrl+Enter</span>
+          </div>
+
+          <textarea id="proof-input" class="proof-editor"
+                    spellcheck="false" autocomplete="off" autocorrect="off"
+                    aria-label="Proof editor"
+                    placeholder="theorem identity:
+  suppose h: P
+    have h2: P by copy h
+  have r: P -> P by imp_intro h h2
+  conclude P -> P by r"></textarea>
+
+          <div id="check-result" class="result-box" role="status" aria-live="polite"></div>
+
+          <details class="lang-ref">
+            <summary>Language quick reference</summary>
+            <div class="lang-ref-body">
+              <code>theorem NAME [using LOGIC]:</code> theorem header<br>
+              <code>assume LABEL: FORMULA</code> introduce assumption<br>
+              <code>suppose LABEL: FORMULA</code> subproof assumption<br>
+              <code>have LABEL: FORMULA by RULE REFS…</code> derive step<br>
+              <code>conclude FORMULA by LABEL</code> final conclusion<br><br>
+              Rules:
+              <code class="r-i">mp</code>
+              <code class="r-i">copy</code>
+              <code class="r-i">imp_intro</code>
+              <code class="r-i">and_intro</code>
+              <code class="r-i">and_elim_left</code>
+              <code class="r-i">and_elim_right</code>
+              <code class="r-i">or_intro_left</code>
+              <code class="r-i">or_intro_right</code>
+              <code class="r-i">or_elim</code>
+              <code class="r-i">neg_intro</code>
+              <code class="r-i">neg_elim</code>
+              <code class="r-i">ex_falso</code><br>
+              Classical only:
+              <code class="r-c">dne</code>
+              <code class="r-c">lem</code>
+              <code class="r-c">pbc</code>
+            </div>
+          </details>
+        </section>
+
+        <!-- Diagnose -->
+        <section id="panel-diagnose" class="panel" role="tabpanel">
+          <div class="toolbar">
+            <p class="panel-intro">Multi-pass structural analysis of the proof in the Verify panel.</p>
+            <button class="btn btn-primary" id="btn-diagnose" data-stele>▶ Run Diagnostics</button>
+          </div>
+          <div id="diag-result"></div>
+        </section>
+
+        <!-- Graph -->
+        <section id="panel-graph" class="panel" role="tabpanel">
+          <div class="toolbar">
+            <p class="panel-intro">
+              Builds the proof dependency graph and outputs DOT notation.
+              Paste into
+              <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank" rel="noopener">
+                Graphviz Online ↗</a> to visualise.
+            </p>
+            <button class="btn btn-primary" id="btn-graph" data-stele>▶ Build Graph</button>
+          </div>
+          <pre id="graph-dot" class="dot-output" style="display:none"></pre>
+          <div id="graph-nodes" class="graph-nodes"></div>
+        </section>
+
+        <!-- Semantics -->
+        <section id="panel-semantics" class="panel" role="tabpanel">
+          <div class="sem-section">
+            <div class="sem-title">Rule Soundness</div>
+            <div class="toolbar">
+              <label for="sem-logic-select">Logic:</label>
+              <select id="sem-logic-select">
+                <option value="classical_prop">Classical</option>
+                <option value="intuitionistic_prop">Intuitionistic</option>
+              </select>
+              <label for="sem-matrix-select">Matrix:</label>
+              <select id="sem-matrix-select">
+                <option value="K3">K3 (strong Kleene)</option>
+                <option value="LP">LP (Logic of Paradox)</option>
+                <option value="boolean">Boolean (classical)</option>
+              </select>
+              <button class="btn btn-secondary" id="btn-soundness" data-stele>▶ Check Soundness</button>
+            </div>
+            <div id="soundness-result"></div>
+          </div>
+
+          <div class="sem-section">
+            <div class="sem-title">World Lattice</div>
+            <div class="toolbar">
+              <label for="lattice-input">Formula:</label>
+              <input id="lattice-input" type="text" value="P or not P"
+                     class="lattice-input-field" placeholder="e.g. P or not P">
+              <button class="btn btn-secondary" id="btn-lattice" data-stele>▶ Run Lattice</button>
+            </div>
+            <div id="lattice-result"></div>
+          </div>
+        </section>
+
+        <!-- Examples -->
+        <section id="panel-examples" class="panel" role="tabpanel">
+          <p class="panel-intro">
+            Click an example to load it into the Verify editor.
+          </p>
+          <div id="examples-grid" class="example-grid">
+            <p class="dim-text">Loading…</p>
+          </div>
+        </section>
+
+      </div><!-- /.main -->
+    </div><!-- /.studio-chrome -->
+  </div><!-- /.sf-studio-wrap -->
+
+  <!-- Footer -->
+  <footer class="sf-footer">
+    <span><strong>STELE v[[STELE_VERSION]]</strong></span>
+    <span>·</span>
+    <span>Formal Verification Framework for Mathematical Reasoning</span>
+    <span>·</span>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    <span>·</span>
+    <a href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
+       target="_blank" rel="noopener">Guide</a>
+    <span>·</span>
+    <span>Built [[BUILD_DATE]]</span>
+    <span>·</span>
+    <span>Pyodide v[[PYODIDE_VERSION]]</span>
+  </footer>
+</main>
+
+<!-- Embedded Stele source (base64-encoded zip): injected by build_single_html.py -->
+<!-- STELE:ZIP_B64 -->
+
+<!-- Inline JS glue: injected by build_single_html.py -->
+<!-- STELE:JS_GLUE -->
+
+</body>
+</html>

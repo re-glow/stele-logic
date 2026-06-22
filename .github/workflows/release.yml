@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  # ── Executable builds (Windows / macOS / Linux) ────────────────────────────
+  build-exe:
     name: Build ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -36,12 +37,7 @@ jobs:
       - name: Build executable
         run: python packaging/build_app.py --onefile --clean
 
-      - name: Smoke test (Unix)
-        if: runner.os != 'Windows'
-        run: python packaging/smoke_app.py
-
-      - name: Smoke test (Windows)
-        if: runner.os == 'Windows'
+      - name: Smoke test
         run: python packaging/smoke_app.py
 
       - name: Upload artifact (Unix)
@@ -58,4 +54,55 @@ jobs:
         with:
           name: SteleStudio-${{ matrix.os }}
           path: dist/SteleStudio.exe
+          if-no-files-found: error
+
+  # ── Single-file HTML build ─────────────────────────────────────────────────
+  build-html:
+    name: Build stele.html
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Build stele.html
+        run: python tools/build_single_html.py --output dist/stele.html
+
+      - name: Verify stele.html
+        run: |
+          python -c "
+          import pathlib, json, sys
+          html = pathlib.Path('dist/stele.html').read_text(encoding='utf-8')
+          checks = [
+            ('loadPyodide' in html,    'loadPyodide present'),
+            ('__steleZipB64' in html,  'embedded zip present'),
+            ('/api/' not in html,      'no /api/ calls'),
+            ('stele_ml' not in html,   'stele_ml excluded'),
+            ('stele_lean' not in html, 'stele_lean excluded'),
+            ('proof-input' in html,    'proof-input present'),
+          ]
+          failed = [(msg) for ok, msg in checks if not ok]
+          if failed:
+            print('FAILED:', failed)
+            sys.exit(1)
+          size = pathlib.Path('dist/stele.html').stat().st_size // 1024
+          print(f'stele.html OK ({size} KB)')
+          "
+
+      - name: Upload stele.html artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stele.html
+          path: dist/stele.html
           if-no-files-found: error

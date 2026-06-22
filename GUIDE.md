@@ -1178,7 +1178,61 @@ python -m http.server --directory dist/site 8000
 
 ---
 
-## 22. 한계와 다음 단계
+## 22. 단일 파일 배포 (`stele.html`)
+
+Stele 코어 소스를 HTML 파일 하나에 내장한 이식성 높은 배포 형식이다.
+GitHub Pages 사이트와 별개로, 이메일 첨부·USB·개인 폴더 등으로 공유할 수 있다.
+
+### 22.1 빌드
+
+```bash
+python tools/build_single_html.py
+# dist/stele.html (~135 KB) 생성
+```
+
+### 22.2 열기
+
+```bash
+# 더블클릭으로 브라우저에서 열기 (일부 브라우저에서 동작)
+dist/stele.html
+
+# file:// CORS 문제가 발생하면 로컬 서버 사용:
+python -m http.server --directory dist 8000
+# http://localhost:8000/stele.html
+```
+
+### 22.3 배포 형식별 비교
+
+| 항목 | 공개 사이트 | `stele.html` | 독립 실행 앱 | 로컬 Python |
+|------|-------------|--------------|--------------|-------------|
+| 형식 | GitHub Pages 정적 사이트 | HTML 단일 파일 | OS 실행 파일 | Python 스크립트 |
+| Python 필요 | 아니오 | 아니오 | 아니오 | 예 (3.10+) |
+| 인터넷 필요 | 예 (첫 방문) | 예 (CDN, v1) | 아니오 | 아니오 |
+| 설치 필요 | 아니오 | 아니오 | 아니오 | 예 |
+| 빌드 명령 | `build_pyodide_site.py` | `build_single_html.py` | `build_app.py` | — |
+| ML/Lean | 제외 | 제외 | 포함 (선택) | 포함 (선택) |
+| 오프라인 | 첫 방문 후 캐시 | 미지원 (v1) | 예 | 예 |
+
+### 22.4 v1 제약 및 미래 확장
+
+- **v1:** Pyodide 런타임(~8 MB)은 CDN(`cdn.jsdelivr.net`)에서 로드된다. 인터넷 연결 필요.
+- **오프라인 번들 모드:** `--pyodide-local PATH` 플래그로 로컬 Pyodide 자산을 지정할 수 있지만, 자산 다운로드는 직접 해야 한다. 완전 오프라인 단일 파일(CDN 없음)은 v1 범위 밖이다.
+- 참조: [Pyodide 다운로드 및 배포](https://pyodide.org/en/stable/usage/downloading-and-deploying.html)
+
+### 22.5 내부 구조
+
+빌드 스크립트(`tools/build_single_html.py`)가 하는 일:
+1. `site/single_file_template.html` 읽기
+2. `site/assets/stele_site.css`를 `<style>` 블록으로 인라인
+3. Stele 소스 파일을 zip으로 묶어 base64 인코딩
+4. base64 zip을 `window.__steleZipB64`로 삽입
+5. `site/assets/stele-inline.js`를 `<script>` 블록으로 인라인
+6. JS 글루가 `__steleZipB64`를 디코딩해 Pyodide 가상 파일시스템에 언패킹
+7. `stele.browser`를 임포트하고 Studio 기능 활성화
+
+---
+
+## 23. 한계와 다음 단계
 
 - 현재는 **명제논리 + 1차 논리 단편**이다. 전체 1차 논리(함수 기호, 동치 등) 미구현.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

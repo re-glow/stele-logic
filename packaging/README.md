@@ -1,5 +1,11 @@
 # Stele Studio — Packaging
 
+> **Note:** This directory covers only the standalone executable build.
+> For the single-file HTML distribution (`stele.html`), see `tools/build_single_html.py`.
+> For the GitHub Pages browser site, see `tools/build_pyodide_site.py`.
+
+# Stele Studio — Standalone Executable
+
 This directory contains scripts and configuration for building Stele Studio as a standalone executable with [PyInstaller](https://pyinstaller.org/).
 
 ## Quick build

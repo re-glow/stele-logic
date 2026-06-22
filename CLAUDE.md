@@ -17,22 +17,29 @@
 관련 문서: 언어 가이드 `GUIDE.md`, 결정·근거 `DECISIONS.md`, 실행 결과 `RESULTS.md`,
 형식 문법/타입/환원 규칙 `docs/semantics.md`, 메타이론 주장 `docs/metatheory.md`.
 
-## 구조
+## 구조 (v1.0)
 
 ```
 stele/
+  __version__.py  버전 ("1.0.0")
   ast.py      식 표현(연결사 무지 Op) + pretty 출력기
   proof.py    증명 노드(Assume/Have/Suppose/Conclude/Theorem) + MatrixDirective
   parser.py   직접 구현한 토크나이저 + 재귀하강 파서 (의존성 없음)
   logic.py    RuleSchema, Logic, MatrixLogic; 내장 논리 5종
   kernel.py   ★ 신뢰 코어: 1차 구문 매처 + 증명트리 검사 (proof 모드)
+  diagnostics.py  ★ UNTRUSTED 구조적 진단 (신뢰 코어 분리)
+  proofgraph.py   증명 의존성 그래프 + DOT 출력
+  browser.py      Pyodide 브리지 (browser_check/diagnose/graph)
+  errors.py       오류 타입
   matrix.py   다치 의미론: Matrix, K3/LP/boolean + rule_soundness()
   world.py    World(matrix, axioms) + status() + lattice_status()
-  cli.py      check / soundness / lattice / demos
-  web.py      로컬 웹 UI 서버(stdlib http.server)
-  webapp/index.html   단일 파일 프런트엔드
-examples/  *.stele  (증명·행렬·세계)
-tests/     pytest 226개
+  cli.py      check / soundness / lattice / graph / diagnose / elaborate / demos
+  web.py      Stele Studio HTTP 서버(stdlib) + JSON API
+  webapp/index.html   Stele Studio SPA
+  core/       증명항 계산법: terms/typing/reduce/debruijn/fol/term_parser
+examples/  *.stele  (증명·행렬·진단)
+site/      공개 사이트 HTML/CSS/JS (Pyodide, 튜토리얼, 갤러리)
+tests/     pytest 1,298개 수집 (1,294 통과; 4 skipped without Hypothesis)
 ```
 
 ## 실행
@@ -80,23 +87,24 @@ python -m pytest -q                          # Hypothesis 없이도 통과
 - AST·스키마·증명 노드는 frozen dataclass(구조적 동치/해시 필요).
 - 변경 후 항상 `pytest` 통과 확인. 규칙·문법을 바꾸면 대응 테스트와 `examples/` 를 갱신.
 
-## 로드맵 (다음 작업 후보)
+## 릴리스 규율
+
+- 버전 문자열은 `stele/__version__.py`에 있다. 릴리스 전 확인.
+- 태그 생성 전 `docs/release-checklist.md`를 완료할 것.
+- `git tag -a vX.Y.Z -m "Stele vX.Y.Z"` 로 annotated 태그 생성.
+- 태그 push 시 `.github/workflows/release.yml`이 실행파일과 `stele.html`을 빌드.
+
+## 로드맵 (v1.0 이후 다음 작업 후보)
 
 **검증 코어:**
-- 의존성 그래프 추출 (증명 단계 간 의존 관계)
 - 증명 상태 추적 (열린 목표·해소된 가정)
-- 변환 검사 (증명 이동·재구성)
-- 오류 위치추정: 미정의 기호, 타입 불일치, 빠진 가설, 순환 의존성
-
-**벤치마크·평가:**
-- 정리 스타일 벤치마크 작업
-- 실패 모드 분류 체계
-- 회귀 테스트 인프라 확장
+- 오류 진단 강화 (순환 의존성, 더 정밀한 위치 추정)
+- 1차 논리 표면 문법 (Stele-Light에 한정사 추가)
+- 구조 규칙 정책 (약화/축약/교환 선언 → 선형·관련성·초일관 세계)
 
 **선택적 확장 (신뢰 코어 밖):**
-- 비형식 증명 스케치 → 형식 구조 변환 (선택적)
-- ML/SLM 증명검증 보조 (선택적; 커널이 재검사)
-- Lean 브릿지 (고전·직관 단편 한정, 선택적)
+- ML/SLM 증명검증 보조 고도화 (`stele_ml/` 확장, 선택적)
+- Lean 브릿지 고도화 (`stele_lean/` 확장, 선택적)
 - 커널 Rust/OCaml 포팅
 
 ## 비목표

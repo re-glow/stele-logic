@@ -1,1 +1,3 @@
-__all__ = []
+from stele.__version__ import __version__
+
+__all__ = ["__version__"]

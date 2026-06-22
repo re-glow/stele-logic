@@ -131,3 +131,77 @@ def test_lp_paraconsistent_world_gives_both():
     neg = Op("not", (phi,))
     w = World("LP", (phi, neg))
     assert status(phi, w) == BOTH, "LP with axioms {P, not P} must give P status BOTH"
+
+
+# ---------------------------------------------------------------------------
+# Invariant 6: Version file exists and is importable
+# ---------------------------------------------------------------------------
+
+def test_version_string_exists():
+    from stele.__version__ import __version__
+    assert isinstance(__version__, str) and len(__version__) > 0, \
+        "stele.__version__.__version__ must be a non-empty string"
+
+
+def test_version_exposed_on_package():
+    import stele
+    assert hasattr(stele, "__version__"), \
+        "stele.__version__ must be accessible as stele.__version__"
+
+
+# ---------------------------------------------------------------------------
+# Invariant 7: Core modules do not import external runtime packages
+# The trusted stele/ core must depend only on the Python standard library.
+# ---------------------------------------------------------------------------
+
+import ast as _ast
+import pathlib as _pathlib
+
+_REPO_ROOT = _pathlib.Path(__file__).resolve().parent.parent
+_CORE_MODULES = [
+    "stele.ast", "stele.proof", "stele.parser",
+    "stele.logic", "stele.kernel", "stele.matrix",
+    "stele.world", "stele.errors",
+]
+_STDLIB_EXCEPTIONS = {
+    # known stdlib modules that may appear in imports
+    "abc", "ast", "collections", "copy", "dataclasses", "enum", "functools",
+    "itertools", "json", "math", "operator", "pathlib", "re", "sys",
+    "typing", "types", "io", "os", "platform", "struct", "textwrap",
+    "__future__", "stele",  # stele itself is ok
+}
+
+
+def _third_party_imports(module_name: str):
+    """Return set of top-level module names imported that are not stdlib or stele."""
+    import importlib.util
+    spec = importlib.util.find_spec(module_name)
+    if spec is None or spec.origin is None:
+        return set()
+    src = _pathlib.Path(spec.origin).read_text(encoding="utf-8")
+    tree = _ast.parse(src)
+    third_party = set()
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.Import):
+            for alias in node.names:
+                top = alias.name.split(".")[0]
+                if top not in _STDLIB_EXCEPTIONS and not top.startswith("stele"):
+                    third_party.add(top)
+        elif isinstance(node, _ast.ImportFrom):
+            # Relative imports (level > 0) are always within the same package — skip
+            if node.level and node.level > 0:
+                continue
+            if node.module:
+                top = node.module.split(".")[0]
+                if top not in _STDLIB_EXCEPTIONS and not top.startswith("stele") and top != "":
+                    third_party.add(top)
+    return third_party
+
+
+def test_core_modules_have_no_runtime_third_party_deps():
+    for module_name in _CORE_MODULES:
+        found = _third_party_imports(module_name)
+        assert not found, (
+            f"{module_name} imports third-party packages: {found}. "
+            "Core stele modules must depend only on the standard library."
+        )

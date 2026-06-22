@@ -39,14 +39,17 @@ keywords ::= "false" | "not" | "and" | "or"
 
 ### 2.2 공식 문법 (EBNF)
 
+1차 논리 단편(Section 8) 포함 전체 문법:
+
 ```ebnf
-formula     ::= implication
+formula     ::= quantifier | implication
+quantifier  ::= ("forall" | "exists") VAR "." formula
 implication ::= disjunction ("->" implication)?
 disjunction ::= conjunction  ("or" conjunction)*
 conjunction ::= negation     ("and" negation)*
 negation    ::= "not" negation
               | atom
-atom        ::= VAR
+atom        ::= VAR ("(" obj_term ("," obj_term)* ")")?  (* Pred if args present *)
               | "false"
               | "(" formula ")"
 ```
@@ -408,30 +411,138 @@ subst_top(arg, body)       — β-환원 단계: subst(body, 0, arg)
 이동은 항을 새 바인더 아래로 옮길 때 자유 인덱스 참조를 올바르게 유지한다.
 치환은 포착을 구조적으로 회피한다: 바인더를 통과할 때마다 대체항을 1 이동시킨다.
 
-### 7.5 미래 1차 논리 바인더 (예정: Prompt 25B)
+### 7.5 1차 논리 바인더의 de Bruijn 처리 (v2 현황)
 
-현재 de Bruijn 층은 **증명 바인더(proof binders)**만 다룬다(lambda, case 분기).
-1차 논리 한정기호(`forall`/`exists`)가 추가될 때 **객체 바인더(object binders)**가
-별도 인덱스 공간으로 추가될 예정이다:
+1차 논리 단편(Section 8)이 추가되면서 **두 종류의 바인더**가 공존한다.
 
-| 바인더 종류 | 묶는 대상 | 현황 |
-|-------------|-----------|------|
-| 증명 바인더 | 증명항 변수 (lambda, case) | v1 구현됨 |
-| 객체 바인더 | 1차 논리 항 변수 (forall, exists) | Prompt 25B 예정 |
+| 바인더 종류 | 묶는 대상 | de Bruijn 처리 |
+|-------------|-----------|----------------|
+| 증명 바인더 | 증명항 변수 (`Lam`, `Case`, `ExistsElim.proof_var`) | DB 인덱스 |
+| 객체 바인더 | 1차 논리 항 변수 (`ForallIntro`, `ExistsElim.obj_var`) | **이름 유지** |
 
-이 두 바인더는 별도 환경(env)으로 추적되며, 같은 인덱스 번호라도 다른 종류의 변수를 지칭한다.
+v2에서 객체 바인더는 **이름 있는 채로 de Bruijn 층에 전달**된다
+(`DBForallIntro(obj_var: str, body)`, `DBExistsElim(obj_var: str, body)`).
+`to_debruijn`은 증명 바인더만 인덱스로 변환하고, 객체 변수 이름은 보존한다.
+
+`alpha_equiv`는 증명 변수 이름 변경에는 둔감하지만,
+**객체 변수 이름 변경에는 민감하다** (이름이 보존되기 때문).
+공식 수준의 객체 변수 α-동치는 `formula_alpha_equiv_fol` (`stele.core.fol`)로 별도 확인한다.
+
+두 바인더 종류를 모두 de Bruijn 인덱스로 처리하는 `to_debruijn_fol`(분리된 obj_env 환경 사용)은
+v3 예정이다.
 
 ---
 
-## 8. v1 제외 범위
+## 8. 1차 논리 단편 (First-Order Fragment)
+
+`stele.core.fol`, `stele.ast.{Pred, Forall, Exists}`, `stele.core.terms.{ForallIntro, ForallElim, ExistsIntro, ExistsElim}`이 구현하는 직관주의 1차 논리 단편.
+
+### 8.1 객체 항 (Object Terms)
+
+```python
+ObjVar(name: str)   — 객체 변수 (한정기호에 묶이거나 자유로움)
+ObjConst(name: str) — 객체 상수 (치환되지 않음)
+```
+
+파서는 술어 인수를 항상 `ObjVar`로 생성한다. `ObjConst`는 프로그래밍 방식으로 구성한다.
+
+### 8.2 공식 확장
+
+```ebnf
+formula     ::= quantifier | implication      (* 확장된 최상위 규칙 *)
+quantifier  ::= ("forall" | "exists") VAR "." formula
+atom        ::= NAME "(" obj_term ("," obj_term)* ")"  (* Pred — 추가 *)
+              | ...기존 규칙...
+
+obj_term    ::= VAR   (* v1: 파서가 ObjVar로 생성 *)
+```
+
+추가 키워드: `forall`, `exists`. 추가 구두점: `.` (한정기호 구분자), `,` (술어 인수 구분자).
+
+### 8.3 1차 논리 타입 규칙
+
+```
+──────────────────────────────────────────────────────── (ForallIntro / ∀I)
+Γ ⊢ ForallIntro(x, body) : forall x. A
+조건:  Γ ⊢ body : A   and   x ∉ fv_obj(Γ)   (신선도 조건)
+
+
+Γ ⊢ fn : forall x. A
+──────────────────────────────────────────────────────── (ForallElim / ∀E)
+Γ ⊢ ForallElim(fn, a) : A[a/x]
+
+
+                  A = A₀[witness/x]
+Γ ⊢ proof : A     exists_type = Exists(x, A₀)
+──────────────────────────────────────────────────────── (ExistsIntro / ∃I)
+Γ ⊢ ExistsIntro(witness, proof, exists_type) : Exists(x, A₀)
+
+
+Γ ⊢ e : Exists(x, A)     Γ, h:A[obj_var/x] ⊢ body : C     x ∉ fv_obj(C)
+──────────────────────────────────────────────────────── (ExistsElim / ∃E)
+Γ ⊢ ExistsElim(e, obj_var, h, body) : C
+```
+
+`fv_obj(Γ)` = Γ의 모든 타입 공식에 자유로이 나타나는 객체 변수 이름의 집합.
+
+### 8.4 1차 논리 β-환원 규칙
+
+```
+ForallElim(ForallIntro(x, body), a)
+    ↦  subst_obj_in_term(body, x, a)           (β_forall)
+
+ExistsElim(ExistsIntro(a, p, _), x, h, body)
+    ↦  subst_obj_in_term(substitute(body, h, p), x, a)   (β_exists)
+```
+
+`subst_obj_in_term`은 증명항 내부의 공식 어노테이션(var_type, right_type 등)에서
+`x → a` 치환을 수행한다. 포착 회피 처리 포함.
+
+### 8.5 증명항 표면 문법 확장
+
+```ebnf
+term           ::= ... | forall_intro_term | exists_elim_term
+
+forall_intro_term ::= "forall_intro" VAR "=>" term
+
+primary        ::= ... | forall_elim_term | exists_intro_term
+
+forall_elim_term  ::= "forall_elim"  "(" term "," VAR ")"
+exists_intro_term ::= "exists_intro" "(" VAR "," term "," formula ")"
+exists_elim_term  ::= "exists_elim"  "(" term "," VAR "," VAR "," term ")"
+```
+
+**예시:**
+
+```
+forall_intro x => fun h: P(x) => h         -- ForallIntro("x", Lam("h", P(x), TVar("h")))
+forall_elim(t, a)                           -- ForallElim(t, ObjVar("a"))
+exists_intro(a, h, exists x. P(x))         -- ExistsIntro(ObjVar("a"), h, Exists(...))
+exists_elim(e, x, h, h)                    -- ExistsElim(e, "x", "h", TVar("h"))
+```
+
+### 8.6 객체 변수 치환 (`subst_obj`)
+
+공식 수준의 포착 회피 치환 `subst_obj(formula, var_name, replacement)`:
+- `Pred` 인수에서 `ObjVar(var_name)` → `replacement`
+- `Forall`/`Exists` 바인더가 `var_name`을 재묶으면 치환 중단(그림자)
+- 바인더 이름이 `replacement`에 자유로이 나타나면 바인더를 α-재명명
+
+증명항 공식 어노테이션 내의 치환: `subst_obj_in_term(term, var_name, replacement)`.
+
+---
+
+## 9. 제외 범위
 
 | 항목 | 설명 |
 |------|------|
 | 고전 증명항 | `dne`, `lem`, `pbc` 연산자가 필요; 별도 설계 필요 |
 | 제어 연산자 | `callcc`, `shift/reset` 등 |
-| η-환원 | β-정규형 이후 추가 정규화; v1 미구현 |
-| 한정 기호 | 1차 논리 전용; 명제논리 단편 밖 (Prompt 25B 예정) |
-| 의존 타입 | 프로포지션으로서의 타입; 명제논리 단편 밖 |
+| η-환원 | β-정규형 이후 추가 정규화; 미구현 |
+| 동치(`=`) | 1차 논리 동치; 미구현 |
+| 함수 기호 | 술어만 지원; 함수 항(`f(x)`) 미지원 |
 | K3 / LP 증명항 | K3·LP는 의미론 모듈; 증명항 구조 없음 |
 | 증명 탐색 / 자동화 | Stele는 검증기이지 증명기가 아님 |
-| 증명항 → 스크립트 역방향 | v1 미구현 |
+| 의존 타입 | 프로포지션으로서의 타입; 명제논리 단편 밖 |
+| 증명항 → 스크립트 역방향 | 미구현 |
+| 객체 바인더 de Bruijn 인덱스화 | 미구현; `to_debruijn_fol` v3 예정 |

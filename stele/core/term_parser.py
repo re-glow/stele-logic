@@ -41,17 +41,21 @@ Examples
 """
 import re
 from stele.ast import Var as FVar, Op
-from stele.core.terms import TVar, Lam, App, Pair, Fst, Snd, Inl, Inr, Case, Abort
+from stele.core.terms import (TVar, Lam, App, Pair, Fst, Snd, Inl, Inr, Case, Abort,
+                               ForallIntro, ForallElim, ExistsIntro, ExistsElim)
+from stele.core.fol import ObjVar
 
 # ── Tokenizer ────────────────────────────────────────────────────────────────
 
-_TOK = re.compile(r"\s*(=>|->|\(|\)|\||,|:|λ|[A-Za-z_][A-Za-z0-9_]*)")
+_TOK = re.compile(r"\s*(=>|->|\(|\)|\||,|:|\.|λ|[A-Za-z_][A-Za-z0-9_]*)")
 
 _TERM_KWS = frozenset({
     "fun", "case", "of", "inl", "inr", "pair", "fst", "snd", "abort",
     "and", "or", "not", "false",
+    "forall_intro", "forall_elim", "exists_intro", "exists_elim",
+    "forall", "exists",
 })
-_PUNCT = frozenset({"(", ")", "|", ",", ":", "=>", "->", "λ"})
+_PUNCT = frozenset({"(", ")", "|", ",", ":", ".", "=>", "->", "λ"})
 
 
 class TermParseError(Exception):
@@ -111,6 +115,10 @@ class _Parser:
             return self.fun_term()
         if t == "case":
             return self.case_term()
+        if t == "forall_intro":
+            return self.forall_intro_term()
+        if t == "exists_elim":
+            return self.exists_elim_term()
         return self.app_term()
 
     def fun_term(self):
@@ -121,6 +129,28 @@ class _Parser:
         self.expect("=>")
         body = self.term()
         return Lam(var, ty, body)
+
+    def forall_intro_term(self):
+        """forall_intro IDENT => term"""
+        self.adv()          # consume 'forall_intro'
+        obj_var = self.ident()
+        self.expect("=>")
+        body = self.term()
+        return ForallIntro(obj_var, body)
+
+    def exists_elim_term(self):
+        """exists_elim(term, IDENT, IDENT, term)"""
+        self.adv()          # consume 'exists_elim'
+        self.expect("(")
+        scrutinee = self.term()
+        self.expect(",")
+        obj_var = self.ident()
+        self.expect(",")
+        proof_var = self.ident()
+        self.expect(",")
+        body = self.term()
+        self.expect(")")
+        return ExistsElim(scrutinee, obj_var, proof_var, body)
 
     def case_term(self):
         self.adv()                      # consume 'case'
@@ -205,6 +235,26 @@ class _Parser:
             self.expect(")")
             return Abort(ft, target)
 
+        if t == "forall_elim":
+            self.adv()
+            self.expect("(")
+            fn = self.term()
+            self.expect(",")
+            ov = self.ident()
+            self.expect(")")
+            return ForallElim(fn, ObjVar(ov))
+
+        if t == "exists_intro":
+            self.adv()
+            self.expect("(")
+            witness_name = self.ident()
+            self.expect(",")
+            proof = self.term()
+            self.expect(",")
+            et = self.formula_until({")"})
+            self.expect(")")
+            return ExistsIntro(ObjVar(witness_name), proof, et)
+
         # Variable — must be a non-keyword, non-punctuation identifier
         if t is None:
             raise TermParseError("unexpected end of input in term position")
@@ -263,7 +313,8 @@ def _parse_formula_from_toks(toks):
 def parse_term(s):
     """Parse a proof term from a surface syntax string.
 
-    Returns: a Term (TVar | Lam | App | Pair | Fst | Snd | Inl | Inr | Case | Abort)
+    Returns: a Term (TVar | Lam | App | Pair | Fst | Snd | Inl | Inr | Case | Abort |
+                      ForallIntro | ForallElim | ExistsIntro | ExistsElim)
     Raises:  TermParseError on syntax errors
     """
     toks = _tokenize(s)

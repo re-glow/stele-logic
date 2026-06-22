@@ -44,14 +44,17 @@
 | 5 | 코어 일관성 | 증명 스케치 + 생성 테스트 |
 | 6 | 고전 배제 | 구현 불변 + 회귀 테스트 |
 | 7 | 행렬 분리 | 아키텍처 불변 + 정적 임포트 검사 |
+| FOL-1 | ForallIntro/Elim 주체 환원 | 증명 스케치 + 회귀 테스트 |
+| FOL-2 | ExistsElim 신선도 시행 | 회귀 테스트 |
 
 **추가 구현 불변 (섹션 5):**
 
 | 불변 | 위치 |
 |------|------|
 | 이름 있는 API 유지 | `debruijn.py` — 기존 API 비변경 |
-| α-동치 결정 | `alpha_equiv` via de Bruijn |
+| α-동치 결정 | `alpha_equiv` via de Bruijn (증명 변수만) |
 | de Bruijn shift/subst 포착 회피 | 구조적 shift 패턴 |
+| 1차 논리 객체 바인더 이름 유지 | `DBForallIntro`, `DBExistsElim` — obj_var 이름 보존 |
 
 ---
 
@@ -340,18 +343,60 @@ python -m pytest -q
 `DBCase`는 분기 변수 타입을 저장하지 않아 완전한 역변환을 지원하지 않는다.
 α-동치는 `to_debruijn`만으로 결정 가능하므로 `from_debruijn`은 완전한 역함수가 아니어도 무방하다.
 
-### 5.3 미래 1차 논리 바인더
+### 5.3 1차 논리 바인더 de Bruijn 처리 (v2 현황)
 
-1차 논리 `forall`/`exists`가 추가될 때(Prompt 25B 예정):
-- **증명 바인더** (현재): lambda, case 분기 변수 — 증명항 변수를 묶음
-- **객체 바인더** (예정): `forall`/`exists` 하의 1차 논리 항 변수 — 별도 인덱스 공간
+1차 논리 단편이 추가되어 두 종류의 바인더가 공존한다:
+- **증명 바인더** (v1, 완전 구현): `Lam`, `Case` 분기, `ExistsElim.proof_var` — DB 인덱스 사용
+- **객체 바인더** (v2, 이름 유지): `ForallIntro.obj_var`, `ExistsElim.obj_var` — 이름 그대로 유지
 
-두 종류의 바인더는 별도 환경으로 추적되며, 동일한 인덱스 번호라도 다른 종류의 변수를 지칭한다.
-현재 `debruijn.py`는 증명 바인더만 구현한다. 객체 바인더 확장은 현재 미구현이다.
+`DBForallIntro`, `DBForallElim`, `DBExistsIntro`, `DBExistsElim`이 추가되었으나,
+객체 변수 이름은 de Bruijn 인덱스로 변환되지 않는다.
+`alpha_equiv`는 증명 변수 재명명에는 둔감하지만 객체 변수 재명명에는 민감하다.
+공식 수준의 α-동치는 `formula_alpha_equiv_fol`로 별도 확인한다.
+
+두 종류 모두 DB 인덱스로 처리하는 `to_debruijn_fol`은 v3 예정이다.
 
 ---
 
-## 6. 알려진 미검증 영역
+## 6. 1차 논리 단편 주장
+
+| # | 이름 | 상태 |
+|---|------|------|
+| FOL-1 | ForallIntro/Elim 주체 환원 | 증명 스케치 + 회귀 테스트 |
+| FOL-2 | ExistsIntro/Elim 주체 환원 | 회귀 테스트로 지원됨 |
+| FOL-3 | β_forall 타입 보존 | 회귀 테스트: `test_fol.py::test_beta_forall_subject_reduction` |
+| FOL-4 | subst_obj 포착 회피 | 회귀 테스트: `test_fol.py::TestSubstObj::test_forall_capture_avoidance` |
+| FOL-5 | 신선도 조건 시행 | 회귀 테스트: `test_fol.py::TestForallTyping::test_forall_intro_freshness_violation` |
+
+### FOL-1: ForallIntro/Elim 주체 환원
+
+**형식 주장.**
+`Γ ⊢ t : forall x. A`이고 `a`가 객체 항이면,
+`β_forall`: `ForallElim(ForallIntro(x, body), a)` → `subst_obj_in_term(body, x, a)` 결과의 타입은
+`Γ ⊢ subst_obj_in_term(body, x, a) : A[a/x]`이다.
+
+**증명 스케치.**
+`ForallElim`의 타입은 `subst_obj(fn_type.body, fn_type.var, obj_term)`이다.
+`ForallIntro`의 타입은 `Forall(x, body_type)`이다.
+따라서 β 환원 전: `subst_obj(Forall(x, body_type).body, x, a)` = `subst_obj(body_type, x, a)`.
+환원 결과의 타입: `infer(ctx, subst_obj_in_term(body, x, a))` = `subst_obj(body_type, x, a)`.
+일치함(단, 구현 정확성 가정).
+
+**테스트 커버리지.**
+`tests/test_fol.py::TestFOLReduction::test_beta_forall_subject_reduction`
+
+### FOL-2: ExistsElim 신선도 시행
+
+**형식 주장.**
+`ExistsElim(e, x, h, body)` 타입 검사 시, 결과 타입 `C`에 `x`가 자유로이 나타나면
+`TypingError`를 발생시킨다.
+
+**테스트 커버리지.**
+`tests/test_fol.py::TestExistsTyping::test_exists_elim_freshness_violation`
+
+---
+
+## 7. 알려진 미검증 영역
 
 다음은 현재 테스트로 충분히 다루어지지 않은 영역이다.
 
@@ -366,3 +411,7 @@ python -m pytest -q
    모든 입력에서 두 치환이 동치임을 속성 기반으로 확인하지 않았다.
 7. **`from_debruijn` Case 지원:** DBCase의 분기 변수 타입 정보 없이는 역변환 불가.
    타입 컨텍스트를 추가 인자로 받는 확장은 미구현이다.
+8. **1차 논리 β_exists 주체 환원:** `beta_exists` 환원 전후 타입 보존에 대한 속성 테스트 없음.
+9. **객체 바인더 de Bruijn 인덱스화:** `ForallIntro`/`ExistsElim.obj_var`는 이름 유지;
+   이를 DB 인덱스로 처리하는 `to_debruijn_fol`은 미구현.
+10. **subst_obj 포착 회피 완전성:** 현재 대표 사례 테스트만 있음; 속성 기반 확인 없음.

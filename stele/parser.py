@@ -1,10 +1,10 @@
 import re
-from .ast import Var, Op
+from .ast import Var, Op, Pred, Forall, Exists
 from .proof import Assume, Have, Suppose, Conclude, Theorem, MatrixDirective, Definition
 from .errors import ParseError
 
-_TOKEN = re.compile(r"\s*(->|\(|\)|[A-Za-z_][A-Za-z0-9_]*)")
-_OPS = {"->", "(", ")", "and", "or", "not"}
+_TOKEN = re.compile(r"\s*(->|\(|\)|\.|,|[A-Za-z_][A-Za-z0-9_]*)")
+_OPS = {"->", "(", ")", ".", ",", "and", "or", "not", "forall", "exists"}
 
 
 def tokenize(s):
@@ -40,10 +40,27 @@ class _Pratt:
         self.adv()
 
     def parse(self):
-        f = self.imp()
+        f = self.formula()
         if self.peek() is not None:
             raise ParseError(f"unexpected token {self.peek()!r}")
         return f
+
+    def formula(self):
+        """Top-level formula: quantifier or implication chain."""
+        if self.peek() in ("forall", "exists"):
+            return self.quantifier()
+        return self.imp()
+
+    def quantifier(self):
+        """Parse: ('forall'|'exists') IDENT '.' formula"""
+        q = self.adv()
+        t = self.peek()
+        if t is None or t in _OPS:
+            raise ParseError(f"expected an object variable after '{q}', got {t!r}")
+        var = self.adv()
+        self.expect(".")
+        body = self.formula()
+        return Forall(var, body) if q == "forall" else Exists(var, body)
 
     def imp(self):
         left = self.disj()
@@ -76,7 +93,7 @@ class _Pratt:
         t = self.peek()
         if t == "(":
             self.adv()
-            f = self.imp()
+            f = self.formula()
             self.expect(")")
             return f
         if t is None or t in _OPS:
@@ -84,7 +101,32 @@ class _Pratt:
         self.adv()
         if t == "false":
             return Op("bot", ())
+        # Check for predicate application: NAME '(' obj_term, ... ')'
+        if self.peek() == "(":
+            return self._predicate(t)
         return Var(t)
+
+    def _predicate(self, name):
+        """Parse: NAME '(' obj_term (',' obj_term)* ')'"""
+        from .core.fol import ObjVar
+        self.adv()   # consume '('
+        args = []
+        if self.peek() != ")":
+            args.append(self._obj_term())
+            while self.peek() == ",":
+                self.adv()
+                args.append(self._obj_term())
+        self.expect(")")
+        return Pred(name, tuple(args))
+
+    def _obj_term(self):
+        """Parse an object term (identifier only in v1 → ObjVar)."""
+        from .core.fol import ObjVar
+        t = self.peek()
+        if t is None or t in _OPS:
+            raise ParseError(f"expected an object term, got {t!r}")
+        self.adv()
+        return ObjVar(t)
 
 
 def parse_formula(s):

@@ -41,12 +41,14 @@ Design notes
   The proof-term core is an independent layer alongside the rule-schema
   kernel (invariant preserved by the test suite).
 """
-from stele.ast import Var as _FVar, Op, pretty
+from stele.ast import Var as _FVar, Op, Forall, Exists, pretty
 
 from .terms import (TVar, Lam, App,
                     Pair, Fst, Snd,
                     Inl, Inr, Case,
-                    Abort)
+                    Abort,
+                    ForallIntro, ForallElim, ExistsIntro, ExistsElim)
+from .fol import (ObjVar, fol_free_obj_vars, subst_obj)
 
 
 # ---------------------------------------------------------------------------
@@ -91,17 +93,35 @@ def normalize_neg(f):
     Op("imp", (A, Op("bot", ()))).
 
     The original formula AST is not mutated; a new formula is returned.
+    First-order Forall/Exists bodies are also normalised recursively.
     """
     if isinstance(f, Op):
         if f.sym == "not":
             return Op("imp", (normalize_neg(f.args[0]), Op("bot", ())))
         return Op(f.sym, tuple(normalize_neg(a) for a in f.args))
+    if isinstance(f, Forall):
+        return Forall(f.var, normalize_neg(f.body))
+    if isinstance(f, Exists):
+        return Exists(f.var, normalize_neg(f.body))
     return f
 
 
 def _feq(a, b) -> bool:
-    """Formula equality modulo negation normalisation."""
-    return normalize_neg(a) == normalize_neg(b)
+    """Formula equality modulo negation normalisation and quantifier α-equivalence."""
+    a, b = normalize_neg(a), normalize_neg(b)
+    if type(a) != type(b):
+        return False
+    if isinstance(a, Forall):
+        if a.var == b.var:
+            return _feq(a.body, b.body)
+        b_renamed = subst_obj(b.body, b.var, ObjVar(a.var))
+        return _feq(a.body, b_renamed)
+    if isinstance(a, Exists):
+        if a.var == b.var:
+            return _feq(a.body, b.body)
+        b_renamed = subst_obj(b.body, b.var, ObjVar(a.var))
+        return _feq(a.body, b_renamed)
+    return a == b
 
 
 def is_imp(f) -> bool:
@@ -226,6 +246,56 @@ def infer(ctx: Context, term):
         check(ctx, term.false_term, Op("bot", ()))
         return term.target_type
 
+    # ── First-order extension ──────────────────────────────────────────────
+
+    if isinstance(term, ForallIntro):
+        # Freshness: obj_var must not be free in any type in ctx
+        for v, ty in ctx.items():
+            if term.obj_var in fol_free_obj_vars(ty):
+                raise TypingError(
+                    f"forall_intro: object variable '{term.obj_var}' appears "
+                    f"free in the type of context variable '{v}'"
+                )
+        body_ty = infer(ctx, term.body)
+        return Forall(term.obj_var, body_ty)
+
+    if isinstance(term, ForallElim):
+        fn_ty = normalize_neg(infer(ctx, term.fn))
+        if not isinstance(fn_ty, Forall):
+            raise TypingError(
+                f"forall_elim: function must have a universal type, "
+                f"got {pretty(fn_ty)}"
+            )
+        return subst_obj(fn_ty.body, fn_ty.var, term.obj_term)
+
+    if isinstance(term, ExistsIntro):
+        et = normalize_neg(term.exists_type)
+        if not isinstance(et, Exists):
+            raise TypingError(
+                f"exists_intro: type annotation must be an existential type, "
+                f"got {pretty(term.exists_type)}"
+            )
+        expected_proof_ty = subst_obj(et.body, et.var, term.witness)
+        check(ctx, term.proof, expected_proof_ty)
+        return et
+
+    if isinstance(term, ExistsElim):
+        s_ty = normalize_neg(infer(ctx, term.scrutinee))
+        if not isinstance(s_ty, Exists):
+            raise TypingError(
+                f"exists_elim: scrutinee must have an existential type, "
+                f"got {pretty(s_ty)}"
+            )
+        A = subst_obj(s_ty.body, s_ty.var, ObjVar(term.obj_var))
+        extended = extend(ctx, term.proof_var, A)
+        result_ty = infer(extended, term.body)
+        if term.obj_var in fol_free_obj_vars(result_ty):
+            raise TypingError(
+                f"exists_elim: result type depends on bound object variable "
+                f"'{term.obj_var}' (freshness violation)"
+            )
+        return result_ty
+
     raise TypingError(
         f"unknown term constructor: {type(term).__name__}"
     )
@@ -299,6 +369,22 @@ def check(ctx: Context, term, expected_type) -> None:
         A, B = s_ty.args
         check(extend(ctx, term.left_var, A),  term.left_body,  expected_type)
         check(extend(ctx, term.right_var, B), term.right_body, expected_type)
+        return
+
+    # ── ForallIntro checks against forall x. A ──────────────────────────────
+    if isinstance(term, ForallIntro) and isinstance(exp_norm, Forall):
+        for v, ty in ctx.items():
+            if term.obj_var in fol_free_obj_vars(ty):
+                raise TypingError(
+                    f"forall_intro: object variable '{term.obj_var}' appears "
+                    f"free in the type of context variable '{v}'"
+                )
+        if term.obj_var != exp_norm.var:
+            # α-rename expected body to use term.obj_var before checking body
+            renamed_body = subst_obj(exp_norm.body, exp_norm.var, ObjVar(term.obj_var))
+            check(ctx, term.body, renamed_body)
+        else:
+            check(ctx, term.body, exp_norm.body)
         return
 
     # ── Default: synthesise and compare ──────────────────────────────────────

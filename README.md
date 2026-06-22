@@ -7,7 +7,7 @@
 - **이다:** 증명검증기(proof checker) + 다논리 의미론적 진단 플랫폼. 여러 논리를 나란히 비교해 추론 규칙의 건전성·독립성을 진단할 수 있다.
 - **아니다:** 정리증명기(theorem prover). 증명을 탐색하지 않는다.
 
-언어 가이드: `GUIDE.md` · 결정·근거: `DECISIONS.md` · 실행 결과: `RESULTS.md` · 증명항 코어: [`docs/proof-terms.md`](docs/proof-terms.md) · Claude Code 컨텍스트: `CLAUDE.md`
+언어 가이드: `GUIDE.md` · 결정·근거: `DECISIONS.md` · 실행 결과: `RESULTS.md` · 증명항 코어: [`docs/proof-terms.md`](docs/proof-terms.md) · 형식 언어 명세: [`docs/semantics.md`](docs/semantics.md) · 메타이론 현황: [`docs/metatheory.md`](docs/metatheory.md) · Claude Code 컨텍스트: `CLAUDE.md`
 
 ## Quickstart
 

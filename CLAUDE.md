@@ -14,7 +14,8 @@
 
 논리적 다원주의(유리학)는 배경 영감이자 선택적 의미론 모듈의 동기이며, 프로젝트의 일차 정체성이 아니다. 철학적 주장이 아닌 검증 도구로서 독립적으로 평가되어야 한다.
 
-관련 문서: 언어 가이드 `GUIDE.md`, 결정·근거 `DECISIONS.md`, 실행 결과 `RESULTS.md`.
+관련 문서: 언어 가이드 `GUIDE.md`, 결정·근거 `DECISIONS.md`, 실행 결과 `RESULTS.md`,
+형식 문법/타입/환원 규칙 `docs/semantics.md`, 메타이론 주장 `docs/metatheory.md`.
 
 ## 구조
 
@@ -46,6 +47,22 @@ python -m stele.cli soundness --logic classical_prop --matrix K3
 python -m stele.cli lattice "P or Q"
 python -m stele.cli demos
 python -m stele.web        # 브라우저 UI (기본 포트 8765)
+```
+
+## 증명항 코어 메타이론 현황
+
+`stele.core`(proof-term layer)는 `docs/semantics.md`에 형식 문법·타입 규칙·환원 규칙이
+명세되어 있고, `docs/metatheory.md`에 7개 메타이론 주장과 각 테스트 현황이 기록되어 있다.
+
+**중요:** Python 테스트는 메타이론을 기계 증명하지 않는다.
+회귀 테스트와 속성 기반 테스트(optional Hypothesis)는 구현 버그를 포착하는 도구이며,
+수학적 정리의 증명이 아니다. "검증됨"이라는 표현을 피하고 "회귀 테스트로 지원됨"·"증명 스케치" 등을 사용할 것.
+
+속성 기반 테스트는 선택적 dev 의존성이다:
+```bash
+pip install -r requirements-dev.txt          # hypothesis 설치
+python -m pytest tests/test_proof_term_properties.py -v
+python -m pytest -q                          # Hypothesis 없이도 통과
 ```
 
 ## 불변 규칙 (반드시 지킬 것)
@@ -87,3 +104,4 @@ python -m stele.web        # 브라우저 UI (기본 포트 8765)
 - 자동 증명 탐색을 커널에 넣기(검증기 ≠ 증명기; 탐색은 별도/untrusted).
 - 미구현·미측정 ML/코퍼스/정확도를 문서나 README에서 주장하기.
 - 다치/초일관 세계의 Lean export.
+- Python 테스트를 메타이론 기계 증명인 것처럼 주장하기(증거이지 증명이 아님).

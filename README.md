@@ -25,6 +25,8 @@
 Open the hosted site (GitHub Pages — see Actions tab or Settings → Pages) and start verifying proofs immediately.
 The full Stele trusted kernel runs in your browser via Pyodide/WASM. No proof text is sent to any server.
 
+The landing page includes a **5-minute interactive tutorial** (6 guided steps covering the proof format, error diagnosis, dependency graph, classical vs intuitionistic logic, and semantic tools) and a **verified example gallery** (15 curated proofs, each labeled with its expected kernel outcome).
+
 **First-load notice:** Pyodide/WASM is ~8 MB, cached by the browser after the first visit.
 
 **Run the browser build locally:**

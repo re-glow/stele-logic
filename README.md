@@ -9,6 +9,47 @@
 
 언어 가이드: `GUIDE.md` · 결정·근거: `DECISIONS.md` · 실행 결과: `RESULTS.md` · Claude Code 컨텍스트: `CLAUDE.md`
 
+## Quickstart
+
+### 1 — Fastest: Python already installed
+
+```bash
+python -m stele        # launches Stele Studio at http://127.0.0.1:8000
+```
+
+### 2 — Python source install / dev
+
+```bash
+python -m pip install -U pip pytest
+python -m pytest -q              # run the test suite
+python -m stele                  # launch Studio
+```
+
+No runtime dependencies. Requires Python 3.10+.
+
+### 3 — Standalone app (no Python needed)
+
+Download the pre-built executable from [GitHub Actions](../../actions/workflows/release.yml) or a tagged release, then run:
+
+```
+SteleStudio          # macOS / Linux
+SteleStudio.exe      # Windows
+```
+
+The browser opens automatically to the local Studio. No Python, no install.
+
+> **Note:** Stele Studio is a local app — it starts a local server (`127.0.0.1`) and has no cloud backend. There is no hosted website at this time; hosting would require either server-side Python infrastructure or a WASM port of the trusted kernel, which is future work.
+
+### Build the standalone app yourself
+
+```bash
+pip install -r packaging/requirements-packaging.txt
+python packaging/build_app.py --onefile
+# Output: dist/SteleStudio  (or dist/SteleStudio.exe)
+```
+
+---
+
 ## 실행
 
 요구사항: Python 3.10+ (런타임 의존성 없음; 테스트에만 `pytest`)

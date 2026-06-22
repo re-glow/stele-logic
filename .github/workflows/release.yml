@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Install packaging dependencies
+        run: pip install -r packaging/requirements-packaging.txt
+
+      - name: Build executable
+        run: python packaging/build_app.py --onefile --clean
+
+      - name: Smoke test (Unix)
+        if: runner.os != 'Windows'
+        run: python packaging/smoke_app.py
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        run: python packaging/smoke_app.py
+
+      - name: Upload artifact (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteleStudio-${{ matrix.os }}
+          path: dist/SteleStudio
+          if-no-files-found: error
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteleStudio-${{ matrix.os }}
+          path: dist/SteleStudio.exe
+          if-no-files-found: error

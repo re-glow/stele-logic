@@ -21,7 +21,14 @@ from .matrix import (BOOLEAN, K3, LP, is_tautology, entails,
                      negation_fixpoints, evaluate)
 from .ast import Var, Op
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+# In a PyInstaller one-file bundle sys._MEIPASS is the extraction root and data
+# files land at {_MEIPASS}/stele/webapp/.  In normal source execution __file__
+# resolves to the stele/ package directory directly.
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    HERE = os.path.join(sys._MEIPASS, 'stele')
+else:
+    HERE = os.path.dirname(os.path.abspath(__file__))
+
 WEBAPP = os.path.join(HERE, "webapp")
 EXAMPLES = os.path.normpath(os.path.join(HERE, "..", "examples"))
 BENCH_REPORT = os.path.normpath(

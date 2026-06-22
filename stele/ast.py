@@ -12,6 +12,33 @@ class Op:
     args: tuple
 
 
+@dataclass(frozen=True)
+class Pred:
+    """First-order atomic predicate: P(t1, …, tn).
+
+    Propositional variables remain Var.  Pred is used only when explicit
+    object-term arguments are present (args is non-empty in normal use).
+
+    args contains ObjVar / ObjConst instances from stele.core.fol.
+    """
+    name: str
+    args: tuple  # tuple of ObjTerm
+
+
+@dataclass(frozen=True)
+class Forall:
+    """Universal quantification: forall x. A  (first-order)."""
+    var: str      # bound object variable name
+    body: object  # Formula
+
+
+@dataclass(frozen=True)
+class Exists:
+    """Existential quantification: exists x. A  (first-order)."""
+    var: str      # bound object variable name
+    body: object  # Formula
+
+
 _PREC = {"imp": 1, "or": 2, "and": 3, "not": 4}
 _BIN = {"and": "and", "or": "or", "imp": "->"}
 
@@ -23,6 +50,14 @@ def pretty(f):
 def _p(f, parent):
     if isinstance(f, Var):
         return f.name
+    if isinstance(f, Pred):
+        return f.name + "(" + ", ".join(str(a) for a in f.args) + ")"
+    if isinstance(f, Forall):
+        inner = "forall " + f.var + ". " + _p(f.body, 0)
+        return "(" + inner + ")" if parent > 0 else inner
+    if isinstance(f, Exists):
+        inner = "exists " + f.var + ". " + _p(f.body, 0)
+        return "(" + inner + ")" if parent > 0 else inner
     if isinstance(f, Op):
         s = f.sym
         if s == "bot":

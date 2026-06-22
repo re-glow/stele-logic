@@ -73,7 +73,8 @@ binders, tracked by a distinct environment in to_debruijn_fol().  No
 object-level binders are implemented here.
 """
 from dataclasses import dataclass
-from .terms import TVar, Lam, App, Pair, Fst, Snd, Inl, Inr, Case, Abort
+from .terms import (TVar, Lam, App, Pair, Fst, Snd, Inl, Inr, Case, Abort,
+                    ForallIntro, ForallElim, ExistsIntro, ExistsElim)
 
 
 # ---------------------------------------------------------------------------
@@ -157,9 +158,49 @@ class DBAbort:
     target_type: object  # Formula annotation
 
 
+@dataclass(frozen=True)
+class DBForallIntro:
+    """Nameless ForallIntro.
+
+    The object variable is kept NAMED (not indexed): the de Bruijn layer
+    in v1 indexes only proof-variable binders.  Object-variable α-equivalence
+    requires a separate pass via formula_alpha_equiv_fol (stele.core.fol).
+    """
+    obj_var: str   # object variable name (named, not DB-indexed)
+    body: object   # DBTerm  (proof-variable binders within body are indexed)
+
+
+@dataclass(frozen=True)
+class DBForallElim:
+    """Nameless ForallElim.  obj_term is kept named."""
+    fn: object       # DBTerm
+    obj_term: object # ObjTerm (from stele.core.fol)
+
+
+@dataclass(frozen=True)
+class DBExistsIntro:
+    """Nameless ExistsIntro.  witness and exists_type are kept named."""
+    witness: object     # ObjTerm
+    proof: object       # DBTerm
+    exists_type: object # Exists formula (named)
+
+
+@dataclass(frozen=True)
+class DBExistsElim:
+    """Nameless ExistsElim.
+
+    proof_var is a PROOF-variable binder → body uses DBBound(0) for proof_var.
+    obj_var is an OBJECT-variable binder → kept named (not DB-indexed).
+    """
+    scrutinee: object  # DBTerm
+    obj_var: str       # object variable name (named)
+    body: object       # DBTerm  (proof_var → DBBound(0))
+
+
 # Convenience type union for documentation purposes (not enforced at runtime)
 DBTerm = (DBBound, DBFree, DBLam, DBApp, DBPair, DBFst, DBSnd,
-          DBInl, DBInr, DBCase, DBAbort)
+          DBInl, DBInr, DBCase, DBAbort,
+          DBForallIntro, DBForallElim, DBExistsIntro, DBExistsElim)
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +274,26 @@ def to_debruijn(term, env=None):
 
     if isinstance(term, Abort):
         return DBAbort(to_debruijn(term.false_term, env), term.target_type)
+
+    if isinstance(term, ForallIntro):
+        # obj_var is an object binder, not a proof binder; env is unchanged
+        return DBForallIntro(term.obj_var, to_debruijn(term.body, env))
+
+    if isinstance(term, ForallElim):
+        return DBForallElim(to_debruijn(term.fn, env), term.obj_term)
+
+    if isinstance(term, ExistsIntro):
+        return DBExistsIntro(term.witness,
+                             to_debruijn(term.proof, env),
+                             term.exists_type)
+
+    if isinstance(term, ExistsElim):
+        # proof_var is a proof binder → extend env; obj_var stays named
+        return DBExistsElim(
+            to_debruijn(term.scrutinee, env),
+            term.obj_var,
+            to_debruijn(term.body, [term.proof_var] + env),
+        )
 
     raise TypeError(f"to_debruijn: unknown term constructor {type(term).__name__!r}")
 
@@ -340,6 +401,28 @@ def from_debruijn(db_term, env=None):
     if isinstance(db_term, DBAbort):
         return Abort(from_debruijn(db_term.false_term, env), db_term.target_type)
 
+    if isinstance(db_term, DBForallIntro):
+        # obj_var is kept named; env is unchanged for proof variables
+        return ForallIntro(db_term.obj_var, from_debruijn(db_term.body, env))
+
+    if isinstance(db_term, DBForallElim):
+        return ForallElim(from_debruijn(db_term.fn, env), db_term.obj_term)
+
+    if isinstance(db_term, DBExistsIntro):
+        return ExistsIntro(db_term.witness,
+                           from_debruijn(db_term.proof, env),
+                           db_term.exists_type)
+
+    if isinstance(db_term, DBExistsElim):
+        # proof_var was erased into DBBound(0); generate a fresh name
+        fresh = _fresh_name(set(env))
+        return ExistsElim(
+            from_debruijn(db_term.scrutinee, env),
+            db_term.obj_var,
+            fresh,
+            from_debruijn(db_term.body, [fresh] + env),
+        )
+
     raise TypeError(f"from_debruijn: unknown DB term constructor {type(db_term).__name__!r}")
 
 
@@ -411,6 +494,26 @@ def shift(db_term, amount, cutoff=0):
     if isinstance(db_term, DBAbort):
         return DBAbort(shift(db_term.false_term, amount, cutoff),
                        db_term.target_type)
+
+    if isinstance(db_term, DBForallIntro):
+        # obj_var is not a proof binder; cutoff unchanged for proof vars
+        return DBForallIntro(db_term.obj_var, shift(db_term.body, amount, cutoff))
+
+    if isinstance(db_term, DBForallElim):
+        return DBForallElim(shift(db_term.fn, amount, cutoff), db_term.obj_term)
+
+    if isinstance(db_term, DBExistsIntro):
+        return DBExistsIntro(db_term.witness,
+                             shift(db_term.proof, amount, cutoff),
+                             db_term.exists_type)
+
+    if isinstance(db_term, DBExistsElim):
+        # body is under one proof binder (proof_var → DBBound(0))
+        return DBExistsElim(
+            shift(db_term.scrutinee, amount, cutoff),
+            db_term.obj_var,
+            shift(db_term.body, amount, cutoff + 1),
+        )
 
     raise TypeError(f"shift: unknown DB term constructor {type(db_term).__name__!r}")
 
@@ -497,6 +600,28 @@ def subst(db_term, index, replacement):
     if isinstance(db_term, DBAbort):
         return DBAbort(subst(db_term.false_term, index, replacement),
                        db_term.target_type)
+
+    if isinstance(db_term, DBForallIntro):
+        # obj_var is not a proof binder; proof-variable indices unaffected by it
+        return DBForallIntro(db_term.obj_var,
+                             subst(db_term.body, index, replacement))
+
+    if isinstance(db_term, DBForallElim):
+        return DBForallElim(subst(db_term.fn, index, replacement), db_term.obj_term)
+
+    if isinstance(db_term, DBExistsIntro):
+        return DBExistsIntro(db_term.witness,
+                             subst(db_term.proof, index, replacement),
+                             db_term.exists_type)
+
+    if isinstance(db_term, DBExistsElim):
+        # body is under one proof binder; same logic as DBLam / DBCase branch
+        shifted = shift(replacement, 1, 0)
+        return DBExistsElim(
+            subst(db_term.scrutinee, index, replacement),
+            db_term.obj_var,
+            subst(db_term.body, index + 1, shifted),
+        )
 
     raise TypeError(f"subst: unknown DB term constructor {type(db_term).__name__!r}")
 

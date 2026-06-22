@@ -38,7 +38,37 @@ SteleStudio.exe      # Windows
 
 The browser opens automatically to the local Studio. No Python, no install.
 
-> **Note:** Stele Studio is a local app — it starts a local server (`127.0.0.1`) and has no cloud backend. There is no hosted website at this time; hosting would require either server-side Python infrastructure or a WASM port of the trusted kernel, which is future work.
+### 4 — Browser-only (no Python, no install, no backend)
+
+The Stele core is dependency-free Python, which means it can run inside Pyodide/WASM directly in the browser.
+
+**Hosted site (GitHub Pages):**
+See the Actions tab → "Deploy Stele Browser Studio to GitHub Pages" or enable Pages in repository Settings → Pages.
+
+**Local build and serve:**
+```bash
+python tools/build_pyodide_site.py     # produces dist/site/
+python -m http.server --directory dist/site 8000
+# open http://localhost:8000
+```
+
+> **Opening `file://` directly may fail** in some browsers due to CORS on `fetch()`.
+> Use a local HTTP server (`python -m http.server`) for testing.
+
+**What runs in the browser:**
+- Proof checking (full trusted kernel)
+- Structural diagnostics
+- Proof dependency graph
+- Rule soundness checks
+- World lattice / semantic playground
+
+**What is excluded from the browser build:**
+- `stele_ml/` (optional ML baseline)
+- `stele_lean/` (optional Lean bridge)
+- Benchmark runner (`stele.eval`)
+- Tests, packaging scripts, `__pycache__`
+
+**First-load notice:** Pyodide/WASM is ~8 MB. It is cached by the browser after the first visit. All computation runs locally; no proof text is sent to any server.
 
 ### Build the standalone app yourself
 

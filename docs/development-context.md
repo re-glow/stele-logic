@@ -5,6 +5,16 @@
 
 런타임: Python 3.10+, **외부 의존성 0** (테스트: `pytest`; 속성 기반 테스트: `hypothesis`, 선택적).
 
+외부 의존성 0이라는 원칙은 단순한 설계 선택 이상의 실질적 의미를 갖는다:
+Stele 코어는 Pyodide/WASM을 통해 **브라우저에서 직접 실행**할 수 있다.
+`tools/build_pyodide_site.py`가 정적 사이트(`dist/site/`)를 생성하며,
+GitHub Pages 워크플로우(`.github/workflows/pages.yml`)가 자동 배포한다.
+
+**배포 면:**
+- **로컬 Python Studio** (`python -m stele`) — Python 설치 필요, 전 기능
+- **독립 실행 앱** (`packaging/build_app.py`) — Python 불필요, PyInstaller 번들
+- **브라우저 전용 사이트** (`site/`, Pyodide) — Python·설치 불필요, 백엔드 없음, 정적 호스팅
+
 속성 기반 테스트: `pip install -r requirements-dev.txt` 후 `pytest tests/test_proof_term_properties.py`.
 Hypothesis 없이 `python -m pytest -q`는 항상 통과한다.
 

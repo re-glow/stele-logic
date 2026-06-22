@@ -1111,9 +1111,76 @@ if lean_available():
 
 ---
 
-## 21. 한계와 다음 단계
+## 21. 브라우저 전용 Studio (Pyodide)
 
-- 현재는 **명제논리 단편**이다. 1차 논리(한정사)는 미구현 — 로드맵 Phase 6.
+Stele 코어는 외부 의존성이 없기 때문에 Python을 설치하지 않아도 브라우저에서 직접 실행할 수 있다.
+빌드 스크립트는 Stele 소스를 zip으로 묶어 정적 사이트와 함께 배포한다.
+
+### 21.1 로컬 빌드
+
+```bash
+python tools/build_pyodide_site.py    # dist/site/ 생성
+python -m http.server --directory dist/site 8000
+# http://localhost:8000 열기
+```
+
+`file://`로 직접 열면 일부 브라우저에서 fetch CORS 오류가 발생한다. 로컬 서버를 사용할 것.
+
+### 21.2 GitHub Pages 배포
+
+`.github/workflows/pages.yml`이 제공된다. 워크플로우는:
+1. 전체 테스트 스위트(`python -m pytest -q`) 실행 — 실패 시 배포 중단
+2. 정적 사이트 빌드(`python tools/build_pyodide_site.py`)
+3. GitHub Pages 배포
+
+**수동 트리거:** Actions → "Deploy Stele Browser Studio to GitHub Pages" → Run workflow
+
+저장소 Settings → Pages에서 GitHub Actions를 Pages 소스로 설정해야 한다.
+
+### 21.3 브라우저 빌드에서 지원하는 기능
+
+| 기능 | 지원 |
+|------|------|
+| 증명 검증 (trusted kernel) | ✓ |
+| 구조적 진단 | ✓ |
+| 의존성 그래프 (DOT 출력) | ✓ |
+| 규칙 건전성 검사 | ✓ |
+| 세계 격자 | ✓ |
+| 증명항 타입 검사 | ✓ (browser_check는 kernel 호출) |
+
+### 21.4 브라우저 빌드에서 제외된 항목
+
+| 모듈 | 이유 |
+|------|------|
+| `stele_ml/` | 선택적 ML 기준선; 무거운 의존성 |
+| `stele_lean/` | Lean 4 브릿지; 브라우저 환경 미지원 |
+| `stele.eval` | 벤치마크 하네스; 선택적 의존성 |
+| `tests/` | 테스트는 배포 산물이 아님 |
+| `bench/`, `packaging/` | 빌드/평가 도구 |
+
+### 21.5 첫 방문 성능 안내
+
+- Pyodide/WASM은 약 8 MB다. 첫 방문에 다운로드되며 이후에는 브라우저가 캐시한다.
+- 모든 증명 검증은 브라우저 내부에서 로컬로 실행된다.
+- 어떤 증명 텍스트도 서버로 전송되지 않는다.
+- 백엔드가 없다.
+
+### 21.6 로컬 Python Studio와의 차이
+
+| 항목 | 로컬 Studio | 브라우저 Studio |
+|------|-------------|-----------------|
+| 실행 방법 | `python -m stele` | 정적 사이트 / GitHub Pages |
+| Python 필요 | 예 | 아니오 (Pyodide 자동 다운로드) |
+| 파일 저장 | OS 파일시스템 | 없음 (브라우저 내부만) |
+| 오프라인 | 예 | 첫 방문 이후 가능 (캐시) |
+| ML/Lean | 옵션 | 제외됨 |
+| 벤치마크 | 지원 | 제외됨 |
+
+---
+
+## 22. 한계와 다음 단계
+
+- 현재는 **명제논리 + 1차 논리 단편**이다. 전체 1차 논리(함수 기호, 동치 등) 미구현.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).
 - 규칙 건전성 보고(§9)는 비방출 규칙만 다루는 v1이다. 방출 규칙의 의미론적 건전성은 추후 크립키 의미론으로 확장 예정.
 - 전체 설계·단계: `stele_redesign.md`. 결정·근거: `DECISIONS.md`.

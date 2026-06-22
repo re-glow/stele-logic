@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele Studio — Browser</title>
+<meta name="description" content="Stele formal proof checker — runs entirely in your browser via Pyodide/WASM. No backend, no Python install required.">
+<link rel="stylesheet" href="assets/stele_site.css">
+</head>
+<body>
+
+<!-- ── Loading overlay ────────────────────────────────────────────────────── -->
+<div id="loading-overlay" role="status" aria-live="polite" aria-label="Loading Stele">
+  <div class="loading-brand">STELE</div>
+  <div class="loading-sub">
+    Loading the Pyodide/WASM runtime and Stele proof-checker core.
+    This may take a moment on first visit (~8 MB download, then cached).
+    All verification runs locally — no data is sent to any server.
+  </div>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar" id="loading-bar"></div>
+  </div>
+  <div class="loading-step" id="loading-step">Initialising…</div>
+</div>
+
+<!-- ── Studio shell ───────────────────────────────────────────────────────── -->
+<div class="studio">
+
+  <!-- Privacy notice -->
+  <div class="privacy-bar" role="note">
+    <strong>100% local</strong>
+    — All proof checking runs in this browser via Pyodide/WASM.
+    No proof text is transmitted to any server. No backend.
+    <span style="margin-left:auto;color:var(--dim)">Stele browser build</span>
+  </div>
+
+  <!-- Header -->
+  <header class="hud-header">
+    <div class="brand">
+      <div>
+        <div class="brand-name">STELE</div>
+        <div class="brand-tagline">Formal Verification Framework · Browser Edition</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="badge-local">WASM · LOCAL</span>
+    </div>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="tab-bar" role="tablist" aria-label="Studio panels">
+    <button class="tab-btn active" role="tab" aria-selected="true"
+            data-tab="verify"   id="tab-verify">VERIFY</button>
+    <button class="tab-btn"        role="tab" aria-selected="false"
+            data-tab="diagnose" id="tab-diagnose">DIAGNOSE</button>
+    <button class="tab-btn"        role="tab" aria-selected="false"
+            data-tab="graph"    id="tab-graph">GRAPH</button>
+    <button class="tab-btn"        role="tab" aria-selected="false"
+            data-tab="semantics" id="tab-semantics">SEMANTICS</button>
+    <button class="tab-btn"        role="tab" aria-selected="false"
+            data-tab="examples" id="tab-examples">EXAMPLES</button>
+  </nav>
+
+  <!-- Status bar (hidden until ready) -->
+  <div id="status-bar" style="display:none;padding:6px 20px;font-size:.75rem;
+       background:rgba(0,232,255,.06);border-bottom:1px solid var(--border);
+       color:var(--muted)"></div>
+
+  <!-- ── Main panels ──────────────────────────────────────────────────────── -->
+  <main class="main" role="main">
+
+    <!-- ── Panel: Verify ──────────────────────────────────────────────────── -->
+    <section id="panel-verify" class="panel active"
+             aria-labelledby="tab-verify" role="tabpanel">
+
+      <div class="toolbar">
+        <label for="logic-select">Logic:</label>
+        <select id="logic-select" aria-label="Select logic">
+          <option value="intuitionistic_prop">Intuitionistic</option>
+          <option value="classical_prop">Classical</option>
+        </select>
+        <button class="btn btn-primary" id="btn-check" data-stele
+                aria-label="Run proof check (Ctrl+Enter)">
+          ▶ Run Check
+        </button>
+        <span style="font-size:.73rem;color:var(--dim)">Ctrl+Enter</span>
+      </div>
+
+      <textarea id="proof-input" class="proof-editor"
+                spellcheck="false" autocomplete="off" autocorrect="off"
+                aria-label="Proof editor"
+                placeholder="theorem my_theorem:
+  assume h1: P
+  assume h2: P -> Q
+  have h3: Q by mp h2 h1
+  conclude Q by h3"></textarea>
+
+      <div id="check-result" class="result-box" role="status" aria-live="polite"></div>
+
+      <details style="margin-top:18px">
+        <summary style="font-size:.75rem;color:var(--muted);cursor:pointer">
+          Proof language quick reference
+        </summary>
+        <div style="margin-top:10px;font-size:.78rem;color:var(--muted);line-height:1.8">
+          <code style="color:var(--text)">theorem NAME [using LOGIC]:</code> — theorem header<br>
+          <code style="color:var(--text)">assume LABEL: FORMULA</code> — introduce an assumption<br>
+          <code style="color:var(--text)">suppose LABEL: FORMULA</code> — subproof assumption (indented body)<br>
+          <code style="color:var(--text)">have LABEL: FORMULA by RULE REFS…</code> — derive a step<br>
+          <code style="color:var(--text)">conclude FORMULA by LABEL</code> — final conclusion<br>
+          <br>
+          Common rules:
+          <code style="color:var(--cyan)">mp</code> ·
+          <code style="color:var(--cyan)">copy</code> ·
+          <code style="color:var(--cyan)">imp_intro</code> ·
+          <code style="color:var(--cyan)">and_intro</code> ·
+          <code style="color:var(--cyan)">and_elim_left</code> ·
+          <code style="color:var(--cyan)">and_elim_right</code> ·
+          <code style="color:var(--cyan)">or_intro_left</code> ·
+          <code style="color:var(--cyan)">or_intro_right</code> ·
+          <code style="color:var(--cyan)">or_elim</code> ·
+          <code style="color:var(--cyan)">neg_intro</code> ·
+          <code style="color:var(--cyan)">neg_elim</code> ·
+          <code style="color:var(--cyan)">ex_falso</code><br>
+          Classical only:
+          <code style="color:var(--violet)">dne</code> ·
+          <code style="color:var(--violet)">lem</code> ·
+          <code style="color:var(--violet)">pbc</code>
+        </div>
+      </details>
+    </section>
+
+    <!-- ── Panel: Diagnostics ─────────────────────────────────────────────── -->
+    <section id="panel-diagnose" class="panel"
+             aria-labelledby="tab-diagnose" role="tabpanel">
+
+      <div class="toolbar">
+        <p style="font-size:.82rem;color:var(--muted)">
+          Runs multi-pass structural diagnostics on the proof in the Verify panel.
+        </p>
+        <button class="btn btn-primary" id="btn-diagnose" data-stele>
+          ▶ Run Diagnostics
+        </button>
+      </div>
+
+      <div id="diag-result"></div>
+    </section>
+
+    <!-- ── Panel: Graph ───────────────────────────────────────────────────── -->
+    <section id="panel-graph" class="panel"
+             aria-labelledby="tab-graph" role="tabpanel">
+
+      <div class="toolbar">
+        <p style="font-size:.82rem;color:var(--muted)">
+          Builds the proof dependency graph and outputs DOT notation.
+          Paste DOT into <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank"
+          rel="noopener" style="color:var(--cyan)">Graphviz Online</a> to visualise.
+        </p>
+        <button class="btn btn-primary" id="btn-graph" data-stele>
+          ▶ Build Graph
+        </button>
+      </div>
+
+      <pre id="graph-dot" class="dot-output" style="display:none"
+           aria-label="DOT graph output"></pre>
+      <div id="graph-nodes" class="graph-nodes"></div>
+    </section>
+
+    <!-- ── Panel: Semantics ───────────────────────────────────────────────── -->
+    <section id="panel-semantics" class="panel"
+             aria-labelledby="tab-semantics" role="tabpanel">
+
+      <!-- Soundness -->
+      <div class="sem-section">
+        <div class="sem-title">Rule Soundness</div>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">
+          Check whether each inference rule of a proof logic is sound
+          under a semantic matrix.  This is a semantic diagnostic
+          (<strong>⊨</strong>), separate from proof checking (<strong>⊢</strong>).
+        </p>
+        <div class="toolbar">
+          <label for="sem-logic-select">Proof logic:</label>
+          <select id="sem-logic-select">
+            <option value="classical_prop">Classical</option>
+            <option value="intuitionistic_prop">Intuitionistic</option>
+          </select>
+          <label for="sem-matrix-select">Matrix:</label>
+          <select id="sem-matrix-select">
+            <option value="K3">K3 (strong Kleene)</option>
+            <option value="LP">LP (Logic of Paradox)</option>
+            <option value="boolean">Boolean (classical)</option>
+          </select>
+          <button class="btn btn-secondary" id="btn-soundness" data-stele>
+            ▶ Check Soundness
+          </button>
+        </div>
+        <div id="soundness-result"></div>
+      </div>
+
+      <!-- Lattice -->
+      <div class="sem-section">
+        <div class="sem-title">World Lattice (CH-Style Independence)</div>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">
+          Checks a formula's semantic status across three worlds (Γ, Γ+φ, Γ+¬φ)
+          demonstrating proposition-level independence patterns.
+          This is a toy analogue of forcing, not set-theoretic independence.
+        </p>
+        <div class="toolbar">
+          <label for="lattice-input">Formula:</label>
+          <input id="lattice-input" type="text" value="P or not P"
+                 style="flex:1;min-width:140px;background:var(--surf2);
+                        color:var(--text);border:1px solid var(--border);
+                        border-radius:4px;padding:6px 10px;
+                        font-family:var(--mono);font-size:.82rem"
+                 aria-label="Formula for lattice query"
+                 placeholder="e.g. P or not P">
+          <button class="btn btn-secondary" id="btn-lattice" data-stele>
+            ▶ Run Lattice
+          </button>
+        </div>
+        <div id="lattice-result"></div>
+      </div>
+    </section>
+
+    <!-- ── Panel: Examples ────────────────────────────────────────────────── -->
+    <section id="panel-examples" class="panel"
+             aria-labelledby="tab-examples" role="tabpanel">
+
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:6px">
+        Click an example to load it into the Verify editor.
+        Try switching the logic between <em>Intuitionistic</em> and <em>Classical</em>
+        to observe how the same proof is accepted or rejected.
+      </p>
+
+      <div id="examples-grid" class="example-grid">
+        <p style="color:var(--dim)">Loading examples…</p>
+      </div>
+    </section>
+
+  </main><!-- /.main -->
+
+  <footer>
+    <p>
+      Stele · formal verification framework ·
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;·&nbsp;
+      Browser build runs entirely in Pyodide/WASM — no server, no data transmission.
+      Local Python Studio: <code>python -m stele</code>
+    </p>
+  </footer>
+
+</div><!-- /.studio -->
+
+<script src="assets/stele-pyodide.js"></script>
+</body>
+</html>

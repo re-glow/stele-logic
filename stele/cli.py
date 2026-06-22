@@ -326,6 +326,27 @@ def cmd_term_check(term_str, type_str, infer_mode):
         return 1
 
 
+def cmd_term_normalize(term_str):
+    """Normalize a proof term to its beta-normal form."""
+    from .core.term_parser import parse_term, TermParseError
+    from .core.reduce import normalize, is_normal, ReductionError
+    from .elaborate import pretty_term
+
+    try:
+        term = parse_term(term_str)
+    except TermParseError as e:
+        print(f"X Term parse error: {e}")
+        return 1
+
+    try:
+        normal = normalize(term)
+        print(f"OK {pretty_term(normal)}")
+        return 0
+    except ReductionError as e:
+        print(f"X Reduction error: {e}")
+        return 1
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     ap = argparse.ArgumentParser(prog="stele")
@@ -392,6 +413,13 @@ def main(argv=None):
     tc.add_argument("--infer", dest="infer_mode", action="store_true",
                     help="infer the term's type instead of checking against --type")
 
+    tn = sub.add_parser(
+        "term-normalize",
+        help="beta-normalize a proof term to its normal form",
+    )
+    tn.add_argument("--term", required=True,
+                    help="proof term in surface syntax, e.g. 'fst(pair(x, y))'")
+
     args = ap.parse_args(argv)
     if args.cmd == "check":
         return cmd_check(args.file, args.logic)
@@ -409,6 +437,8 @@ def main(argv=None):
         return cmd_elaborate(args.file, args.logic)
     if args.cmd == "term-check":
         return cmd_term_check(args.term, args.type_str, args.infer_mode)
+    if args.cmd == "term-normalize":
+        return cmd_term_normalize(args.term)
     return 2
 
 

@@ -1,0 +1,12 @@
+# elaborate_disjunction.stele
+# Disjunction commutativity: P or Q |- Q or P
+# Elaborates to a Case expression (or_elim) with Inr/Inl branches.
+# Run: python -m stele.cli elaborate examples/elaborate_disjunction.stele
+theorem elaborate_disjunction:
+  assume h1: P or Q
+  suppose h2: P
+    have h3: Q or P by or_intro_right h2
+  suppose h4: Q
+    have h5: Q or P by or_intro_left h4
+  have h6: Q or P by or_elim h1 h2 h3 h4 h5
+  conclude Q or P by h6

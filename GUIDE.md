@@ -2,7 +2,10 @@
 
 Stele-Light는 자연연역 증명을 **사람이 읽을 수 있게** 적는 표면 언어다. 커널은 정리증명기가 아니라 **검증기**다 — 당신이 단계를 명시하면, 커널은 각 단계가 *선언된 논리 세계*에서 유효한 규칙 인스턴스인지만 판정한다.
 
-증명항 계산법(Curry–Howard) 레이어: [`docs/proof-terms.md`](docs/proof-terms.md)
+증명항 계산법(Curry–Howard) 레이어 및 스크립트 정교화: [`docs/proof-terms.md`](docs/proof-terms.md)
+
+Stele now has a proof-term core and an elaboration path from supported proof scripts into typed proof terms.  
+CLI: `python -m stele.cli elaborate FILE` · `python -m stele.cli term-check --term TERM --type TYPE`
 
 ---
 

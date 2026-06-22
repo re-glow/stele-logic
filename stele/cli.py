@@ -240,6 +240,92 @@ def cmd_demos():
     return 0
 
 
+def cmd_elaborate(path, logic):
+    """Elaborate a proof script into a proof term and typecheck it."""
+    from .elaborate import crosscheck_theorem, pretty_term, ElaborationError
+    from .ast import pretty as pretty_formula
+    from .errors import ParseError
+
+    text = open(path, encoding="utf-8").read()
+    try:
+        thm = parse_theorem(text)
+    except ParseError as e:
+        loc = f" (line {e.line})" if getattr(e, "line", None) else ""
+        print(f"X Parse error{loc}: {e}")
+        return 1
+
+    logic_name = logic or thm.logic or "intuitionistic_prop"
+    result = crosscheck_theorem(thm, logic_name)
+
+    print(f"elaborate  [{thm.name} | logic: {logic_name}]")
+
+    tag = "OK" if result.script_ok else "X"
+    print(f"  script check:  {tag}")
+    if result.script_error:
+        print(f"    {result.script_error}")
+
+    if result.script_ok:
+        tag = "OK" if result.elaboration_ok else "X"
+        print(f"  elaboration:   {tag}")
+        if result.elab_error:
+            print(f"    {result.elab_error}")
+
+    if result.elaboration_ok:
+        tag = "OK" if result.typecheck_ok else "X"
+        print(f"  term typecheck:{tag}")
+        if result.type_error:
+            print(f"    {result.type_error}")
+        if result.term is not None:
+            print(f"  proof term:    {pretty_term(result.term)}")
+
+    return 0 if result.ok else 1
+
+
+def cmd_term_check(term_str, type_str, infer_mode):
+    """Parse and typecheck (or infer the type of) a surface proof term."""
+    from .core.term_parser import parse_term, TermParseError
+    from .core.typing import infer as term_infer, check as term_check, TypingError
+    from .ast import pretty as pretty_formula
+    from .errors import ParseError
+    from .parser import parse_formula
+
+    # Parse the term
+    try:
+        term = parse_term(term_str)
+    except TermParseError as e:
+        print(f"X Term parse error: {e}")
+        return 1
+
+    ctx = {}  # empty context — term must be closed
+
+    if infer_mode:
+        try:
+            ty = term_infer(ctx, term)
+            print(f"OK inferred type: {pretty_formula(ty)}")
+            return 0
+        except TypingError as e:
+            print(f"X Type error: {e}")
+            return 1
+
+    if not type_str:
+        print("X --type is required (or use --infer)")
+        return 1
+
+    try:
+        expected = parse_formula(type_str)
+    except ParseError as e:
+        print(f"X Formula parse error: {e}")
+        return 1
+
+    try:
+        term_check(ctx, term, expected)
+        print(f"OK term checks as {pretty_formula(expected)}")
+        return 0
+    except TypingError as e:
+        print(f"X Type error: {e}")
+        return 1
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     ap = argparse.ArgumentParser(prog="stele")
@@ -284,6 +370,28 @@ def main(argv=None):
 
     sub.add_parser("demos", help="run the many-valued semantics demonstrations")
 
+    el = sub.add_parser(
+        "elaborate",
+        help="elaborate a proof script into a proof term and typecheck it",
+    )
+    el.add_argument("file")
+    el.add_argument(
+        "--logic", default=None,
+        help="proof logic to verify against (default: theorem's 'using' clause "
+             "or intuitionistic_prop)",
+    )
+
+    tc = sub.add_parser(
+        "term-check",
+        help="parse and typecheck (or infer the type of) a proof term",
+    )
+    tc.add_argument("--term", required=True,
+                    help="proof term in surface syntax, e.g. 'fun x: A => x'")
+    tc.add_argument("--type", dest="type_str", default=None,
+                    help="expected formula type, e.g. 'A -> A'")
+    tc.add_argument("--infer", dest="infer_mode", action="store_true",
+                    help="infer the term's type instead of checking against --type")
+
     args = ap.parse_args(argv)
     if args.cmd == "check":
         return cmd_check(args.file, args.logic)
@@ -297,6 +405,10 @@ def main(argv=None):
         return cmd_diagnose(args.file, args.logic)
     if args.cmd == "demos":
         return cmd_demos()
+    if args.cmd == "elaborate":
+        return cmd_elaborate(args.file, args.logic)
+    if args.cmd == "term-check":
+        return cmd_term_check(args.term, args.type_str, args.infer_mode)
     return 2
 
 

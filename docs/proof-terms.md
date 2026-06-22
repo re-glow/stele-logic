@@ -256,9 +256,100 @@ except TypingError as e:
 
 기존 증명 스크립트 검사기(`check_theorem`)는 그대로 유지된다. 증명항 코어는 **추가** 레이어이며 기존 동작을 바꾸지 않는다.
 
-### 미래 작업
+---
 
-향후 Stele-Light 증명 스크립트를 증명항으로 정교화(elaboration)하는 것은 이 v1의 범위 밖이다. 이 경우 각 `have ... by rule ...` 단계를 대응 증명항 생성자로 변환하는 정교화기가 필요하다.
+## 7a. 스크립트 정교화(elaboration) — v2
+
+> **Stele now has a proof-term core and an elaboration path from supported proof scripts into typed proof terms.**
+
+`stele.elaborate` 모듈은 직관주의 단편의 Stele-Light 증명 스크립트를 증명항으로 정교화한다.
+
+### 지원 규칙 → 증명항 생성자 대응
+
+| 증명 규칙 | 증명항 생성자 |
+|-----------|--------------|
+| `assume` / `suppose` | `TVar` |
+| `copy` | 변수 재사용 |
+| `mp` | `App` |
+| `imp_intro` | `Lam` |
+| `and_intro` | `Pair` |
+| `and_elim_left` | `Fst` |
+| `and_elim_right` | `Snd` |
+| `or_intro_left` | `Inl` |
+| `or_intro_right` | `Inr` |
+| `or_elim` | `Case` |
+| `ex_falso` | `Abort` |
+| `neg_intro` | `Lam` (not A = A → false) |
+| `neg_elim` | `App` (not A = A → false) |
+
+### 미지원 규칙 (고전)
+
+`dne`, `lem`, `pbc`는 `ElaborationError`를 발생시킨다. 고전 증명항은 별도의 제어 연산자/이중부정 번역 설계가 필요하다.
+
+### 상호 검증 (`crosscheck_theorem`)
+
+```python
+from stele.elaborate import crosscheck_theorem
+
+result = crosscheck_theorem(thm, logic_name="intuitionistic_prop")
+# result.script_ok      — 커널이 스크립트를 허가했는가?
+# result.elaboration_ok — 스크립트가 증명항으로 정교화되었는가?
+# result.typecheck_ok   — 증명항이 결론 공식에 대해 타입 검사를 통과했는가?
+# result.ok             — 세 조건 모두 참인가?
+```
+
+`crosscheck_theorem`은 기존 커널 검사를 대체하지 않는다. 두 방향의 일관성 확인이다:
+1. 규칙 스키마 커널이 스크립트를 허가
+2. 정교화된 증명항이 결론에 대해 타입 검사를 통과
+
+---
+
+## 7b. 증명항 표면 문법 및 CLI
+
+### 표면 문법 요약 (`stele.core.term_parser`)
+
+```
+fun x: A => body           람다 추상 (또는 λ x: A => body)
+f(a)                        함수 적용 (f에 a를 적용)
+f(a)(b)                     연쇄 적용 (좌결합)
+pair(a, b)                  논리곱 도입
+fst(t)                      논리곱 제거 (왼쪽)
+snd(t)                      논리곱 제거 (오른쪽)
+inl(t, B)                   논리합 도입 (왼쪽); B는 오른쪽 타입 어노테이션
+inr(t, A)                   논리합 도입 (오른쪽); A는 왼쪽 타입 어노테이션
+case e of inl x => u | inr y => v   논리합 제거
+abort(t, C)                 거짓 제거; C는 목표 타입 어노테이션
+```
+
+타입 어노테이션(`:` 뒤 또는 `inl`/`inr`/`abort`의 두 번째 인자)에는 기존 공식 문법(`->`, `and`, `or`, `not`, `false`, 괄호)이 그대로 적용된다.
+
+### `term-check` CLI
+
+```bash
+# 증명항이 타입 A -> A를 갖는지 검사
+python -m stele.cli term-check --term "fun x: A => x" --type "A -> A"
+
+# 증명항의 타입을 추론
+python -m stele.cli term-check --term "fun x: A => x" --infer
+```
+
+### `elaborate` CLI
+
+```bash
+# 증명 스크립트를 정교화하고 결과를 보고
+python -m stele.cli elaborate examples/elaborate_identity.stele
+python -m stele.cli elaborate examples/elaborate_disjunction.stele
+python -m stele.cli elaborate examples/dne.stele --logic classical_prop
+```
+
+출력 예시:
+```
+elaborate  [elaborate_identity | logic: intuitionistic_prop]
+  script check:  OK
+  elaboration:   OK
+  term typecheck:OK
+  proof term:    fun h1: P => h1
+```
 
 ---
 
@@ -269,5 +360,5 @@ except TypingError as e:
 | 고전 증명항 (dne, lem, pbc) | 제어 연산자 또는 이중부정 번역이 필요; 별도 설계 예정 |
 | K3 / LP 다치 증명항 | K3·LP는 의미론 모듈; 증명항 계산법이 아님 |
 | 증명 탐색 / 정규화 | 검증기 ≠ 증명기; Stele의 핵심 정체성 밖 |
-| 증명항 표면 언어 (파서) | 미구현 — 항은 Python에서 직접 조립 |
+| 증명항 표면 언어 → 스크립트 역방향 | v1에서 미구현; 미래 작업 |
 | 한정 기호, 의존 타입 | 명제논리 단편 밖 |

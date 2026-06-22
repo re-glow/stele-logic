@@ -3,7 +3,10 @@
 이 문서는 Stele Logic System을 Claude Code로 이어받기 위한 압축 핸드오프다.
 보강 문서: 설계 `stele_redesign.md`, 언어 `GUIDE.md`, 결정 `DECISIONS.md`, 결과 `RESULTS.md`, 운영 규칙 `CLAUDE.md`.
 
-런타임: Python 3.10+, **외부 의존성 0** (테스트만 `pytest`).
+런타임: Python 3.10+, **외부 의존성 0** (테스트: `pytest`; 속성 기반 테스트: `hypothesis`, 선택적).
+
+속성 기반 테스트: `pip install -r requirements-dev.txt` 후 `pytest tests/test_proof_term_properties.py`.
+Hypothesis 없이 `python -m pytest -q`는 항상 통과한다.
 
 ---
 
@@ -16,7 +19,7 @@
 
 ---
 
-## 2. 이미 구현된 것 (215개 테스트 통과)
+## 2. 이미 구현된 것 (888개 테스트 통과, Hypothesis 포함)
 
 ```
 stele/
@@ -36,9 +39,20 @@ stele/
 examples/  proof: dne, dne_law, valid_*, invalid_*, peirce, lem, neg_intro, or_elim, ...
            matrix: matrix_k3.stele, matrix_lp.stele, matrix_boolean.stele
            world: world_ch_style.py
+stele/core/   terms.py / typing.py / reduce.py / term_parser.py
+              — 증명항 계산법: TVar/Lam/App/Pair/Fst/Snd/Inl/Inr/Case/Abort
+              — 양방향 타입 검사(infer/check) + β-환원(step/normalize/is_normal)
+              — 표면 문법 파서(parse_term)
+stele/elaborate.py  — 스크립트 → 증명항 정교화(crosscheck_theorem)
+docs/semantics.md   — 형식 문법(BNF/EBNF) + 타입 규칙 + 환원 규칙 참조 명세
+docs/metatheory.md  — 7개 메타이론 주장과 현황(주체 환원·정규화·합류성·일관성 등)
+docs/proof-terms.md — 증명항 API + 정교화 가이드 + CLI 사용법
 tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
            conclusion_directed / new_rules / generalized_discharge / discharge_rules
            classical_principles / matrix_surface / rule_soundness / world / world_lattice
+           test_proof_terms / test_elaboration / test_reduction
+           test_proof_term_properties (선택적, Hypothesis 필요)
+           test_docs_and_deps
 ```
 
 - **proof 모드 공통 규칙:**

@@ -6,6 +6,7 @@ rule-schema kernel.  It does not replace or modify the trusted kernel.
 Public API:
     terms   — proof term constructors (TVar, Lam, App, Pair, ...)
     typing  — bidirectional typechecking (infer, check, TypingError)
+    reduce  — beta-reduction (free_vars, substitute, step, normalize, is_normal)
 """
 from .terms import (
     TVar, Lam, App,
@@ -19,6 +20,9 @@ from .typing import (
     Context, empty_ctx, extend,
     normalize_neg, is_imp, is_and, is_or, is_false, mk_not,
 )
+from .reduce import (
+    free_vars, substitute, step, normalize, is_normal, ReductionError,
+)
 
 __all__ = [
     "TVar", "Lam", "App",
@@ -29,4 +33,5 @@ __all__ = [
     "TypingError",
     "Context", "empty_ctx", "extend",
     "normalize_neg", "is_imp", "is_and", "is_or", "is_false", "mk_not",
+    "free_vars", "substitute", "step", "normalize", "is_normal", "ReductionError",
 ]

@@ -353,12 +353,100 @@ elaborate  [elaborate_identity | logic: intuitionistic_prop]
 
 ---
 
-## 8. 제외 범위 (재확인)
+## 8. β-환원과 정규화 — v3
+
+`stele/core/reduce.py`는 증명항의 β-환원과 정규화를 제공한다.
+
+### 환원 규칙
+
+| 이름 | 패턴 | 환원 결과 |
+|------|------|----------|
+| β_imp | `App(Lam(x, A, body), arg)` | `body[arg/x]` |
+| β_fst | `Fst(Pair(a, b))` | `a` |
+| β_snd | `Snd(Pair(a, b))` | `b` |
+| β_case_l | `Case(Inl(a, _), x, lb, y, rb)` | `lb[a/x]` |
+| β_case_r | `Case(Inr(b, _), x, lb, y, rb)` | `rb[b/y]` |
+
+각 규칙은 순차 계산에서 **절단 제거(cut elimination)**에 대응한다. η-환원은 v1에서 미구현이다.
+
+### 포착 회피 치환 (capture-avoiding substitution)
+
+`substitute(term, x, replacement)`는 `term[replacement/x]`를 계산한다.
+
+- **그림자(shadowing):** 바인더가 `x`를 재바인드하면 그 이하에 치환하지 않는다.
+- **포착 회피:** 바인더의 바운드 이름이 `replacement`의 자유 변수에 속하면 알파 재명명(alpha-rename)한다. 새 이름은 `NAME_0`, `NAME_1`, … 형식으로 생성한다.
+
+### 전략: 최좌-최외 (leftmost-outermost / normal order)
+
+`step(term)` 함수는 한 번의 β-환원 단계를 수행한다.
+
+- 복합 노드에서 가장 바깥 환원 쌍(redex)을 먼저 시도한다.
+- 헤드 환원 쌍이 없으면 왼쪽→오른쪽 순으로 부분항을 재귀 탐색한다.
+- 환원 쌍이 없으면 `None`을 반환한다(정규형).
+
+이 전략은 결정적이며, 단순 타입 직관주의 단편에서 유일한 β-정규형에 도달한다.
+
+### API
+
+```python
+from stele.core.reduce import free_vars, substitute, step, normalize, is_normal, ReductionError
+
+# 자유 변수
+free_vars(Lam("x", A, App(TVar("x"), TVar("y"))))  # {"y"}
+
+# 한 단계 환원
+step(App(Lam("x", A, TVar("x")), TVar("a")))  # TVar("a")
+step(Fst(Pair(TVar("a"), TVar("b"))))          # TVar("a")
+step(TVar("x"))                                # None  (이미 정규형)
+
+# 정규화
+normalize(App(Lam("x", A, TVar("x")), TVar("a")))          # TVar("a")
+normalize(Fst(Pair(Fst(Pair(TVar("a"), TVar("b"))), TVar("c"))))  # TVar("a")
+
+# 정규형 확인
+is_normal(TVar("x"))                                        # True
+is_normal(App(Lam("x", A, TVar("x")), TVar("a")))          # False
+
+# 연료 소진 시 예외
+try:
+    normalize(big_term, fuel=10)
+except ReductionError:
+    ...
+```
+
+`stele.core.__init__`도 이 심볼들을 재내보낸다.
+
+### `term-normalize` CLI
+
+```bash
+# 증명항을 β-정규형으로 환원
+python -m stele.cli term-normalize --term "fst(pair(x, y))"
+# OK x
+
+python -m stele.cli term-normalize --term "fun x: A => fst(pair(x, x))"
+# OK fun x: A => x
+```
+
+### 메타이론 관계 (주의사항)
+
+| 성질 | 상태 |
+|------|------|
+| 단순 타입 직관주의 단편의 강한 정규화 | 표준 메타정리로 알려짐 (기계 검증 안 됨) |
+| 합류성(confluence) | 교회-로서 정리로 알려짐; 회귀 테스트(`test_reduction.py::TestConfluence`)는 특정 사례만 확인 |
+| 주체 환원(subject reduction) | 회귀 테스트(`test_reduction.py::TestSubjectReduction`)가 각 β-규칙을 확인; 기계 증명 아님 |
+| 일관성(consistency) | 연기 테스트(`TestConsistency`)가 빈 컨텍스트에서 도입 규칙만으로 `false`를 증명할 수 없음을 확인; 기계 증명 아님 |
+
+연기 테스트는 구현 버그를 포착하는 회귀 테스트이며, 형식 증명이 아니다.
+
+---
+
+## 9. 제외 범위 (재확인)
 
 | 항목 | 이유 |
 |------|------|
 | 고전 증명항 (dne, lem, pbc) | 제어 연산자 또는 이중부정 번역이 필요; 별도 설계 예정 |
 | K3 / LP 다치 증명항 | K3·LP는 의미론 모듈; 증명항 계산법이 아님 |
-| 증명 탐색 / 정규화 | 검증기 ≠ 증명기; Stele의 핵심 정체성 밖 |
+| 증명 탐색 | 검증기 ≠ 증명기; Stele의 핵심 정체성 밖 |
+| η-환원 | v1에서 미구현; 미래 작업 후보 |
 | 증명항 표면 언어 → 스크립트 역방향 | v1에서 미구현; 미래 작업 |
 | 한정 기호, 의존 타입 | 명제논리 단편 밖 |

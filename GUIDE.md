@@ -9,6 +9,31 @@ CLI: `python -m stele.cli elaborate FILE` · `python -m stele.cli term-check --t
 
 ---
 
+## 0. 처음 5분 (First five minutes)
+
+The hosted site has a **5-minute interactive tutorial** with 6 guided steps and a **verified example gallery** with 15 curated proofs. Use them to learn the proof format before reading this guide.
+
+**Tutorial steps (browser site):**
+
+| Step | Topic |
+|------|-------|
+| 1 | The proof format — `theorem`, `assume`, `suppose`, `have`, `conclude` |
+| 2 | Catch an error — type mismatch in `mp`, Diagnose panel |
+| 3 | Dependency graph — DOT output, Graphviz Online |
+| 4 | Classical vs intuitionistic — same proof, different logics |
+| 5 | Semantic tools — ⊢ vs ⊨, rule soundness, world lattice |
+| 6 | What's next — docs, gallery, distribution modes |
+
+**Example gallery categories:**
+
+- `basics` — 7 valid intuitionistic proofs (imp_self, and, neg_intro, ex_falso, or_comm, imp_chain, neg_elim)
+- `classical` — 3 classical-only proofs (dne, lem, peirce) that fail under intuitionistic logic
+- `diagnostics` — 5 error/warning cases (type mismatch, scope error, unused assumption, undefined symbol, wrong conclusion)
+
+All 15 gallery entries are honesty-tested: expected labels (`pass`/`fail`/`warn`) are verified against the actual kernel on every CI run via `tests/test_gallery.py`.
+
+---
+
 ## 1. 한눈에 보기
 
 ```

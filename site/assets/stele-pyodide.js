@@ -7,7 +7,7 @@
  *   3. Import stele.browser inside Pyodide.
  *   4. Expose wrapper functions: check, diagnose, graph, soundness, lattice, examples.
  *   5. Manage loading state in the Studio section (not a full-page overlay).
- *   6. Expose window.stele.loadPreset() for the gallery section.
+ *   6. Expose window.stele.loadPreset() for the gallery/tutorial sections.
  *
  * No backend API calls are made anywhere in this file.
  * All computation runs locally in the browser via Pyodide/WASM.
@@ -27,6 +27,238 @@ const STELE_ZIP = "./stele_source.zip";
 
 let pyodide = null;
 let steleReady = false;
+
+// ── Gallery data ───────────────────────────────────────────────────────────
+// Mirrors site/examples_gallery.json — source of truth for tests.
+
+const GALLERY_ENTRIES = [
+  {
+    id: "imp_self",
+    title: "Identity (P → P)",
+    description: "The simplest intuitionistic proof: from hypothesis P derive P → P using imp_intro to discharge the suppose block.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem imp_self:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P -> P by imp_intro h1 h2
+  conclude P -> P by h3`,
+  },
+  {
+    id: "and_demo",
+    title: "Conjunction Intro & Elim",
+    description: "Introduce P ∧ Q with and_intro, then extract each component with and_elim_left and and_elim_right.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem and_demo:
+  assume h1: P
+  assume h2: Q
+  have h3: P and Q by and_intro h1 h2
+  have h4: P by and_elim_left h3
+  have h5: Q by and_elim_right h3
+  conclude Q by h5`,
+  },
+  {
+    id: "neg_intro",
+    title: "Negation Introduction",
+    description: "Prove ¬(P ∧ ¬P) by assuming P ∧ ¬P, extracting both parts, deriving ⊥, then closing with neg_intro.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem neg_intro_demo:
+  suppose h1: P and not P
+    have h2: P by and_elim_left h1
+    have h3: not P by and_elim_right h1
+    have h4: false by neg_elim h2 h3
+  have h5: not (P and not P) by neg_intro h1 h4
+  conclude not (P and not P) by h5`,
+  },
+  {
+    id: "ex_falso",
+    title: "Ex Falso Quodlibet",
+    description: "From P and ¬P derive ⊥, then prove any formula Q by ex_falso. A contradiction entails everything.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem ex_falso_demo:
+  assume h1: P
+  assume h2: not P
+  have h3: false by neg_elim h1 h2
+  have h4: Q by ex_falso h3
+  conclude Q by h4`,
+  },
+  {
+    id: "or_comm",
+    title: "Disjunction Commutativity",
+    description: "From P ∨ Q derive Q ∨ P using or_elim with two suppose blocks, each closing with an or_intro step.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem or_comm:
+  assume h1: P or Q
+  suppose h2: P
+    have h3: Q or P by or_intro_right h2
+  suppose h4: Q
+    have h5: Q or P by or_intro_left h4
+  have h6: Q or P by or_elim h1 h2 h3 h4 h5
+  conclude Q or P by h6`,
+  },
+  {
+    id: "imp_chain",
+    title: "Hypothetical Syllogism",
+    description: "From P→Q, Q→R, and P, derive R by chaining two modus ponens steps. Valid in both logics.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem chain:
+  assume h1: P -> Q
+  assume h2: Q -> R
+  assume h3: P
+  have h4: Q by mp h1 h3
+  have h5: R by mp h2 h4
+  conclude R by h5`,
+  },
+  {
+    id: "neg_elim",
+    title: "Negation Elimination",
+    description: "From P and ¬P derive ⊥ directly using neg_elim. The fundamental law of contradiction.",
+    logic: "intuitionistic_prop",
+    category: "basics",
+    expected: "pass",
+    logic_note: null,
+    proof: `theorem neg_elim_demo:
+  assume h1: P
+  assume h2: not P
+  have h3: false by neg_elim h1 h2
+  conclude false by h3`,
+  },
+  {
+    id: "dne",
+    title: "Double Negation Elimination",
+    description: "¬¬P → P using the dne rule. Accepted by classical logic, rejected by intuitionistic — switch the logic to see the difference.",
+    logic: "classical_prop",
+    category: "classical",
+    expected: "pass",
+    logic_note: "classical only",
+    proof: `theorem dne_consequent:
+  assume h1: not not P
+  have h2: P by dne h1
+  conclude P by h2`,
+  },
+  {
+    id: "lem",
+    title: "Law of Excluded Middle",
+    description: "P ∨ ¬P using the lem rule. A hallmark of classical logic — not derivable intuitionistically.",
+    logic: "classical_prop",
+    category: "classical",
+    expected: "pass",
+    logic_note: "classical only",
+    proof: `theorem lem_demo using classical_prop:
+  have h: P or not P by lem
+  conclude P or not P by h`,
+  },
+  {
+    id: "peirce",
+    title: "Peirce's Law",
+    description: "((P→Q)→P)→P — a classical tautology with a complex nested proof using proof by contradiction (pbc).",
+    logic: "classical_prop",
+    category: "classical",
+    expected: "pass",
+    logic_note: "classical only",
+    proof: `theorem peirce using classical_prop:
+  suppose h: (P -> Q) -> P
+    suppose hnp: not P
+      suppose hp: P
+        have hbot: false by neg_elim hp hnp
+        have hq: Q by ex_falso hbot
+      have hpq: P -> Q by imp_intro hp hq
+      have hp2: P by mp h hpq
+      have hbot2: false by neg_elim hp2 hnp
+    have hp3: P by pbc hnp hbot2
+  have h_thm: ((P -> Q) -> P) -> P by imp_intro h hp3
+  conclude ((P -> Q) -> P) -> P by h_thm`,
+  },
+  {
+    id: "invalid_mp",
+    title: "Type Mismatch (error)",
+    description: "mp requires the second premise to match the antecedent of the implication. h1 is P→Q but h2 is R, not P — InvalidTransition error.",
+    logic: "intuitionistic_prop",
+    category: "diagnostics",
+    expected: "fail",
+    logic_note: null,
+    proof: `theorem bad_mp:
+  assume h1: P -> Q
+  assume h2: R
+  have h3: Q by mp h1 h2
+  conclude Q by h3`,
+  },
+  {
+    id: "invalid_scope",
+    title: "Scope Error (error)",
+    description: "Hypothesis h2 introduced inside a suppose block is used after the block closes. Discharged hypotheses are out of scope.",
+    logic: "intuitionistic_prop",
+    category: "diagnostics",
+    expected: "fail",
+    logic_note: null,
+    proof: `theorem leak:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P by copy h2
+  conclude P by h3`,
+  },
+  {
+    id: "diag_unused",
+    title: "Unused Assumption (warning)",
+    description: "Assumption h2 is declared but never contributes to the conclusion. The kernel accepts the proof; diagnostics report an UnusedAssumption warning.",
+    logic: "intuitionistic_prop",
+    category: "diagnostics",
+    expected: "warn",
+    logic_note: null,
+    proof: `theorem diag_unused:
+  assume h1: P
+  assume h2: Q
+  conclude P by h1`,
+  },
+  {
+    id: "diag_undef",
+    title: "Undefined Symbol (error)",
+    description: "mp references 'missing', which is never introduced. The kernel reports UndefinedSymbol with an exact location.",
+    logic: "intuitionistic_prop",
+    category: "diagnostics",
+    expected: "fail",
+    logic_note: null,
+    proof: `theorem diag_undef:
+  assume h1: P -> Q
+  assume h2: P
+  have h3: Q by mp h1 missing
+  conclude Q by h3`,
+  },
+  {
+    id: "diag_conclusion",
+    title: "Wrong Conclusion (error)",
+    description: "The conclude step claims Q but h1 holds P — a formula mismatch. The kernel reports UnsupportedConclusion.",
+    logic: "intuitionistic_prop",
+    category: "diagnostics",
+    expected: "fail",
+    logic_note: null,
+    proof: `theorem diag_conclusion:
+  assume h1: P
+  conclude Q by h1`,
+  },
+];
+
+// ── Tutorial state ─────────────────────────────────────────────────────────
+
+let currentTutorialStep = 1;
+const TOTAL_TUTORIAL_STEPS = 6;
 
 // ── Loading UI ────────────────────────────────────────────────────────────
 
@@ -359,6 +591,57 @@ function loadExampleCard(card) {
   showStatus("info", `Loaded: ${fn}`);
 }
 
+// ── Gallery rendering (no Pyodide required) ────────────────────────────────
+
+function renderGallery() {
+  const grid = document.getElementById("gallery-grid");
+  if (!grid) return;
+
+  const cards = GALLERY_ENTRIES.map(entry => {
+    const tagClass = entry.category === "classical" ? "tag-classical"
+                   : entry.category === "diagnostics" ? "tag-diag"
+                   : "tag-valid";
+    const tagText = entry.category === "classical" ? "Classical only"
+                  : entry.category === "diagnostics" ? "Diagnostic"
+                  : "Intuitionistic";
+    const expClass = entry.expected === "pass" ? "gcard-exp-pass"
+                   : entry.expected === "warn" ? "gcard-exp-warn"
+                   : "gcard-exp-fail";
+    const expText = entry.expected === "pass" ? "✓ Valid"
+                  : entry.expected === "warn" ? "⚠ Warning"
+                  : "✗ Error";
+
+    const lines = entry.proof.split("\n");
+    const preview = lines.slice(0, 6).join("\n") + (lines.length > 6 ? "\n  …" : "");
+
+    return `<article class="gallery-card" aria-label="${esc(entry.title)}">
+      <div class="gcard-header">
+        <span class="gcard-tag ${tagClass}">${tagText}</span>
+        <span class="gcard-expected ${expClass}">${expText}</span>
+      </div>
+      <h3 class="gcard-title">${esc(entry.title)}</h3>
+      <p class="gcard-desc">${esc(entry.description)}</p>
+      <pre class="gcard-code" aria-hidden="true">${esc(preview)}</pre>
+      <button class="btn btn-ghost gcard-btn gcard-load-btn"
+              data-proof="${esc(entry.proof)}"
+              data-logic="${esc(entry.logic)}"
+              aria-label="Load ${esc(entry.title)} in Studio">
+        Load in Studio ↑
+      </button>
+    </article>`;
+  }).join("");
+
+  grid.innerHTML = cards;
+
+  grid.querySelectorAll(".gcard-load-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const proof = btn.dataset.proof;
+      const logic = btn.dataset.logic;
+      if (proof) loadPreset(proof, logic || "intuitionistic_prop");
+    });
+  });
+}
+
 // ── Gallery preset loader (global) ─────────────────────────────────────────
 
 function setEditorContent(proof, logic) {
@@ -373,9 +656,8 @@ function setEditorContent(proof, logic) {
 }
 
 /**
- * loadPreset(proof, logic) — called from gallery "Load & Try" buttons.
- * Loads the proof into the Verify editor, scrolls to the Studio section,
- * and auto-runs the check if Stele is already ready.
+ * loadPreset — called from gallery "Load in Studio" buttons.
+ * Loads proof, scrolls to Studio, auto-runs check if ready.
  */
 function loadPreset(proof, logic) {
   setEditorContent(proof, logic);
@@ -389,8 +671,55 @@ function loadPreset(proof, logic) {
   }
 }
 
-// Expose globally so gallery onclick handlers and external scripts can call it
-window.stele = { loadPreset, runCheck, activateTab };
+/**
+ * loadTutorialPreset — called from tutorial "Try in Studio" buttons.
+ * Loads proof, sets logic, activates the specified panel tab, scrolls to Studio,
+ * and auto-runs the appropriate action if Stele is already ready.
+ */
+function loadTutorialPreset(proof, logic, tab) {
+  if (proof) setEditorContent(proof, logic);
+  const studio = document.getElementById("studio");
+  if (studio) studio.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (tab) setTimeout(() => activateTab(tab), 300);
+
+  if (steleReady && proof) {
+    const delay = 700;
+    if (!tab || tab === "verify") setTimeout(runCheck, delay);
+    else if (tab === "diagnose") setTimeout(runDiagnose, delay);
+    else if (tab === "graph") setTimeout(runGraph, delay);
+  } else if (proof) {
+    showStatus("info", "Proof loaded — click the button in the Studio once Stele finishes loading.");
+  }
+}
+
+// ── Tutorial navigation ────────────────────────────────────────────────────
+
+function showTutorialStep(n) {
+  if (n < 1 || n > TOTAL_TUTORIAL_STEPS) return;
+  currentTutorialStep = n;
+
+  for (let i = 1; i <= TOTAL_TUTORIAL_STEPS; i++) {
+    const step = document.getElementById("tstep-" + i);
+    if (step) step.classList.toggle("active", i === n);
+  }
+
+  document.querySelectorAll(".tut-dot").forEach(dot => {
+    const stepNum = parseInt(dot.dataset.step, 10);
+    dot.classList.toggle("active", stepNum === n);
+    dot.setAttribute("aria-current", stepNum === n ? "true" : "false");
+  });
+
+  const counter = document.getElementById("tut-counter");
+  if (counter) counter.textContent = `Step ${n} of ${TOTAL_TUTORIAL_STEPS}`;
+
+  const prev = document.getElementById("tut-prev");
+  const next = document.getElementById("tut-next");
+  if (prev) prev.disabled = n <= 1;
+  if (next) {
+    next.disabled = n >= TOTAL_TUTORIAL_STEPS;
+    next.textContent = n >= TOTAL_TUTORIAL_STEPS ? "Done ✓" : "Next →";
+  }
+}
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
@@ -411,16 +740,49 @@ document.addEventListener("DOMContentLoaded", () => {
   bind("btn-soundness", runSoundness);
   bind("btn-lattice",   runLattice);
 
-  // Gallery "Load & Try" buttons
+  // Legacy gallery "Load & Try" buttons (hardcoded in HTML, if any)
   document.querySelectorAll(".gcard-btn").forEach(btn => {
+    if (!btn.classList.contains("gcard-load-btn")) {
+      btn.addEventListener("click", () => {
+        const proof = btn.dataset.proof;
+        const logic = btn.dataset.logic;
+        if (proof) loadPreset(proof, logic || "intuitionistic_prop");
+      });
+    }
+  });
+
+  // Tutorial dot buttons
+  document.querySelectorAll(".tut-dot").forEach(dot => {
+    dot.addEventListener("click", () => showTutorialStep(parseInt(dot.dataset.step, 10)));
+  });
+
+  // Tutorial prev/next
+  const prevBtn = document.getElementById("tut-prev");
+  const nextBtn = document.getElementById("tut-next");
+  if (prevBtn) prevBtn.addEventListener("click", () => showTutorialStep(currentTutorialStep - 1));
+  if (nextBtn) nextBtn.addEventListener("click", () => showTutorialStep(currentTutorialStep + 1));
+
+  // Tutorial "Load & run" buttons
+  document.querySelectorAll(".tut-load-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const proof = btn.dataset.proof;
-      const logic = btn.dataset.logic;
-      if (proof) loadPreset(proof, logic || "intuitionistic_prop");
+      const proof = btn.dataset.proof || null;
+      const logic = btn.dataset.logic || "intuitionistic_prop";
+      const tab   = btn.dataset.tab   || "verify";
+      loadTutorialPreset(proof, logic, tab);
     });
   });
 
-  // Ctrl+Enter in proof editor → run check
+  // Tutorial "open tab" buttons (no proof loading, just navigate)
+  document.querySelectorAll(".tut-open-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.tab;
+      const studio = document.getElementById("studio");
+      if (studio) studio.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (tab) setTimeout(() => activateTab(tab), 300);
+    });
+  });
+
+  // Ctrl+Enter in proof editor
   const editor = document.getElementById("proof-input");
   if (editor) {
     editor.addEventListener("keydown", e => {
@@ -433,6 +795,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Disable Studio buttons until Pyodide is ready
   setButtonsEnabled(false);
 
+  // Render gallery immediately (uses GALLERY_ENTRIES, no Pyodide needed)
+  renderGallery();
+
+  // Initialise tutorial nav state
+  showTutorialStep(1);
+
   // Start Pyodide initialisation in the background
   initStele();
 });
+
+// Expose globally for gallery/tutorial onclick handlers and external scripts
+window.stele = { loadPreset, loadTutorialPreset, runCheck, activateTab };

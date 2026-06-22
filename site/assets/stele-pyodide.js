@@ -2,32 +2,33 @@
  * stele-pyodide.js — Pyodide glue for the Stele browser Studio.
  *
  * Architecture:
- *   1. Load Pyodide from the pinned CDN (several MB, first visit only).
+ *   1. Load Pyodide from the pinned CDN.
  *   2. Fetch stele_source.zip and extract into Pyodide's virtual filesystem.
  *   3. Import stele.browser inside Pyodide.
  *   4. Expose wrapper functions: check, diagnose, graph, soundness, lattice, examples.
- *   5. Manage loading state and disable/enable UI elements.
+ *   5. Manage loading state in the Studio section (not a full-page overlay).
+ *   6. Expose window.stele.loadPreset() for the gallery section.
  *
- * IMPORTANT: No backend API calls are made anywhere in this file.
- *            All computation runs locally in the browser via Pyodide/WASM.
- *            No proof text is sent to any server.
+ * No backend API calls are made anywhere in this file.
+ * All computation runs locally in the browser via Pyodide/WASM.
+ * No proof text is sent to any server.
  */
 
 "use strict";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────
 
 const PYODIDE_CDN =
   "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js";
 
 const STELE_ZIP = "./stele_source.zip";
 
-// ── State ────────────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────
 
 let pyodide = null;
 let steleReady = false;
 
-// ── Loading UI helpers ───────────────────────────────────────────────────────
+// ── Loading UI ────────────────────────────────────────────────────────────
 
 function setLoadingStep(msg) {
   const el = document.getElementById("loading-step");
@@ -39,11 +40,11 @@ function setLoadingBar(pct) {
   if (bar) bar.style.width = Math.min(100, pct) + "%";
 }
 
-function hideLoadingOverlay() {
-  const el = document.getElementById("loading-overlay");
+function hideLoadingBanner() {
+  const el = document.getElementById("studio-loading");
   if (el) {
     el.classList.add("hidden");
-    setTimeout(() => { el.style.display = "none"; }, 400);
+    setTimeout(() => { el.style.display = "none"; }, 450);
   }
 }
 
@@ -53,7 +54,7 @@ function setButtonsEnabled(enabled) {
   });
 }
 
-// ── Pyodide bootstrap ────────────────────────────────────────────────────────
+// ── Pyodide bootstrap ──────────────────────────────────────────────────────
 
 async function loadPyodideScript() {
   return new Promise((resolve, reject) => {
@@ -61,7 +62,8 @@ async function loadPyodideScript() {
     const script = document.createElement("script");
     script.src = PYODIDE_CDN;
     script.onload = resolve;
-    script.onerror = () => reject(new Error("Failed to load Pyodide from CDN. Check your internet connection."));
+    script.onerror = () =>
+      reject(new Error("Failed to load Pyodide from CDN. Check internet connection."));
     document.head.appendChild(script);
   });
 }
@@ -81,7 +83,8 @@ async function initStele() {
     setLoadingStep("Fetching Stele source bundle…");
     setLoadingBar(55);
     const resp = await fetch(STELE_ZIP);
-    if (!resp.ok) throw new Error(`Failed to fetch ${STELE_ZIP}: ${resp.status} ${resp.statusText}`);
+    if (!resp.ok)
+      throw new Error(`Failed to fetch ${STELE_ZIP}: ${resp.status} ${resp.statusText}`);
     const buf = await resp.arrayBuffer();
 
     setLoadingStep("Extracting Stele modules into virtual filesystem…");
@@ -96,9 +99,9 @@ async function initStele() {
     setLoadingBar(100);
     steleReady = true;
 
-    hideLoadingOverlay();
+    hideLoadingBanner();
     setButtonsEnabled(true);
-    showStatus("ready", "Stele loaded. All verification runs locally in this browser.");
+    showStatus("ready", "Stele loaded — all verification runs locally in this browser.");
 
     await loadExamples();
   } catch (err) {
@@ -108,242 +111,214 @@ async function initStele() {
   }
 }
 
-// ── Python call helpers ──────────────────────────────────────────────────────
-
-async function callPython(code) {
-  if (!steleReady) throw new Error("Stele is not ready yet.");
-  const result = await pyodide.runPythonAsync(code);
-  return JSON.parse(result);
-}
+// ── Python call helpers ────────────────────────────────────────────────────
 
 async function callBrowser(fn, args) {
-  // Set args as Pyodide globals to avoid injection
+  if (!steleReady) throw new Error("Stele is not ready yet.");
   for (const [k, v] of Object.entries(args)) {
     pyodide.globals.set("_arg_" + k, v);
   }
   const argList = Object.keys(args).map(k => "_arg_" + k).join(", ");
   const code = `import json; json.dumps(_sb.${fn}(${argList}))`;
-  return callPython(code);
+  const raw = await pyodide.runPythonAsync(code);
+  return JSON.parse(raw);
 }
 
-// ── Status bar ───────────────────────────────────────────────────────────────
+// ── Status bar ─────────────────────────────────────────────────────────────
 
 function showStatus(kind, msg) {
   const bar = document.getElementById("status-bar");
   if (!bar) return;
   bar.textContent = msg;
-  bar.className = "status-bar status-" + kind;
+  bar.className = "studio-status-bar";
   bar.style.display = "block";
+  if (kind === "error") bar.style.color = "var(--red)";
+  else if (kind === "ready") bar.style.color = "var(--green)";
+  else bar.style.color = "";
 }
 
-// ── Tab navigation ───────────────────────────────────────────────────────────
+// ── Tab navigation ─────────────────────────────────────────────────────────
 
 function activateTab(tabId) {
   document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.tab === tabId);
-    btn.setAttribute("aria-selected", btn.dataset.tab === tabId ? "true" : "false");
+    const active = btn.dataset.tab === tabId;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
   });
   document.querySelectorAll(".panel").forEach(panel => {
     panel.classList.toggle("active", panel.id === "panel-" + tabId);
   });
 }
 
-// ── Result rendering ─────────────────────────────────────────────────────────
+// ── HTML escaping ──────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// ── Result rendering ───────────────────────────────────────────────────────
 
 function showResult(elId, html, kind) {
   const el = document.getElementById(elId);
   if (!el) return;
   el.innerHTML = html;
-  el.className = "result-box show result-" + (kind || "info");
+  el.className = "result-box show" + (kind ? " result-" + kind : "");
 }
 
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-// ── Panel: Verify ────────────────────────────────────────────────────────────
+// ── Panel: Verify ──────────────────────────────────────────────────────────
 
 async function runCheck() {
   const source = document.getElementById("proof-input").value.trim();
-  const logic = document.getElementById("logic-select").value;
+  const logic  = document.getElementById("logic-select").value;
   if (!source) { showResult("check-result", "Enter a proof above.", "info"); return; }
 
   showResult("check-result", "Checking…", "info");
   try {
     const r = await callBrowser("browser_check", { proof_text: source, logic });
     if (r.ok) {
-      showResult(
-        "check-result",
-        `✓ Valid  |  theorem: <strong>${escHtml(r.name)}</strong>  |  logic: ${escHtml(r.logic)}`,
-        "ok"
-      );
+      showResult("check-result",
+        `✓ Valid  |  theorem: <strong>${esc(r.name)}</strong>  |  logic: ${esc(r.logic)}`,
+        "ok");
     } else {
       const line = r.line ? ` (line ${r.line})` : "";
-      showResult("check-result", `✗ ${escHtml(r.kind || "error")}${line}: ${escHtml(r.error)}`, "err");
+      showResult("check-result",
+        `✗ ${esc(r.kind || "error")}${line}: ${esc(r.error)}`, "err");
     }
   } catch (e) {
-    showResult("check-result", "Internal error: " + escHtml(e.message), "err");
+    showResult("check-result", "Internal error: " + esc(e.message), "err");
   }
 }
 
-// ── Panel: Diagnostics ───────────────────────────────────────────────────────
+// ── Panel: Diagnostics ──────────────────────────────────────────────────────
 
 async function runDiagnose() {
   const source = document.getElementById("proof-input").value.trim();
-  const logic = document.getElementById("logic-select").value;
-  if (!source) { document.getElementById("diag-result").innerHTML = "<p style='color:var(--muted)'>Enter a proof in the Verify panel first.</p>"; return; }
+  const logic  = document.getElementById("logic-select").value;
+  const out    = document.getElementById("diag-result");
+  if (!source) { out.innerHTML = `<p class="dim-text">Enter a proof in the Verify panel first.</p>`; return; }
 
-  document.getElementById("diag-result").innerHTML = "<p style='color:var(--muted)'>Running diagnostics…</p>";
+  out.innerHTML = `<p class="dim-text">Running diagnostics…</p>`;
   try {
     const r = await callBrowser("browser_diagnose", { proof_text: source, logic });
+    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${esc(r.error)}</p>`; return; }
     const diags = r.diagnostics || [];
-    if (!r.ok) {
-      document.getElementById("diag-result").innerHTML =
-        `<p style='color:var(--red)'>${escHtml(r.error)}</p>`;
+    if (!diags.length) {
+      out.innerHTML = `<p style='color:var(--green)'>No diagnostics — proof structure looks clean.</p>`;
       return;
     }
-    if (diags.length === 0) {
-      document.getElementById("diag-result").innerHTML =
-        `<p style='color:var(--green)'>No diagnostics — proof structure looks clean.</p>`;
-      return;
-    }
-    const items = diags.map(d => {
-      const sv = d.severity || "info";
-      const lineStr = d.line ? `<div class="diag-line">line ${d.line}</div>` : "";
-      return `<li class="diag-item ${escHtml(sv)}">
-        <div class="diag-code">${escHtml(d.code || "")}</div>
-        <div class="diag-msg">${escHtml(d.message)}</div>
-        ${lineStr}
-      </li>`;
-    }).join("");
-    document.getElementById("diag-result").innerHTML = `<ul class="diag-list">${items}</ul>`;
+    out.innerHTML = `<ul class="diag-list">${diags.map(d => `
+      <li class="diag-item ${esc(d.severity || "info")}">
+        <div class="diag-code">${esc(d.code || "")}</div>
+        <div class="diag-msg">${esc(d.message)}</div>
+        ${d.line ? `<div class="diag-line">line ${d.line}</div>` : ""}
+      </li>`).join("")}</ul>`;
   } catch (e) {
-    document.getElementById("diag-result").innerHTML =
-      `<p style='color:var(--red)'>Error: ${escHtml(e.message)}</p>`;
+    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
   }
 }
 
-// ── Panel: Graph ─────────────────────────────────────────────────────────────
+// ── Panel: Graph ───────────────────────────────────────────────────────────
 
 async function runGraph() {
   const source = document.getElementById("proof-input").value.trim();
-  const logic = document.getElementById("logic-select").value;
+  const logic  = document.getElementById("logic-select").value;
   const dotOut = document.getElementById("graph-dot");
-  const nodesOut = document.getElementById("graph-nodes");
+  const nodes  = document.getElementById("graph-nodes");
   if (!source) {
     dotOut.textContent = "Enter a proof in the Verify panel first.";
     dotOut.style.display = "block"; return;
   }
-
-  dotOut.textContent = "Building graph…";
-  dotOut.style.display = "block";
-  nodesOut.innerHTML = "";
+  dotOut.textContent = "Building graph…"; dotOut.style.display = "block"; nodes.innerHTML = "";
   try {
     const r = await callBrowser("browser_graph", { proof_text: source, logic });
-    if (!r.ok) {
-      dotOut.textContent = `Error: ${r.error}`;
-      return;
-    }
+    if (!r.ok) { dotOut.textContent = `Error: ${r.error}`; return; }
     dotOut.textContent = r.dot || "(no DOT output)";
-    const nodes = r.nodes || [];
-    nodesOut.innerHTML = nodes.map(n => `
+    nodes.innerHTML = (r.nodes || []).map(n => `
       <div class="graph-node">
-        <div class="lbl">${escHtml(n.label)}</div>
-        <div class="knd">${escHtml(n.kind)}${n.rule ? " · " + escHtml(n.rule) : ""}</div>
-        <div class="frm">${escHtml(n.formula || "")}</div>
+        <div class="lbl">${esc(n.label)}</div>
+        <div class="knd">${esc(n.kind)}${n.rule ? " · " + esc(n.rule) : ""}</div>
+        <div class="frm">${esc(n.formula || "")}</div>
       </div>`).join("");
-  } catch (e) {
-    dotOut.textContent = "Error: " + e.message;
-  }
+  } catch (e) { dotOut.textContent = "Error: " + e.message; }
 }
 
-// ── Panel: Semantics — Soundness ─────────────────────────────────────────────
+// ── Panel: Semantics — Soundness ───────────────────────────────────────────
 
 async function runSoundness() {
-  const logic = document.getElementById("sem-logic-select").value;
+  const logic  = document.getElementById("sem-logic-select").value;
   const matrix = document.getElementById("sem-matrix-select").value;
-  const out = document.getElementById("soundness-result");
-  out.innerHTML = "Checking…";
-
+  const out    = document.getElementById("soundness-result");
+  out.innerHTML = `<p class="dim-text">Checking…</p>`;
   try {
     const r = await callBrowser("browser_soundness", { logic, matrix });
-    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${escHtml(r.error)}</p>`; return; }
+    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${esc(r.error)}</p>`; return; }
     const rows = (r.rules || []).map(rule => {
       const cls = rule.status === "sound" ? "sound" : rule.status === "unsound" ? "unsound" : "skipped";
-      let cx = "";
-      if (rule.counterexample) {
-        cx = `<br><small style='color:var(--muted)'>counterexample: ${escHtml(JSON.stringify(rule.counterexample))}</small>`;
-      }
-      return `<tr>
-        <td>${escHtml(rule.rule)}</td>
-        <td class="${cls}">${escHtml(rule.status)}${cx}</td>
-      </tr>`;
+      const cx  = rule.counterexample
+        ? `<br><small style='color:var(--muted)'>counterexample: ${esc(JSON.stringify(rule.counterexample))}</small>`
+        : "";
+      return `<tr><td>${esc(rule.rule)}</td><td class="${cls}">${esc(rule.status)}${cx}</td></tr>`;
     }).join("");
     out.innerHTML = `
       <p style='font-size:.8rem;color:var(--muted);margin-bottom:8px'>
-        Logic <strong style='color:var(--text)'>${escHtml(r.logic)}</strong>
-        against matrix <strong style='color:var(--text)'>${escHtml(r.matrix)}</strong>
+        Logic <strong style='color:var(--text)'>${esc(r.logic)}</strong>
+        · matrix <strong style='color:var(--text)'>${esc(r.matrix)}</strong>
       </p>
       <table class="soundness-table">
         <thead><tr><th>Rule</th><th>Status</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   } catch (e) {
-    out.innerHTML = `<p style='color:var(--red)'>Error: ${escHtml(e.message)}</p>`;
+    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
   }
 }
 
-// ── Panel: Semantics — Lattice ────────────────────────────────────────────────
+// ── Panel: Semantics — Lattice ─────────────────────────────────────────────
 
 async function runLattice() {
   const formula = document.getElementById("lattice-input").value.trim();
-  const out = document.getElementById("lattice-result");
-  if (!formula) { out.innerHTML = `<p style='color:var(--muted)'>Enter a formula above.</p>`; return; }
-  out.innerHTML = "Computing…";
-
+  const out     = document.getElementById("lattice-result");
+  if (!formula) { out.innerHTML = `<p class="dim-text">Enter a formula above.</p>`; return; }
+  out.innerHTML = `<p class="dim-text">Computing…</p>`;
   try {
     const r = await callBrowser("browser_lattice", { formula });
-    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${escHtml(r.error)}</p>`; return; }
-    const rows = (r.rows || []).map(row => {
-      const axioms = row.axioms.length ? row.axioms.map(escHtml).join(", ") : "∅";
-      return `<tr>
-        <td>${escHtml(row.label)}</td>
-        <td style='color:var(--muted);font-size:.75rem'>${axioms}</td>
-        <td class="status-${escHtml(row.status)}">${escHtml(row.status)}</td>
-      </tr>`;
-    }).join("");
+    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${esc(r.error)}</p>`; return; }
+    const rows = (r.rows || []).map(row =>
+      `<tr>
+        <td>${esc(row.label)}</td>
+        <td style='color:var(--muted);font-size:.75rem'>${row.axioms.length ? row.axioms.map(esc).join(", ") : "∅"}</td>
+        <td class="status-${esc(row.status)}">${esc(row.status)}</td>
+      </tr>`).join("");
     out.innerHTML = `
       <p style='font-size:.8rem;color:var(--muted);margin-bottom:8px'>
-        Formula: <strong style='color:var(--cyan)'>${escHtml(r.formula)}</strong>
+        Formula: <strong style='color:var(--cyan)'>${esc(r.formula)}</strong>
       </p>
       <table class="lattice-table">
         <thead><tr><th>World</th><th>Axioms</th><th>Status</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   } catch (e) {
-    out.innerHTML = `<p style='color:var(--red)'>Error: ${escHtml(e.message)}</p>`;
+    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
   }
 }
 
-// ── Panel: Examples ───────────────────────────────────────────────────────────
+// ── Panel: Examples ────────────────────────────────────────────────────────
 
 const EXAMPLE_DESCRIPTIONS = {
-  "dne.stele":        "Double negation elimination — valid classically, rejected intuitionistically",
-  "imp_self.stele":   "A → A — valid in all logics",
-  "invalid_mp.stele": "Malformed modus ponens — type mismatch",
-  "lem.stele":        "Law of excluded middle (P ∨ ¬P) — classical only",
-  "neg_intro.stele":  "Negation introduction — ¬(P ∧ ¬P)",
-  "valid_and.stele":  "Conjunction introduction and elimination",
-  "or_comm.stele":    "Disjunction commutativity",
-  "or_intro.stele":   "Disjunction introduction",
-  "ex_falso.stele":   "Ex falso quodlibet — from ⊥, prove anything",
+  "dne.stele":             "Double negation elimination — classical only",
+  "imp_self.stele":        "A → A — valid in all logics",
+  "invalid_mp.stele":      "Malformed modus ponens — type mismatch",
+  "lem.stele":             "Law of excluded middle — classical only",
+  "neg_intro.stele":       "Negation introduction: ¬(P ∧ ¬P)",
+  "valid_and.stele":       "Conjunction introduction and elimination",
+  "or_comm.stele":         "Disjunction commutativity",
+  "or_intro.stele":        "Disjunction introduction",
+  "ex_falso.stele":        "Ex falso quodlibet — from ⊥, prove anything",
   "valid_imp_chain.stele": "Hypothetical syllogism: A→B, B→C ⊢ A→C",
-  "peirce.stele":     "Peirce's law — classical only",
-  "dne_law.stele":    "DNE as implication ¬¬A→A",
+  "peirce.stele":          "Peirce's law — classical only",
+  "dne_law.stele":         "DNE as implication ¬¬A→A",
 };
 
 async function loadExamples() {
@@ -353,48 +328,71 @@ async function loadExamples() {
     const r = await callBrowser("browser_examples", {});
     const examples = r.examples || {};
     const keys = Object.keys(examples);
-    if (keys.length === 0) {
-      grid.innerHTML = `<p style='color:var(--muted)'>No examples bundled.</p>`;
-      return;
-    }
+    if (!keys.length) { grid.innerHTML = `<p class="dim-text">No examples bundled.</p>`; return; }
     grid.innerHTML = keys.map(fn => {
       const desc = EXAMPLE_DESCRIPTIONS[fn] || fn;
       return `<div class="example-card" tabindex="0" role="button"
-          aria-label="Load example: ${escHtml(fn)}"
-          data-filename="${escHtml(fn)}"
-          data-content="${escHtml(examples[fn])}">
-        <div class="ex-name">${escHtml(fn)}</div>
-        <div class="ex-desc">${escHtml(desc)}</div>
+          aria-label="Load example: ${esc(fn)}"
+          data-filename="${esc(fn)}"
+          data-content="${esc(examples[fn])}">
+        <div class="ex-name">${esc(fn)}</div>
+        <div class="ex-desc">${esc(desc)}</div>
       </div>`;
     }).join("");
     grid.querySelectorAll(".example-card").forEach(card => {
-      card.addEventListener("click", () => loadExample(card));
+      card.addEventListener("click", () => loadExampleCard(card));
       card.addEventListener("keydown", e => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); loadExample(card); }
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); loadExampleCard(card); }
       });
     });
   } catch (e) {
-    grid.innerHTML = `<p style='color:var(--red)'>Failed to load examples: ${escHtml(e.message)}</p>`;
+    grid.innerHTML = `<p style='color:var(--red)'>Failed to load examples: ${esc(e.message)}</p>`;
   }
 }
 
-function loadExample(card) {
+function loadExampleCard(card) {
   const content = card.dataset.content;
   const fn = card.dataset.filename;
-  const editor = document.getElementById("proof-input");
-  if (editor) {
-    editor.value = content;
-    // Clear previous results
-    document.getElementById("check-result").className = "result-box";
-    document.getElementById("diag-result").innerHTML = "";
-    // Switch to Verify tab
-    activateTab("verify");
-    editor.focus();
-    showStatus("info", `Loaded example: ${fn}`);
+  setEditorContent(content, null);
+  activateTab("verify");
+  document.getElementById("proof-input").focus();
+  showStatus("info", `Loaded: ${fn}`);
+}
+
+// ── Gallery preset loader (global) ─────────────────────────────────────────
+
+function setEditorContent(proof, logic) {
+  const editor   = document.getElementById("proof-input");
+  const logicSel = document.getElementById("logic-select");
+  if (editor)   editor.value = proof;
+  if (logicSel && logic) logicSel.value = logic;
+  const resultBox = document.getElementById("check-result");
+  if (resultBox) resultBox.className = "result-box";
+  const diagResult = document.getElementById("diag-result");
+  if (diagResult) diagResult.innerHTML = "";
+}
+
+/**
+ * loadPreset(proof, logic) — called from gallery "Load & Try" buttons.
+ * Loads the proof into the Verify editor, scrolls to the Studio section,
+ * and auto-runs the check if Stele is already ready.
+ */
+function loadPreset(proof, logic) {
+  setEditorContent(proof, logic);
+  activateTab("verify");
+  const studio = document.getElementById("studio");
+  if (studio) studio.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (steleReady) {
+    setTimeout(runCheck, 600);
+  } else {
+    showStatus("info", "Proof loaded — click Run Check once Stele finishes loading.");
   }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// Expose globally so gallery onclick handlers and external scripts can call it
+window.stele = { loadPreset, runCheck, activateTab };
+
+// ── Init ───────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   // Tab buttons
@@ -402,32 +400,39 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", () => activateTab(btn.dataset.tab));
   });
 
-  // Action buttons
+  // Studio action buttons
   const bind = (id, fn) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("click", fn);
   };
-
   bind("btn-check",     runCheck);
   bind("btn-diagnose",  runDiagnose);
   bind("btn-graph",     runGraph);
   bind("btn-soundness", runSoundness);
   bind("btn-lattice",   runLattice);
 
-  // Keyboard shortcut: Ctrl+Enter in proof editor → run check
+  // Gallery "Load & Try" buttons
+  document.querySelectorAll(".gcard-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const proof = btn.dataset.proof;
+      const logic = btn.dataset.logic;
+      if (proof) loadPreset(proof, logic || "intuitionistic_prop");
+    });
+  });
+
+  // Ctrl+Enter in proof editor → run check
   const editor = document.getElementById("proof-input");
   if (editor) {
     editor.addEventListener("keydown", e => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        runCheck();
+        e.preventDefault(); runCheck();
       }
     });
   }
 
-  // Disable all stele buttons until ready
+  // Disable Studio buttons until Pyodide is ready
   setButtonsEnabled(false);
 
-  // Start Pyodide init
+  // Start Pyodide initialisation in the background
   initStele();
 });

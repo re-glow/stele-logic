@@ -323,3 +323,139 @@ class TestDocumentation:
         txt = DEV_CTX.read_text(encoding="utf-8").lower()
         assert "pyodide" in txt, \
             "docs/development-context.md should mention Pyodide"
+
+    def test_readme_browser_option_before_python(self):
+        """Browser quickstart must appear before the local Python option."""
+        txt = README.read_text(encoding="utf-8")
+        browser_pos = txt.find("Browser Studio")
+        python_pos  = txt.find("Local Python")
+        assert browser_pos != -1, "README should have a 'Browser Studio' heading"
+        assert python_pos  != -1, "README should have a 'Local Python' heading"
+        assert browser_pos < python_pos, \
+            "README: Browser Studio section should appear before Local Python"
+
+
+# ── Public site landing-page checks ─────────────────────────────────────────
+
+class TestPublicSiteLanding:
+    """Verify that the index.html is a proper landing page (not just a raw tool dump)."""
+
+    def _html(self):
+        return (SITE_SRC / "index.html").read_text(encoding="utf-8")
+
+    def test_has_hero_section(self):
+        html = self._html()
+        assert 'id="hero"' in html or "id='hero'" in html, \
+            "index.html should have a hero section (#hero)"
+
+    def test_has_nav(self):
+        html = self._html()
+        assert "<nav" in html, "index.html should include a navigation element"
+
+    def test_primary_framing_formal_verification(self):
+        """Primary framing must be 'formal verification', not 'logical pluralism'."""
+        html = self._html().lower()
+        assert "formal verification" in html or "proof verification" in html, \
+            "index.html should mention 'formal verification' or 'proof verification'"
+
+    def test_logical_pluralism_not_in_headline(self):
+        """'logical pluralism' must not appear in any h1 or h2 heading."""
+        import re as _re
+        html = self._html()
+        headings = _re.findall(r"<h[12][^>]*>(.*?)</h[12]>", html, _re.IGNORECASE | _re.DOTALL)
+        for h in headings:
+            assert "logical pluralism" not in h.lower(), \
+                f"Heading should not lead with 'logical pluralism': {h[:80]}"
+
+    def test_has_studio_section(self):
+        html = self._html()
+        assert 'id="studio"' in html or "id='studio'" in html, \
+            "index.html should have a #studio section"
+
+    def test_has_quickstart_section(self):
+        html = self._html()
+        assert 'id="quickstart"' in html or "quickstart" in html.lower(), \
+            "index.html should have a quickstart or get-started section"
+
+    def test_has_gallery_section(self):
+        html = self._html()
+        assert 'id="gallery"' in html or "gallery" in html.lower(), \
+            "index.html should have a gallery/examples section"
+
+    def test_has_docs_section(self):
+        html = self._html()
+        assert 'id="docs"' in html or "documentation" in html.lower(), \
+            "index.html should have a documentation/links section"
+
+    def test_has_feature_cards(self):
+        html = self._html()
+        assert "feature-card" in html or "feature-grid" in html, \
+            "index.html should include feature cards"
+
+    def test_hero_has_symbol_cascade(self):
+        """Hero should contain mathematical symbols (animation/decorative)."""
+        html = self._html()
+        assert "hero-symbols" in html or any(sym in html for sym in ("∀", "⊢", "→", "∃")), \
+            "Hero section should include mathematical symbol decoration"
+
+    def test_math_symbols_respect_reduced_motion(self):
+        """Symbol animations must be gated behind prefers-reduced-motion."""
+        css = CSS_FILE.read_text(encoding="utf-8")
+        assert "prefers-reduced-motion" in css
+        assert "hero-symbols" in css or "symbol" in css
+
+    def test_studio_section_has_loading_state(self):
+        html = self._html()
+        assert "studio-loading" in html or "loading-step" in html, \
+            "Studio section should have a loading state element"
+
+    def test_all_studio_panel_ids_present(self):
+        """All IDs referenced by the JS glue must exist in the HTML."""
+        html = self._html()
+        required_ids = [
+            "proof-input", "logic-select", "btn-check", "check-result",
+            "btn-diagnose", "diag-result",
+            "btn-graph", "graph-dot",
+            "btn-soundness", "soundness-result",
+            "btn-lattice", "lattice-result", "lattice-input",
+            "examples-grid",
+        ]
+        for eid in required_ids:
+            assert f'id="{eid}"' in html or f"id='{eid}'" in html, \
+                f"index.html is missing required element id='{eid}'"
+
+    def test_gallery_cards_have_load_try_buttons(self):
+        html = self._html()
+        assert "gcard-btn" in html or "Load" in html, \
+            "Gallery section should have load/try buttons"
+
+    def test_gallery_has_proof_data_attributes(self):
+        html = self._html()
+        assert "data-proof" in html, \
+            "Gallery buttons should carry data-proof attributes for loadPreset()"
+
+    def test_js_exposes_load_preset(self):
+        """stele-pyodide.js must expose a loadPreset function."""
+        js = JS_GLUE.read_text(encoding="utf-8")
+        assert "loadPreset" in js, \
+            "stele-pyodide.js should expose loadPreset for gallery integration"
+
+    def test_js_exposes_window_stele(self):
+        """stele-pyodide.js must expose window.stele global."""
+        js = JS_GLUE.read_text(encoding="utf-8")
+        assert "window.stele" in js, \
+            "stele-pyodide.js should set window.stele for gallery onclick handlers"
+
+    def test_footer_present(self):
+        html = self._html()
+        assert "<footer" in html, "index.html should include a footer element"
+
+    def test_has_github_link(self):
+        html = self._html()
+        assert "github.com" in html, "index.html should link to GitHub"
+
+    def test_no_npm_or_react_in_html(self):
+        html = self._html()
+        for banned in ("node_modules", "import React", "import Vue", "@angular"):
+            assert banned not in html, \
+                f"index.html must not reference '{banned}'"

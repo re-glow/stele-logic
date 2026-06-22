@@ -11,6 +11,7 @@ on:
       - "site/**"
       - "tools/build_pyodide_site.py"
       - "examples/**"
+      - "tests/test_pyodide_site.py"
 
 # Allow one concurrent deployment; cancel in-progress runs on new pushes.
 concurrency:

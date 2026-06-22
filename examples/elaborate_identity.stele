@@ -1,0 +1,9 @@
+# elaborate_identity.stele
+# The simplest possible intuitionistic proof: P -> P (identity).
+# Elaborates to: fun h1: P => h1
+# Run: python -m stele.cli elaborate examples/elaborate_identity.stele
+theorem elaborate_identity:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P -> P by imp_intro h1 h2
+  conclude P -> P by h3

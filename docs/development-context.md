@@ -216,6 +216,15 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 4. **구조 규칙 정책** — 약화/축약/교환을 논리별 선언으로 → 선형·관련성·초일관 세계.
 5. **de Bruijn FOL 완성** — `to_debruijn_fol` (객체 변수까지 DB 인덱스화).
 
+**공개 사이트 디자인 시스템 (v1.1 이후, Prompts 42–50):**
+공개 사이트(`site/`)에 대한 정보 아키텍처 계획과 디자인 시스템이
+`docs/design-system.md`에 정의되어 있다.
+대상 구조: Landing, Studio, Theory, Architecture, Research, About, Docs 페이지.
+CSS 토큰(`site/assets/tokens.css`), 컴포넌트 라이브러리(`site/assets/components.css`),
+시각적 모티프(`site/assets/visuals.js`)가 추가됐다.
+스켈레톤 페이지: `studio.html`, `theory.html`, `architecture.html`, `research.html`, `about.html`.
+Prompts 43–49에서 순차적으로 채워진다.
+
 **v1.0 이후 — 선택적 확장 (신뢰 코어 밖):**
 6. **ML/SLM 증명검증 보조 고도화** — 커널이 재검사하는 untrusted 보조자 (`stele_ml/` 확장).
 7. **Lean 4 브릿지 고도화** — 고전·직관 단편 export 확장 (`stele_lean/` 확장).

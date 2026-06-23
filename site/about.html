@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele — About</title>
+<meta name="description"
+  content="About the Stele project: a formal verification framework for mathematical reasoning built by Jaehwan Kim.">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="studio.html">Studio</a>
+    <a href="theory.html">Theory</a>
+    <a href="research.html">Research</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<main class="page-main" id="main-content">
+
+  <section class="page-section" aria-labelledby="about-heading">
+    <div class="section-inner">
+      <span class="section-label">About</span>
+      <h1 id="about-heading" class="section-heading">About the Project</h1>
+      <p class="section-sub" style="font-family:var(--font-sans)">
+        Stele is a formal verification framework for mathematical reasoning,
+        built as an independent research project.
+      </p>
+
+      <div class="callout callout-info" style="max-width:640px;margin-bottom:2rem">
+        <span class="callout-label">Page status — Prompt 49</span>
+        <p>
+          This page is a skeleton. Creator profile, project timeline, and
+          audience-specific narrative will be written in Prompt 49.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project overview -->
+  <section class="page-section page-section--alt" aria-labelledby="project-heading">
+    <div class="section-inner">
+      <h2 id="project-heading" class="section-heading" style="margin-bottom:1.5rem">
+        The Project
+      </h2>
+      <div class="skeleton-notice" style="max-width:680px">
+        <strong>Planned content — Prompt 49</strong>
+        What Stele is, why it was built, what problem it solves.
+        Relationship to Yurihak / logical pluralism research.
+        First-person narrative connecting the intellectual motivation to the implementation.
+      </div>
+    </div>
+  </section>
+
+  <!-- Timeline -->
+  <section class="page-section" aria-labelledby="timeline-heading">
+    <div class="section-inner">
+      <h2 id="timeline-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Timeline
+      </h2>
+      <div class="skeleton-notice" style="max-width:680px">
+        <strong>Planned content — Prompt 49</strong>
+        Project history from initial proof-checker concept through v1.0 and v1.1.
+        Key milestones: kernel, matrix semantics, proof terms, Kripke, whitepaper.
+      </div>
+    </div>
+  </section>
+
+  <!-- Audiences -->
+  <section class="page-section page-section--alt" aria-labelledby="audiences-heading">
+    <div class="section-inner">
+      <h2 id="audiences-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Who Is Stele For?
+      </h2>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:900px">
+
+        <div class="trust-card" style="border-left:3px solid rgba(0,232,255,.35)">
+          <div class="trust-card-header">
+            <span class="trust-card-name">Technical reviewer</span>
+          </div>
+          <div class="trust-card-body">
+            Inspect the trust boundary: 142-line kernel, rule-data separation,
+            zero runtime dependencies, 1852 regression tests.
+            Read the formal semantics and metatheory documentation.
+          </div>
+          <a href="architecture.html" class="btn btn-ghost" style="align-self:flex-start;margin-top:.5rem">
+            Architecture →
+          </a>
+        </div>
+
+        <div class="trust-card" style="border-left:3px solid rgba(176,106,255,.35)">
+          <div class="trust-card-header">
+            <span class="trust-card-name">Teacher / student</span>
+          </div>
+          <div class="trust-card-body">
+            Use the browser Studio to demonstrate classical vs. intuitionistic logic
+            live. 15 curated examples with expected outcomes. No installation needed.
+          </div>
+          <a href="studio.html" class="btn btn-ghost" style="align-self:flex-start;margin-top:.5rem">
+            Open Studio →
+          </a>
+        </div>
+
+        <div class="trust-card" style="border-left:3px solid rgba(0,255,159,.35)">
+          <div class="trust-card-header">
+            <span class="trust-card-name">Researcher</span>
+          </div>
+          <div class="trust-card-body">
+            Read the whitepaper. Explore the proof-term calculus (Curry–Howard),
+            matrix semantics (K3/LP), and Kripke countermodel search.
+            All claims carry explicit status labels and test evidence.
+          </div>
+          <a href="research.html" class="btn btn-ghost" style="align-self:flex-start;margin-top:.5rem">
+            Research →
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Metrics snapshot -->
+  <section class="page-section" aria-labelledby="metrics-heading">
+    <div class="section-inner">
+      <h2 id="metrics-heading" class="section-heading" style="margin-bottom:1.5rem">
+        By the Numbers
+      </h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;max-width:700px">
+        <div class="metric-card">
+          <div class="metric-value">1852</div>
+          <div class="metric-label">Regression tests</div>
+          <div class="metric-note">4 skipped (Hypothesis optional)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">142</div>
+          <div class="metric-label">Kernel lines</div>
+          <div class="metric-note">Trusted core (stdlib only)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">5</div>
+          <div class="metric-label">Built-in logics</div>
+          <div class="metric-note">IPL, classical, K3, LP, minimal</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">0</div>
+          <div class="metric-label">Runtime deps</div>
+          <div class="metric-note">stdlib only; pytest for tests</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

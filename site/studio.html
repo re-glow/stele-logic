@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele Studio — Proof Workbench</title>
+<meta name="description"
+  content="Stele Studio: write natural-deduction proofs and verify them in the browser. Powered by Pyodide/WASM — no backend, no data sent to any server.">
+<!-- Design tokens first, then base styles, then component extensions -->
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<!-- Skip link -->
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<!-- Navigation — full multi-page nav (to be expanded in Prompt 43–44) -->
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="theory.html">Theory</a>
+    <a href="research.html">Research</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- Studio shell (placeholder — full Studio migration in Prompt 44)         -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<main class="page-main" id="main-content">
+
+  <section class="page-section" aria-labelledby="studio-heading">
+    <div class="section-inner">
+
+      <div class="section-header">
+        <span class="section-label">Proof Workbench</span>
+        <h1 id="studio-heading" class="section-heading">
+          Stele Studio
+          <span class="badge badge-stable">Stable</span>
+        </h1>
+        <p class="section-sub" style="font-family:var(--font-sans)">
+          Write structured natural-deduction proofs. The trusted kernel checks each
+          inference step for logical validity. Runs entirely in the browser via
+          Pyodide/WASM — no backend, no data transmitted.
+        </p>
+      </div>
+
+      <!-- Studio migration notice -->
+      <div class="callout callout-info" style="margin-bottom:2rem;max-width:680px">
+        <span class="callout-label">In progress — Prompt 44</span>
+        <p>
+          The full Studio workbench is currently available on the
+          <a href="index.html#studio">main page</a> (§ Studio section).
+          This dedicated page will host the workbench after it is separated from
+          the landing in Prompt 44.
+        </p>
+      </div>
+
+      <!-- Feature status table -->
+      <div style="max-width:680px">
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem;font-family:var(--font-sans)">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:500">Feature</th>
+              <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:500">Status</th>
+              <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:500">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--surf2)">
+              <td style="padding:8px 10px;color:var(--text)">Verify</td>
+              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
+              <td style="padding:8px 10px;color:var(--muted)">Kernel-checked; 5 built-in logics</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surf2)">
+              <td style="padding:8px 10px;color:var(--text)">Diagnose</td>
+              <td style="padding:8px 10px"><span class="badge badge-untrusted">Untrusted</span></td>
+              <td style="padding:8px 10px;color:var(--muted)">Structural advisory; no kernel trust</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surf2)">
+              <td style="padding:8px 10px;color:var(--text)">Dependency Graph</td>
+              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
+              <td style="padding:8px 10px;color:var(--muted)">DOT output of proof structure</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surf2)">
+              <td style="padding:8px 10px;color:var(--text)">Matrix Semantics</td>
+              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
+              <td style="padding:8px 10px;color:var(--muted)">K3, LP, Boolean soundness checks</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--surf2)">
+              <td style="padding:8px 10px;color:var(--text)">World Lattice</td>
+              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
+              <td style="padding:8px 10px;color:var(--muted)">Proposition-level independence demo</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 10px;color:var(--text)">Kripke Countermodels</td>
+              <td style="padding:8px 10px"><span class="badge badge-experimental">Experimental</span></td>
+              <td style="padding:8px 10px;color:var(--muted)">Bounded ≤4 worlds; absence ≠ validity</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- CTA to current studio -->
+      <div style="margin-top:2rem">
+        <a href="index.html#studio" class="btn btn-primary">
+          Open Studio on main page ↑
+        </a>
+        <span style="margin-left:1rem;font-size:.78rem;color:var(--muted);font-family:var(--font-sans)">
+          Full workbench migration coming in Prompt 44.
+        </span>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
+      Local Studio: <code>python -m stele</code>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

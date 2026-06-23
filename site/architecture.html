@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele — Architecture &amp; Trust Model</title>
+<meta name="description"
+  content="Stele trust model: the trusted kernel, certificates, and explicitly untrusted layers (diagnostics, hints, ML). Zero runtime dependencies.">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="studio.html">Studio</a>
+    <a href="theory.html">Theory</a>
+    <a href="research.html">Research</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<main class="page-main" id="main-content">
+
+  <section class="page-section" aria-labelledby="arch-heading">
+    <div class="section-inner">
+      <span class="section-label">Trust &amp; Architecture</span>
+      <h1 id="arch-heading" class="section-heading">Architecture &amp; Trust Model</h1>
+      <p class="section-sub" style="font-family:var(--font-sans)">
+        Stele's correctness guarantee rests on a single small trusted core.
+        Every other layer is explicitly untrusted and advisory.
+      </p>
+
+      <div class="callout callout-info" style="max-width:640px;margin-bottom:2rem">
+        <span class="callout-label">Page status — Prompt 46–47</span>
+        <p>
+          This page is a skeleton. Full content will be written in Prompts 46–47.
+          See <a href="https://github.com/re-glow/stele-logic/blob/main/docs/development-context.md">docs/development-context.md</a>
+          and <a href="https://github.com/re-glow/stele-logic/blob/main/DECISIONS.md">DECISIONS.md</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust layers -->
+  <section class="page-section page-section--alt" aria-labelledby="trust-layers-heading">
+    <div class="section-inner">
+      <h2 id="trust-layers-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Trust Layers
+      </h2>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:900px">
+
+        <div class="trust-card trust-card-trusted">
+          <div class="trust-card-header">
+            <span class="badge badge-stable">Trusted core</span>
+            <span class="trust-card-name">Kernel</span>
+          </div>
+          <div class="trust-card-body">
+            142-line pure syntactic matcher. First-order rule matching only.
+            No semantic reasoning. De Bruijn criterion. Stdlib only.
+            The sole source of proof validity verdicts.
+          </div>
+          <code class="trust-card-path">stele/kernel.py</code>
+        </div>
+
+        <div class="trust-card trust-card-trusted">
+          <div class="trust-card-header">
+            <span class="badge badge-stable">Trusted</span>
+            <span class="trust-card-name">Parser</span>
+          </div>
+          <div class="trust-card-body">
+            Hand-written recursive descent tokenizer and parser. No external parser
+            library. Stdlib only. Produces AST consumed by kernel.
+          </div>
+          <code class="trust-card-path">stele/parser.py</code>
+        </div>
+
+        <div class="trust-card trust-card-untrusted">
+          <div class="trust-card-header">
+            <span class="badge badge-untrusted">Untrusted</span>
+            <span class="trust-card-name">Diagnostics</span>
+          </div>
+          <div class="trust-card-body">
+            Structural multi-pass analysis: unused assumptions, missing hypotheses,
+            scope errors, undefined symbols. Advisory only — no kernel import.
+          </div>
+          <code class="trust-card-path">stele/diagnostics.py</code>
+        </div>
+
+        <div class="trust-card trust-card-untrusted">
+          <div class="trust-card-header">
+            <span class="badge badge-untrusted">Untrusted</span>
+            <span class="trust-card-name">Proof-state hints</span>
+          </div>
+          <div class="trust-card-body">
+            Rule suggestion hints based on current proof state.
+            All hints carry <code>trusted=False</code> — never used by kernel.
+          </div>
+          <code class="trust-card-path">stele/proofstate.py</code>
+        </div>
+
+        <div class="trust-card trust-card-experimental">
+          <div class="trust-card-header">
+            <span class="badge badge-experimental">Experimental</span>
+            <span class="trust-card-name">Certificates</span>
+          </div>
+          <div class="trust-card-body">
+            Kernel-gated certificate emission. Minicheck provides an independent
+            Python re-verification path — same process, different code path.
+          </div>
+          <code class="trust-card-path">stele/certificate.py · stele/minicheck.py</code>
+        </div>
+
+        <div class="trust-card trust-card-optional">
+          <div class="trust-card-header">
+            <span class="badge badge-optional">Optional</span>
+            <span class="trust-card-name">ML Baseline</span>
+          </div>
+          <div class="trust-card-body">
+            Multinomial Naive Bayes classifier. Synthetic corpus.
+            Completely isolated from trust core. No effect on kernel correctness.
+          </div>
+          <code class="trust-card-path">stele_ml/</code>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Invariants -->
+  <section class="page-section" aria-labelledby="invariants-heading">
+    <div class="section-inner">
+      <h2 id="invariants-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Invariants
+      </h2>
+      <div class="skeleton-notice" style="max-width:680px">
+        <strong>Planned content — Prompt 47</strong>
+        Six invariants from CLAUDE.md: trust boundary, rule-data separation,
+        zero runtime deps, K3/LP table definition, honesty policy,
+        proof vs. matrix mode separation. Test evidence for each.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Zero runtime dependencies.
+      <code>python -m pytest -q</code> — 1852 tests, 4 skipped.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

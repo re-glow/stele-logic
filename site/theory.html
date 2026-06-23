@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele — Theory &amp; Formal Semantics</title>
+<meta name="description"
+  content="Stele formal theory: Stele-Light proof language, proof-term calculus, matrix semantics, Kripke countermodels. Metatheory claims and evidence.">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="studio.html">Studio</a>
+    <a href="research.html">Research</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<main class="page-main" id="main-content">
+
+  <!-- Hero -->
+  <section class="page-section" aria-labelledby="theory-heading"
+    style="background:radial-gradient(ellipse at 50% 0%,rgba(176,106,255,.05) 0%,transparent 60%)">
+    <div class="section-inner">
+
+      <!-- Kripke motif (decorative) -->
+      <div class="kripke-motif" style="float:right;margin:0 0 1rem 2rem;opacity:.7"
+           aria-hidden="true"
+           data-stele-visual="kripke-motif" data-decorative="true">
+        <div class="visual-fallback">⊢</div>
+      </div>
+
+      <span class="section-label">Formal Foundations</span>
+      <h1 id="theory-heading" class="section-heading">Theory &amp; Semantics</h1>
+      <p class="section-sub" style="font-family:var(--font-sans)">
+        Stele's formal underpinnings: the Stele-Light proof language,
+        Curry–Howard proof-term calculus, multi-valued matrix semantics,
+        and bounded Kripke countermodel search.
+      </p>
+
+      <div class="callout callout-info" style="max-width:640px;clear:both">
+        <span class="callout-label">Page status — Prompt 45</span>
+        <p>
+          This page is a skeleton. Full content will be written in Prompt 45.
+          See <a href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md">docs/semantics.md</a>
+          and <a href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md">docs/metatheory.md</a>
+          for the current formal specification.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sections planned for Prompt 45 -->
+  <section class="page-section page-section--alt" aria-labelledby="stele-light-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-label">Proof Language</span>
+        <h2 id="stele-light-heading" class="section-heading">
+          Stele-Light
+          <span class="badge badge-stable">Stable</span>
+        </h2>
+      </div>
+      <div class="skeleton-notice">
+        <strong>Planned content — Prompt 45</strong>
+        Proof syntax, inference rules (12 IPL + 3 classical), theorem structure,
+        assume / have / suppose / conclude keywords, scope and discharge rules.
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section" aria-labelledby="proof-terms-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-label">Curry–Howard</span>
+        <h2 id="proof-terms-heading" class="section-heading">
+          Proof-Term Calculus
+          <span class="badge badge-experimental">Experimental</span>
+        </h2>
+      </div>
+      <div class="skeleton-notice">
+        <strong>Planned content — Prompt 45</strong>
+        Bidirectional type-checking, β-reduction, de Bruijn indices,
+        FOL fragment (ForallIntro/Elim/ExistsIntro/Elim),
+        term-check and term-normalize CLI commands.
+      </div>
+      <div class="callout callout-warning" style="margin-top:1rem;max-width:640px">
+        <span class="callout-label">Limitation</span>
+        <p>
+          Classical proofs are accepted at the rule level. Proof terms are not
+          extracted from classical proofs — acceptance is at rule application, not
+          term level. The classical bridge (Gödel–Gentzen) is formula-level only.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section page-section--alt" aria-labelledby="matrix-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-label">Multi-valued Semantics</span>
+        <h2 id="matrix-heading" class="section-heading">
+          Matrix Semantics
+          <span class="badge badge-stable">Stable</span>
+        </h2>
+      </div>
+      <div class="skeleton-notice">
+        <strong>Planned content — Prompt 45</strong>
+        K3 (Kleene), LP (Priest), Boolean matrices; truth-value tables;
+        rule soundness checks; world lattice and proposition-level independence.
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section" aria-labelledby="kripke-heading">
+    <div class="section-inner">
+      <div class="section-header">
+        <span class="section-label">Intuitionistic Semantics</span>
+        <h2 id="kripke-heading" class="section-heading">
+          Kripke Countermodels
+          <span class="badge badge-experimental">Experimental</span>
+        </h2>
+      </div>
+      <div class="skeleton-notice">
+        <strong>Planned content — Prompt 45</strong>
+        Bounded finite Kripke frame search (≤4 worlds default),
+        intuitionistic propositional logic only, absence-of-countermodel caveat.
+      </div>
+      <div class="callout callout-warning" style="margin-top:1rem;max-width:640px">
+        <span class="callout-label">Important</span>
+        <p>Bounded search — absence of a countermodel is not a proof of validity.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs links -->
+  <section class="page-section page-section--alt" aria-labelledby="theory-docs-heading">
+    <div class="section-inner">
+      <h2 id="theory-docs-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Formal Documentation
+      </h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:900px">
+        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md"
+           target="_blank" rel="noopener">
+          <span class="doc-link-icon" aria-hidden="true">⊢</span>
+          <span class="doc-link-title">Formal Semantics</span>
+          <span class="badge badge-stable">Stable</span>
+          <span class="doc-link-desc">BNF grammar, typing rules, reduction rules, de Bruijn layer.</span>
+        </a>
+        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md"
+           target="_blank" rel="noopener">
+          <span class="doc-link-icon" aria-hidden="true">∴</span>
+          <span class="doc-link-title">Metatheory</span>
+          <span class="badge badge-experimental">Proof sketches</span>
+          <span class="doc-link-desc">Subject reduction, normalization, consistency — claims and evidence.</span>
+        </a>
+        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/proof-terms.md"
+           target="_blank" rel="noopener">
+          <span class="doc-link-icon" aria-hidden="true">λ</span>
+          <span class="doc-link-title">Proof Terms</span>
+          <span class="badge badge-experimental">Experimental</span>
+          <span class="doc-link-desc">Curry–Howard core, FOL fragment, term parser, elaboration API.</span>
+        </a>
+        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
+           target="_blank" rel="noopener">
+          <span class="doc-link-icon" aria-hidden="true">📖</span>
+          <span class="doc-link-title">Language Guide</span>
+          <span class="badge badge-stable">Stable</span>
+          <span class="doc-link-desc">Proof syntax, rules, matrix semantics, world lattice, CLI.</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
+      Local Studio: <code>python -m stele</code>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/visuals.js" defer></script>
+</body>
+</html>

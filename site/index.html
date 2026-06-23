@@ -6,7 +6,12 @@
 <title>Stele — Formal Proof Verification in the Browser</title>
 <meta name="description"
   content="Stele is a formal verification framework for mathematical reasoning. Write structured natural-deduction proofs and verify them instantly — directly in your browser, no install required.">
+<!-- Design tokens — load first so base CSS can selectively override -->
+<link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
+<!-- Component library (status badges, trust cards, metric cards, etc.) -->
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
 </head>
 <body>
 
@@ -821,5 +826,7 @@
 </footer>
 
 <script src="assets/stele-pyodide.js"></script>
+<!-- Visual motif primitives (auto-inits data-stele-visual elements; defer = non-blocking) -->
+<script src="assets/visuals.js" defer></script>
 </body>
 </html>

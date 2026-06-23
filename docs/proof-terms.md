@@ -1,4 +1,4 @@
-# Proof-Term Core — Stele v2
+# Proof-Term Core — Stele v1.1
 
 이 문서는 `stele.core` 패키지에 구현된 직관주의 명제논리 + 1차 논리 단편의 증명항 계산법(proof-term calculus)을 설명한다.
 

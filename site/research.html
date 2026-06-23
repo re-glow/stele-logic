@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele — Research &amp; Whitepaper</title>
+<meta name="description"
+  content="Stele research context: technical whitepaper, logical pluralism motivation, proof-assistant comparison, references, and provenance.">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="studio.html">Studio</a>
+    <a href="theory.html">Theory</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<main class="page-main" id="main-content">
+
+  <section class="page-section" aria-labelledby="research-heading"
+    style="background:radial-gradient(ellipse at 50% 0%,rgba(0,232,255,.03) 0%,transparent 60%)">
+    <div class="section-inner">
+      <span class="section-label">Research</span>
+      <h1 id="research-heading" class="section-heading">Research &amp; Whitepaper</h1>
+      <p class="section-sub" style="font-family:var(--font-sans)">
+        Stele is a formal verification tool motivated by the research problem of
+        supporting multiple logical frameworks in a single proof-checking infrastructure.
+        This page connects the implementation to its theoretical context.
+      </p>
+
+      <div class="callout callout-info" style="max-width:640px;margin-bottom:2rem">
+        <span class="callout-label">Page status — Prompts 46–47</span>
+        <p>
+          This page is a skeleton. Full content — Yurihak / logical pluralism framing,
+          proof-assistant comparison, references map, and whitepaper integration —
+          will be written in Prompts 46–47.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Whitepaper section -->
+  <section class="page-section page-section--alt" aria-labelledby="whitepaper-heading">
+    <div class="section-inner">
+      <h2 id="whitepaper-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Technical Whitepaper
+      </h2>
+      <p style="font-family:var(--font-sans);font-size:var(--text-base);color:var(--muted);max-width:640px;margin-bottom:1.5rem;line-height:var(--lh-loose)">
+        The whitepaper covers Stele's architecture, formal semantics, metatheory claims,
+        experimental features (Kripke, certificates, proof terms), ML baseline, and
+        known limitations. All claims carry explicit status labels.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:2rem">
+        <a href="https://github.com/re-glow/stele-logic/blob/main/docs/whitepaper.md"
+           target="_blank" rel="noopener" class="btn btn-primary">
+          Read Whitepaper (Markdown) ↗
+        </a>
+        <a href="https://github.com/re-glow/stele-logic/blob/main/paper/stele-whitepaper.tex"
+           target="_blank" rel="noopener" class="btn btn-secondary">
+          LaTeX Source ↗
+        </a>
+      </div>
+      <div class="callout callout-warning" style="max-width:640px">
+        <span class="callout-label">Metatheory status</span>
+        <p>
+          Metatheory claims (subject reduction, normalization, consistency) are
+          supported by regression tests and proof sketches — not by machine-checked
+          proofs. Tests are evidence, not proof.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Research motivation placeholder -->
+  <section class="page-section" aria-labelledby="motivation-heading">
+    <div class="section-inner">
+      <h2 id="motivation-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Research Motivation
+      </h2>
+      <div class="skeleton-notice" style="max-width:680px">
+        <strong>Planned content — Prompt 46</strong>
+        Logical pluralism and the Yurihak (유리학) project as inspiration.
+        Why supporting multiple logical frameworks in one infrastructure matters.
+        Framing: motivation and design inspiration, not a completed formalization.
+      </div>
+    </div>
+  </section>
+
+  <!-- Proof assistant comparison placeholder -->
+  <section class="page-section page-section--alt" aria-labelledby="comparison-heading">
+    <div class="section-inner">
+      <h2 id="comparison-heading" class="section-heading" style="margin-bottom:1.5rem">
+        Relation to Proof Assistants
+      </h2>
+      <div class="skeleton-notice" style="max-width:680px">
+        <strong>Planned content — Prompt 47</strong>
+        How Stele differs from Lean 4, Coq, Agda, and Isabelle/HOL.
+        Proof checker vs. theorem prover distinction.
+        What Stele is not: no proof search, no tactics, no metaprogramming.
+      </div>
+    </div>
+  </section>
+
+  <!-- References -->
+  <section class="page-section" aria-labelledby="references-heading">
+    <div class="section-inner">
+      <h2 id="references-heading" class="section-heading" style="margin-bottom:1.5rem">
+        References &amp; Provenance
+      </h2>
+      <div class="skeleton-notice" style="max-width:680px">
+        <strong>Planned content — Prompt 47</strong>
+        Kleene (K3), Priest (LP), Troelstra &amp; van Dalen (IQL),
+        Curry–Howard correspondence, de Bruijn criterion.
+        Provenance map from design decisions to source citations.
+      </div>
+      <div style="margin-top:1.5rem">
+        <a href="https://github.com/re-glow/stele-logic/blob/main/paper/references.bib"
+           target="_blank" rel="noopener" class="btn btn-ghost">
+          View references.bib ↗
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

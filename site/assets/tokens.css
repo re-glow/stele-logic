@@ -1,0 +1,151 @@
+/* Stele Design Tokens
+   Source of truth for all CSS custom properties.
+   Load BEFORE stele_site.css so stele_site.css can selectively override.
+   Skeleton pages (theory/research/about/etc.) reference this file directly.
+   See: docs/design-system.md §3
+*/
+
+:root {
+  /* ── Color: Base ──────────────────────────────────────────────────────── */
+  --bg:      #07090f;
+  --bg2:     #090c15;
+  --surface: #0d1220;
+  --surf2:   #111826;
+  --surf3:   #0a1018;
+
+  /* ── Color: Borders ───────────────────────────────────────────────────── */
+  --border:  #1c2840;
+  --bord2:   #263450;
+
+  /* ── Color: Text ─────────────────────────────────────────────────────── */
+  --text:          #b8cce0;   /* primary — contrast ≈10.5:1 on --bg ✓ WCAG AAA */
+  --text-secondary: #7fa0be;  /* secondary prose — contrast ≈5.6:1 on --bg ✓ */
+  --muted:         #5e7a8f;   /* contrast ≈4.8:1 on --bg ✓ WCAG AA */
+  --dim:           #283a54;   /* decorative/disabled only; not for body text */
+
+  /* ── Color: Accents ───────────────────────────────────────────────────── */
+  --cyan:   #00e8ff;
+  --violet: #b06aff;
+  --green:  #00ff9f;
+  --red:    #ff3566;
+  --amber:  #ffb347;
+
+  /* ── Color: Status badges ─────────────────────────────────────────────── */
+  /* Stable */
+  --status-stable-bg:     rgba(0,255,159,.08);
+  --status-stable-fg:     #00ff9f;
+  --status-stable-border: rgba(0,255,159,.22);
+  /* Experimental */
+  --status-experimental-bg:     rgba(255,179,71,.08);
+  --status-experimental-fg:     #ffb347;
+  --status-experimental-border: rgba(255,179,71,.22);
+  /* Optional */
+  --status-optional-bg:     rgba(176,106,255,.08);
+  --status-optional-fg:     #b06aff;
+  --status-optional-border: rgba(176,106,255,.22);
+  /* Demo */
+  --status-demo-bg:     rgba(0,232,255,.06);
+  --status-demo-fg:     #00e8ff;
+  --status-demo-border: rgba(0,232,255,.2);
+  /* Future */
+  --status-future-bg:     rgba(40,58,84,.5);
+  --status-future-fg:     #5e7a8f;
+  --status-future-border: rgba(40,58,84,.8);
+  /* Untrusted */
+  --status-untrusted-bg:     rgba(255,53,102,.06);
+  --status-untrusted-fg:     #ff3566;
+  --status-untrusted-border: rgba(255,53,102,.2);
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --font-mono:    ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  --font-sans:    system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+  --font-display: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+
+  /* Aliases kept for backward-compat with stele_site.css */
+  --mono: ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  --sans: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+
+  /* Type scale */
+  --text-xs:   0.72rem;
+  --text-sm:   0.82rem;
+  --text-base: 0.92rem;
+  --text-md:   1rem;
+  --text-lg:   1.2rem;
+  --text-xl:   1.6rem;
+  --text-2xl:  2.2rem;
+  --text-hero: clamp(3rem, 8vw, 6rem);
+
+  /* Line heights */
+  --lh-tight:  1.2;
+  --lh-normal: 1.6;
+  --lh-loose:  1.85;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.01em;
+  --tracking-normal:  0em;
+  --tracking-title:   0.04em;
+  --tracking-label:   0.12em;
+  --tracking-wide:    0.18em;
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  --max-w-text:    680px;
+  --max-w-content: 1100px;
+  --max-w-wide:    1280px;
+
+  /* Spacing (4px base grid) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-section: 80px;
+
+  /* Gaps */
+  --gap-card:    18px;
+  --gap-feature: 18px;
+  --section-gap: 80px; /* backward-compat alias */
+
+  /* ── Shape ────────────────────────────────────────────────────────────── */
+  --radius-sm: 3px;
+  --radius:    6px;  /* backward-compat alias */
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --border-width: 1px;
+
+  /* Glows / shadows */
+  --glow-cyan:   0 0 18px rgba(0,232,255,.12);
+  --glow-green:  0 0 14px rgba(0,255,159,.12);
+  --glow-violet: 0 0 14px rgba(176,106,255,.12);
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --dur-fast:   120ms;
+  --dur-normal: 220ms;
+  --dur-slow:   400ms;
+
+  --ease-default: ease;
+  --ease-out:     cubic-bezier(0.2, 0, 0, 1);
+  /* --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); — use sparingly */
+
+  /* ── Z-index layers ───────────────────────────────────────────────────── */
+  --z-base:     0;
+  --z-above:    10;
+  --z-sticky:   100;
+  --z-nav:      200;
+  --z-overlay:  400;
+  --z-scanline: 9990;
+}
+
+/* ── Reduced-motion: disable all custom-property-driven animations ──────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast:   0ms;
+    --dur-normal: 0ms;
+    --dur-slow:   0ms;
+  }
+}

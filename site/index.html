@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stele — Formal Proof Verification in the Browser</title>
 <meta name="description"
-  content="Stele is a formal verification framework for mathematical reasoning. Write structured natural-deduction proofs and verify them instantly — directly in your browser, no install required.">
+  content="Stele is a formal verification framework for mathematical reasoning. Write structured natural-deduction proofs and verify them step by step — directly in your browser, no install required.">
 <!-- Design tokens — load first so base CSS can selectively override -->
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
@@ -15,67 +15,169 @@
 </head>
 <body>
 
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
 <!-- ── Sticky nav ─────────────────────────────────────────────────────────── -->
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="#hero">STELE</a>
   <div class="nav-links">
-    <a href="#what">About</a>
-    <a href="#tutorial">Tutorial</a>
     <a href="#studio">Studio</a>
-    <a href="#gallery">Examples</a>
-    <a href="#quickstart">Get Started</a>
+    <a href="#tutorial">Tutorial</a>
+    <a href="theory.html">Theory</a>
+    <a href="research.html">Research</a>
+    <a href="about.html">About</a>
     <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
        class="nav-link-gh">GitHub ↗</a>
   </div>
 </nav>
+
+<main id="main-content">
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <!-- § 1  HERO                                                               -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <section id="hero" aria-labelledby="hero-heading">
 
-  <!-- Mathematical symbol cascade — decorative, hidden from screen readers  -->
+  <!-- Mathematical symbol cascade — decorative, hidden from screen readers -->
   <div class="hero-symbols" aria-hidden="true">
     <span style="--x:3%;  --ty:-45px; --d:0s;   --fs:1.1rem">∀</span>
     <span style="--x:9%;  --ty:-30px; --d:2.3s;  --fs:.85rem">⊢</span>
     <span style="--x:17%; --ty:-50px; --d:0.8s;  --fs:1.3rem">→</span>
     <span style="--x:24%; --ty:-35px; --d:4.1s;  --fs:.9rem">¬</span>
     <span style="--x:31%; --ty:-55px; --d:1.6s;  --fs:1.1rem">∃</span>
-    <span style="--x:39%; --ty:-40px; --d:3.4s;  --fs:.8rem">∧</span>
     <span style="--x:47%; --ty:-30px; --d:0.4s;  --fs:1.2rem">⊨</span>
-    <span style="--x:55%; --ty:-60px; --d:2.9s;  --fs:.9rem">∨</span>
     <span style="--x:62%; --ty:-45px; --d:1.2s;  --fs:1.0rem">⊥</span>
     <span style="--x:70%; --ty:-35px; --d:3.7s;  --fs:.85rem">∴</span>
-    <span style="--x:77%; --ty:-50px; --d:0.6s;  --fs:1.1rem">≡</span>
     <span style="--x:84%; --ty:-30px; --d:2.1s;  --fs:.9rem">∈</span>
-    <span style="--x:91%; --ty:-55px; --d:4.5s;  --fs:1.2rem">⊃</span>
     <span style="--x:96%; --ty:-40px; --d:1.9s;  --fs:.8rem">∀</span>
-    <span style="--x:13%; --ty:-65px; --d:5.2s;  --fs:.75rem">⊢</span>
-    <span style="--x:43%; --ty:-70px; --d:3.0s;  --fs:.7rem">→</span>
-    <span style="--x:66%; --ty:-60px; --d:1.4s;  --fs:.75rem">¬</span>
-    <span style="--x:87%; --ty:-50px; --d:4.8s;  --fs:.8rem">∃</span>
-    <span style="--x:58%; --ty:-75px; --d:0.2s;  --fs:.7rem">∧</span>
-    <span style="--x:33%; --ty:-55px; --d:5.8s;  --fs:.72rem">⊨</span>
   </div>
 
-  <div class="hero-content">
-    <p class="hero-eyebrow">Formal Verification Framework</p>
-    <h1 class="hero-brand" id="hero-heading">STELE</h1>
-    <p class="hero-tagline">Mathematical reasoning, verified.</p>
-    <p class="hero-desc">
-      Write structured natural-deduction proofs. Stele's trusted kernel
-      checks each step for logical validity — in the browser, with no
-      backend, no installation, no data sent to any server.
-    </p>
-    <div class="hero-actions">
-      <a href="#tutorial" class="btn btn-primary hero-cta">5-minute tutorial</a>
-      <a href="#studio"   class="btn btn-ghost hero-cta">Open Studio</a>
+  <div class="hero-inner">
+
+    <!-- Left: text content -->
+    <div class="hero-text">
+      <p class="hero-eyebrow">Formal Verification Framework for Mathematical Reasoning</p>
+      <h1 class="hero-brand" id="hero-heading">STELE</h1>
+      <p class="hero-tagline">Write a proof. Check every rule.</p>
+      <p class="hero-desc">
+        Structured natural-deduction proof checking in the browser.
+        The trusted kernel verifies each inference step against the declared logic —
+        intuitionistic, classical, or a custom rule set.
+        Runs entirely via Pyodide/WASM. No backend. Nothing transmitted.
+        <em>Not a theorem prover.</em>
+      </p>
+
+      <!-- Status evidence strip -->
+      <div class="hero-badges" role="list" aria-label="Feature status">
+        <span class="badge badge-stable" role="listitem">Proof checker — Stable</span>
+        <span class="badge badge-stable" role="listitem">Browser Studio — Stable</span>
+        <span class="badge badge-experimental" role="listitem">Kripke countermodels — Experimental</span>
+        <span class="badge badge-experimental" role="listitem">Certificates — Experimental</span>
+        <span class="badge badge-optional" role="listitem">Lean bridge — Optional</span>
+      </div>
+
+      <!-- Primary actions -->
+      <div class="hero-actions">
+        <a href="#studio"   class="btn btn-primary  hero-cta">Open Studio</a>
+        <a href="research.html" class="btn btn-secondary hero-cta">Read Whitepaper</a>
+        <a href="#tutorial" class="btn btn-ghost    hero-cta">5-min Tutorial</a>
+        <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+           class="btn btn-ghost hero-cta">GitHub ↗</a>
+      </div>
+
+      <p class="hero-notice">
+        <span class="notice-dot" aria-hidden="true"></span>
+        Runs locally via Pyodide/WASM · ~8 MB on first visit, then cached
+      </p>
     </div>
-    <p class="hero-notice">
-      <span class="notice-dot"></span>
-      Runs locally via Pyodide/WASM · ~8 MB on first visit, then cached
-    </p>
+
+    <!-- Right: proof dependency graph visual — decorative -->
+    <div class="hero-graph-wrap" aria-hidden="true">
+      <svg viewBox="0 0 440 230" width="100%">
+        <defs>
+          <marker id="hg-arrow" markerWidth="7" markerHeight="7"
+                  refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 z" fill="rgba(176,106,255,.6)"/>
+          </marker>
+          <marker id="hg-arrow-g" markerWidth="7" markerHeight="7"
+                  refX="6" refY="3.5" orient="auto">
+            <path d="M0,0 L7,3.5 L0,7 z" fill="rgba(0,255,159,.65)"/>
+          </marker>
+        </defs>
+        <!-- Edges: assumptions → mp rule -->
+        <line x1="92"  y1="86"  x2="211" y2="121"
+              stroke="rgba(176,106,255,.4)" stroke-width="1.5"
+              marker-end="url(#hg-arrow)"/>
+        <line x1="92"  y1="169" x2="211" y2="135"
+              stroke="rgba(176,106,255,.4)" stroke-width="1.5"
+              marker-end="url(#hg-arrow)"/>
+        <!-- Edge: mp → conclusion -->
+        <line x1="260" y1="128" x2="357" y2="128"
+              stroke="rgba(0,255,159,.45)" stroke-width="1.5"
+              marker-end="url(#hg-arrow-g)"/>
+        <!-- h1: assume P→Q -->
+        <circle cx="70" cy="80" r="23"
+                fill="rgba(0,232,255,.04)" stroke="rgba(0,232,255,.55)" stroke-width="1.5"/>
+        <text x="70" y="75" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="9"
+              fill="rgba(127,160,190,.7)">h1</text>
+        <text x="70" y="87" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="10"
+              fill="#00e8ff">P→Q</text>
+        <!-- h2: assume P -->
+        <circle cx="70" cy="175" r="23"
+                fill="rgba(0,232,255,.04)" stroke="rgba(0,232,255,.55)" stroke-width="1.5"/>
+        <text x="70" y="170" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="9"
+              fill="rgba(127,160,190,.7)">h2</text>
+        <text x="70" y="182" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="10"
+              fill="#00e8ff">P</text>
+        <!-- mp: modus ponens derivation -->
+        <circle cx="235" cy="128" r="25"
+                fill="rgba(176,106,255,.05)" stroke="rgba(176,106,255,.55)" stroke-width="1.5"/>
+        <text x="235" y="123" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="9"
+              fill="rgba(127,160,190,.7)">mp</text>
+        <text x="235" y="135" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="10"
+              fill="#b06aff">Q</text>
+        <!-- ∴ conclusion -->
+        <circle cx="385" cy="128" r="28"
+                fill="rgba(0,255,159,.06)" stroke="rgba(0,255,159,.65)" stroke-width="1.5"
+                class="stele-conclude-pulse"/>
+        <text x="385" y="121" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="14"
+              fill="#00ff9f">∴</text>
+        <text x="385" y="136" text-anchor="middle"
+              font-family="ui-monospace,monospace" font-size="10"
+              fill="#00ff9f">Q</text>
+      </svg>
+    </div>
+
   </div>
+
+  <!-- Audience navigation cards -->
+  <nav class="hero-audiences" aria-label="Start here by audience">
+    <a href="architecture.html" class="audience-card">
+      <span class="audience-card-role">Technical reviewer</span>
+      <span class="audience-card-dest">Architecture &amp; Trust →</span>
+    </a>
+    <a href="theory.html" class="audience-card">
+      <span class="audience-card-role">Teacher / student</span>
+      <span class="audience-card-dest">Theory &amp; Tutorial →</span>
+    </a>
+    <a href="research.html" class="audience-card">
+      <span class="audience-card-role">Admissions reader</span>
+      <span class="audience-card-dest">Research &amp; Whitepaper →</span>
+    </a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="audience-card">
+      <span class="audience-card-role">Developer</span>
+      <span class="audience-card-dest">GitHub &amp; Docs →</span>
+    </a>
+  </nav>
+
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
@@ -97,6 +199,9 @@
       <div class="feature-card">
         <div class="feature-icon" aria-hidden="true">⊢</div>
         <h3 class="feature-title">Proof Verification</h3>
+        <div class="feature-card-badges">
+          <span class="badge badge-stable">Stable</span>
+        </div>
         <p class="feature-desc">
           Write proofs in a readable natural-deduction language.
           The trusted kernel verifies every step against the declared logic
@@ -106,6 +211,9 @@
       <div class="feature-card">
         <div class="feature-icon" aria-hidden="true">⚠</div>
         <h3 class="feature-title">Structural Diagnostics</h3>
+        <div class="feature-card-badges">
+          <span class="badge badge-stable">Stable</span>
+        </div>
         <p class="feature-desc">
           Multi-pass analysis flags undefined symbols, missing hypotheses,
           invalid transitions, and unused assumptions with exact line numbers.
@@ -114,6 +222,9 @@
       <div class="feature-card">
         <div class="feature-icon" aria-hidden="true">⬡</div>
         <h3 class="feature-title">Dependency Graph</h3>
+        <div class="feature-card-badges">
+          <span class="badge badge-stable">Stable</span>
+        </div>
         <p class="feature-desc">
           Extract the proof's step-by-step dependency graph. Detect cycles,
           isolated steps, and unused assumptions. Export in DOT notation.
@@ -122,10 +233,40 @@
       <div class="feature-card">
         <div class="feature-icon" aria-hidden="true">⊨</div>
         <h3 class="feature-title">Semantic Tools</h3>
+        <div class="feature-card-badges">
+          <span class="badge badge-stable">Stable</span>
+          <span class="badge badge-experimental">Kripke — Experimental</span>
+        </div>
         <p class="feature-desc">
           Check rule soundness against multi-valued matrices (K3, LP, Boolean).
           Explore world lattices and proposition-level independence patterns.
+          Bounded Kripke countermodel search for intuitionistic propositional logic.
         </p>
+      </div>
+    </div>
+
+    <!-- Trust boundary summary -->
+    <div class="trust-boundary-block">
+      <div class="trust-card trust-card-trusted">
+        <div class="trust-card-header">
+          <span class="badge badge-stable" style="font-size:.65rem;padding:2px 6px">Trusted</span>
+          <span class="trust-card-name">kernel.py</span>
+        </div>
+        <div class="trust-card-body">
+          stdlib only · pure syntactic matching.
+          The only code path that issues proof verdicts.
+        </div>
+      </div>
+      <div class="trust-card trust-card-untrusted">
+        <div class="trust-card-header">
+          <span class="badge badge-untrusted" style="font-size:.65rem;padding:2px 6px">Untrusted</span>
+          <span class="trust-card-name">diagnostics · hints · ML</span>
+        </div>
+        <div class="trust-card-body">
+          Structural diagnostics, proof-state hints, ML baseline.
+          Explicitly outside the trust boundary.
+          Cannot affect kernel soundness.
+        </div>
       </div>
     </div>
 
@@ -415,6 +556,15 @@
           <a href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
              target="_blank" rel="noopener" class="btn btn-ghost tstep-nc-btn">Read Guide ↗</a>
         </div>
+        <div class="tstep-next-card">
+          <div class="tstep-nc-icon" aria-hidden="true">∴</div>
+          <h4 class="tstep-nc-title">Technical Whitepaper</h4>
+          <p class="tstep-nc-desc">
+            Formal semantics, metatheory claims, proof-term calculus,
+            and the trust boundary specification.
+          </p>
+          <a href="research.html" class="btn btn-secondary tstep-nc-btn">Read Whitepaper →</a>
+        </div>
       </div>
     </div>
 
@@ -487,7 +637,7 @@
                 data-tab="examples" aria-controls="panel-examples">EXAMPLES</button>
       </nav>
 
-      <!-- ── Panel: Verify ──────────────────────────────────────────────── -->
+      <!-- ── Panel: Verify ──────────────────────────────────────────────────── -->
       <div class="main">
         <section id="panel-verify" class="panel active" role="tabpanel"
                  aria-labelledby="tab-verify-label">
@@ -760,6 +910,11 @@
     <h2 id="docs-heading" class="section-heading">Learn more</h2>
 
     <div class="docs-grid">
+      <a class="doc-card" href="research.html">
+        <span class="doc-icon" aria-hidden="true">∴</span>
+        <span class="doc-title">Technical Whitepaper</span>
+        <span class="doc-desc">Formal semantics, proof terms, Kripke semantics, metatheory claims and evidence.</span>
+      </a>
       <a class="doc-card" href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
          target="_blank" rel="noopener">
         <span class="doc-icon" aria-hidden="true">📖</span>
@@ -807,6 +962,8 @@
     </div>
   </div>
 </section>
+
+</main>
 
 <!-- ── Footer ─────────────────────────────────────────────────────────────── -->
 <footer class="site-footer">

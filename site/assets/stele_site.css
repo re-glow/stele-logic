@@ -635,3 +635,110 @@ select:focus-visible { outline: 2px solid var(--cyan); }
 
 /* ── Utility ───────────────────────────────────────────────────────────── */
 .dim-text { color: var(--dim); }
+
+/* ── Hero: split layout (v1.1) ─────────────────────────────────────────── */
+#hero {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 80px 24px 60px;
+}
+
+.hero-inner {
+  position: relative; z-index: 1;
+  width: 100%;
+  max-width: var(--max-w-wide, 1280px);
+  margin: 0 auto 32px;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 28px;
+}
+
+.hero-graph-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+}
+.hero-graph-wrap svg {
+  max-width: 440px;
+  filter: drop-shadow(0 0 24px rgba(0,232,255,.04));
+}
+
+/* Audience nav cards */
+.hero-audiences {
+  position: relative; z-index: 1;
+  width: 100%;
+  max-width: var(--max-w-wide, 1280px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.audience-card {
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.audience-card:hover {
+  border-color: var(--bord2);
+  box-shadow: 0 0 14px rgba(0,232,255,.04);
+  text-decoration: none;
+}
+.audience-card-role {
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  font-weight: 600;
+}
+.audience-card-dest {
+  font-size: .8rem;
+  color: var(--muted);
+}
+
+/* Feature card status badges */
+.feature-card-badges {
+  margin: 8px 0 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Trust boundary block */
+.trust-boundary-block {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  max-width: 720px;
+}
+
+@media (max-width: 900px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .hero-graph-wrap { display: none; }
+  .hero-audiences { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .hero-audiences { grid-template-columns: 1fr; }
+  .trust-boundary-block { grid-template-columns: 1fr; }
+}

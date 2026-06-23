@@ -535,7 +535,77 @@ exists_elim(e, x, h, h)                    -- ExistsElim(e, "x", "h", TVar("h"))
 
 ---
 
-## 9. 제외 범위
+## 9. 유한 크립키 의미론 (직관 명제 논리)
+
+`stele/kripke.py`는 직관 명제 논리의 유한 크립키 의미론을 구현한다.
+
+### 9.1 크립키 모델
+
+```
+KripkeModel:
+  worlds     — 유한 세계 집합 (정수 튜플)
+  order      — 반사·추이적 전순서: frozenset of (w, v) pairs  (w ≤ v)
+  valuation  — 단조 원자 할당: frozenset of (world, atom_name) pairs
+```
+
+`(w, "P") ∈ valuation` iff `w ⊩ P`.
+
+**단조성(지속성):** w ≤ v이고 `(w, atom) ∈ valuation`이면 `(v, atom) ∈ valuation`.
+
+### 9.2 강제 관계
+
+`forces(model, w, formula) → bool`:
+
+```
+w ⊩ P          iff  (w, "P") ∈ valuation
+w ⊩ false       never
+w ⊩ A ∧ B      iff  w ⊩ A  and  w ⊩ B
+w ⊩ A ∨ B      iff  w ⊩ A  or   w ⊩ B
+w ⊩ A → B      iff  for all v ≥ w:  v ⊩ A  implies  v ⊩ B
+w ⊩ ¬A         iff  for all v ≥ w:  not v ⊩ A   (= A → false)
+```
+
+### 9.3 지속성 (Beth 보조정리)
+
+**주장:** w ≤ v이고 w ⊩ A이면 v ⊩ A.
+
+*증명 스케치:* 원자와 결합사에 대해 귀납. 원자는 단조성 공리가 보장. 연결사는 강제 조항의 구조에 의해 상속된다.
+
+**회귀 테스트:** `tests/test_kripke.py::TestPersistence`
+
+### 9.4 반례 탐색
+
+`find_countermodel(formula, max_worlds=4) → KripkeCountermodel | None`
+
+소규모 유한 크립키 모델에 대해 제한된 완전 탐색을 수행한다:
+
+1. `n = 1, 2, …, max_worlds`에 대해 `{0,…,n-1}`의 모든 전순서를 열거
+2. 각 전순서에 대해 모든 단조 원자 할당을 열거
+3. 어떤 세계에서 공식이 강제되지 않으면 반례 반환
+
+**한계:** `None` 반환은 직관 논리적 타당성을 보장하지 않는다. 제한된 탐색이며, 반례가 존재하더라도 더 큰 모델에서만 발견될 수 있다.
+
+### 9.5 고전 vs 직관 분리
+
+다음 공식들은 `find_countermodel`로 유한 반례를 찾을 수 있다:
+
+| 공식 | 고전 | 직관 (Kripke) |
+|------|------|--------------|
+| P → P | 타당 | 타당 (반례 없음) |
+| P ∨ ¬P | 타당 | 비타당 (반례 있음) |
+| ¬¬P → P | 타당 | 비타당 (반례 있음) |
+| ((P→Q)→P)→P | 타당 | 비타당 (반례 있음) |
+
+### 9.6 제외 범위
+
+- 1차 논리 크립키 의미론 미구현 (명제 논리 전용)
+- 모달 논리 미구현
+- 전체 완전성 증명 없음 (유한 탐색 도구만 제공)
+- K3/LP 행렬 의미론과 독립적: `kripke.py`는 `matrix.py`를 임포트하지 않음
+
+---
+
+## 10. 제외 범위
 
 | 항목 | 설명 |
 |------|------|

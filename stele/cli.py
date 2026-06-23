@@ -380,6 +380,36 @@ def cmd_term_normalize(term_str):
         return 1
 
 
+def cmd_kripke(formula_str, max_worlds):
+    """Search for a finite Kripke countermodel for a propositional formula."""
+    from .parser import parse_formula
+    from .ast import pretty
+    from .kripke import find_countermodel, forces, pretty_model
+    from .errors import ParseError
+
+    try:
+        formula = parse_formula(formula_str)
+    except ParseError as e:
+        print(f"X Parse error: {e}")
+        return 1
+
+    print(f"kripke  formula: {pretty(formula)}")
+    cm = find_countermodel(formula, max_worlds=max_worlds)
+
+    if cm is None:
+        print(f"  result:  no countermodel found within {max_worlds} world(s)")
+        print(f"  note:    this does NOT prove intuitionistic validity")
+        print(f"           (bounded search, not completeness)")
+        return 0
+
+    print(f"  result:  countermodel found (not intuitionistically valid)")
+    print(f"  failing world: {cm.world}")
+    lines = pretty_model(cm.model).splitlines()
+    for line in lines:
+        print(f"  {line}")
+    return 0
+
+
 def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     ap = argparse.ArgumentParser(prog="stele")
@@ -455,6 +485,19 @@ def main(argv=None):
     tn.add_argument("--term", required=True,
                     help="proof term in surface syntax, e.g. 'fst(pair(x, y))'")
 
+    kr = sub.add_parser(
+        "kripke",
+        help="search for a finite Kripke countermodel for a propositional formula",
+    )
+    kr.add_argument(
+        "formula",
+        help="propositional formula to test, e.g. 'P or not P'",
+    )
+    kr.add_argument(
+        "--max-worlds", dest="max_worlds", type=int, default=4,
+        help="maximum number of worlds to search (default: 4)",
+    )
+
     args = ap.parse_args(argv)
     if args.cmd == "check":
         return cmd_check(args.file, args.logic)
@@ -475,6 +518,8 @@ def main(argv=None):
                               getattr(args, "context_str", None))
     if args.cmd == "term-normalize":
         return cmd_term_normalize(args.term)
+    if args.cmd == "kripke":
+        return cmd_kripke(args.formula, args.max_worlds)
     return 2
 
 

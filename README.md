@@ -30,6 +30,7 @@ Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`
 | Proof-term reduction / normalization | **Stable** | `stele.core.reduce.normalize()` | Fuel limit (default 1 000 steps); no η-reduction |
 | de Bruijn binder layer | **Stable** | `stele.core.debruijn` | Proof-variable binders only; FOL object-vars remain named |
 | First-order proof-term fragment | **Experimental** | `stele.core` ForallIntro/Elim/ExistsIntro/Elim | No proof-script surface syntax; object-var de Bruijn incomplete |
+| Kripke countermodel search | **Experimental** | `python -m stele.cli kripke FORMULA` | Propositional only; bounded finite search (≤4 worlds default); no completeness |
 | Semantics & metatheory docs | **Stable** (docs) | `docs/semantics.md`, `docs/metatheory.md` | Proof sketches + regression/property tests; not machine-checked |
 | Property-based tests (Hypothesis) | **Optional** | `pip install -r requirements-dev.txt && pytest tests/test_proof_term_properties.py` | Requires Hypothesis; core test suite passes without it |
 | Browser Pyodide Studio | **Stable** | https://re-glow.github.io/stele-logic/ | Internet required for Pyodide CDN (~8 MB, cached) |

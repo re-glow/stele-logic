@@ -1408,12 +1408,27 @@ kripke  formula: P or not P
 | `not not P -> P` | 반례 있음 (고전 전용) |
 | `((P -> Q) -> P) -> P` | 반례 있음 (Peirce, 고전 전용) |
 
-### 24.6 한계
+### 24.6 웹 API / Pyodide / 진단 연동
+
+**Stele Studio** (로컬 서버 `python -m stele.web`):
+- Semantics 패널 → "KRIPKE COUNTERMODEL" 섹션: 공식 입력 후 Find 클릭
+- HTTP API: `GET /api/kripke?formula=P+or+not+P&max_worlds=3`
+
+**공개 사이트** (Pyodide):
+- Semantics 패널 → "Kripke Countermodel" 섹션 (WASM, 서버 없음)
+- Python API: `browser_kripke("P or not P", max_worlds=3)` → JSON dict
+
+**진단 통합** (`stele.diagnostics`):
+- 직관 명제 논리 증명에서 고전 전용 규칙(`dne`, `lem`, `pbc`)을 사용할 때
+  `KripkeCountermodelFound` (info) 진단이 **추가로** 붙는다.
+- 기존 kernel 오류를 대체하지 않는다. 어디까지나 의미론적 참고 정보다.
+- 증명 검사 실패 ≠ 의미론적 비도출 가능성(두 개념을 혼동하지 말 것).
+
+### 24.7 한계
 
 - **명제 논리 전용**: 1차 논리 크립키 의미론 미구현
 - **유한 제한 탐색**: `None` 반환은 직관 타당성 보장이 아님
 - **완전성 없음**: 반례가 더 큰 모델에만 존재할 경우 탐지 불가
-- **UI 없음**: 현재 CLI 전용; Studio 통합 미구현
 
 ---
 

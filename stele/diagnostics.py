@@ -17,6 +17,8 @@ Stable diagnostic codes (tests and benchmark datasets rely on these strings):
   UndefinedDefinition  — definition body references an undefined name (v1: heuristic)
   InvalidTransition    — in-scope refs but rule application fails (classified from kernel)
   TypeMismatch         — sort-level mismatch (v1 machinery only; no surface trigger yet)
+  KripkeCountermodelFound — additive info hint: finite Kripke countermodel found (info only,
+                            additive alongside InvalidTransition; never a kernel replacement)
 """
 from dataclasses import dataclass
 from .ast import pretty
@@ -34,7 +36,8 @@ class Diagnostic:
     Stable code strings (relied on by tests and future benchmark datasets):
       UndefinedSymbol, MissingHypothesis, UnsupportedConclusion,
       CircularDependency, UnusedAssumption,
-      UndefinedDefinition, InvalidTransition, TypeMismatch
+      UndefinedDefinition, InvalidTransition, TypeMismatch,
+      KripkeCountermodelFound (info-only)
     """
     code: str          # one of the stable code strings above
     message: str       # human-readable explanation
@@ -54,6 +57,7 @@ def diagnose_theorem(thm, logic_name=None):
       Pass 1: Scope analysis       → UndefinedSymbol, MissingHypothesis, UnsupportedConclusion
       Pass 2: Graph analysis       → CircularDependency, UnusedAssumption
       Pass 3: Kernel classification → InvalidTransition (only when pass 1 is error-free)
+      Pass 4: Kripke hint (info)   → KripkeCountermodelFound (intuitionistic_prop + InvalidTransition)
     """
     diags = []
     all_labels = _collect_all_labels(thm.lines)
@@ -86,6 +90,14 @@ def diagnose_theorem(thm, logic_name=None):
     # Only run when no scope errors; kernel errors would duplicate scope errors otherwise.
     if not scope_errors and logic is not None and logic.semantics == "proof":
         _check_invalid_transitions(thm, name, diags)
+
+    # Pass 4: Kripke countermodel hint — additive info, only safe cases.
+    # Fires when (a) logic is intuitionistic_prop AND (b) no scope errors.
+    # _attach_kripke_hint re-runs the kernel to confirm a rule failure (including
+    # "not available" which Pass 3 does not classify as InvalidTransition).
+    # This pass NEVER replaces a kernel error; it is informational only.
+    if not scope_errors and name == "intuitionistic_prop":
+        _attach_kripke_hint(thm, diags)
 
     return diags
 
@@ -360,3 +372,68 @@ def _check_invalid_transitions(thm, logic_name, diags):
             diags.append(Diagnostic("InvalidTransition", msg, line, "error"))
         # Other ProofError types (no conclude, duplicate label) are structural issues
         # not covered by this pass.
+
+
+def _attach_kripke_hint(thm, diags):
+    """Pass 4: optionally attach a KripkeCountermodelFound info diagnostic.
+
+    Safe cases ONLY:
+      - Logic is intuitionistic_prop (caller checks this)
+      - No scope errors (caller checks)
+      - Kernel rejects with "rule X is not available" (classical-only rule)
+      - A Kripke countermodel exists within 3 worlds
+
+    Deliberately excludes wrong-premises errors and structural issues.
+    Never replaces a kernel error — adds an info note alongside.
+    """
+    # Only fire for "rule X is not available" (classical-only rule used under
+    # intuitionistic logic). Ignore wrong-premise errors and structural issues.
+    from .kernel import check_theorem
+    from .errors import ProofError
+    try:
+        check_theorem(thm, "intuitionistic_prop")
+        return  # proof passed; nothing to annotate
+    except ProofError as e:
+        if "is not available" not in str(e):
+            return  # not a classical-only rule; no semantic interpretation
+    except Exception:
+        return
+
+    # Extract the theorem's conclude formula (the first Conclude node).
+    conclude_formula = None
+    for node in thm.lines:
+        if isinstance(node, Conclude):
+            conclude_formula = node.formula
+            break
+    if conclude_formula is None:
+        return
+
+    try:
+        from .kripke import kripke_explain
+        from .ast import pretty as pretty_formula
+    except Exception:
+        return
+
+    try:
+        ex = kripke_explain(conclude_formula, max_worlds=3,
+                            formula_str=pretty_formula(conclude_formula))
+    except Exception:
+        return
+
+    if ex.status != "countermodel_found":
+        return
+
+    diags.append(Diagnostic(
+        "KripkeCountermodelFound",
+        (
+            f"Kripke countermodel (≤3 worlds): '{ex.formula}' fails at world "
+            f"{ex.failing_world}. "
+            f"worlds={ex.worlds}, "
+            f"order={ex.order_pairs}, "
+            f"valuation={ex.valuation}. "
+            f"Note: proof-check failure ≠ semantic non-derivability; "
+            f"this is an independent semantic witness."
+        ),
+        None,
+        "info",
+    ))

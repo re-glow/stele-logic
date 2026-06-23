@@ -528,6 +528,26 @@ td.des{background:#0b1e14;color:var(--green);font-weight:700}
       </div>
     </section>
 
+    <!-- Kripke Countermodel -->
+    <section class="plural-section">
+      <h2 class="section-label">KRIPKE COUNTERMODEL</h2>
+      <p class="section-desc">Bounded finite Kripke countermodel search for intuitionistic propositional logic. Propositional formulas only. Bounded search — absence of a countermodel does <em>not</em> prove validity.</p>
+      <div class="toolbar-row">
+        <label for="kripke-formula" class="toolbar-label">Formula</label>
+        <input id="kripke-formula" class="formula-input" type="text"
+               value="P or not P" placeholder="e.g. P or not P" />
+        <label for="kripke-worlds" class="toolbar-label">Max&nbsp;worlds</label>
+        <select id="kripke-worlds" class="logic-sel" style="width:auto">
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
+        <button class="btn-secondary" id="btn-kripke">FIND</button>
+      </div>
+      <div id="kripke-output" class="section-body" aria-live="polite">
+        <p class="idle-msg">Enter a formula and search for a Kripke countermodel.</p>
+      </div>
+    </section>
+
     <!-- Matrix truth tables -->
     <section class="plural-section plural-wide">
       <h2 class="section-label">MATRIX TRUTH TABLES</h2>
@@ -1162,6 +1182,60 @@ function renderLattice(r) {
     <thead><tr><th>WORLD</th><th>AXIOMS</th><th>STATUS</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+}
+
+/* kripke countermodel */
+$('btn-kripke').addEventListener('click', runKripke);
+$('kripke-formula').addEventListener('keydown', e => { if(e.key==='Enter') runKripke(); });
+
+async function runKripke() {
+  const formula = $('kripke-formula').value.trim();
+  const maxWorlds = parseInt($('kripke-worlds').value) || 3;
+  if (!formula) return;
+  $('kripke-output').innerHTML = '<p class="idle-msg">Searching…</p>';
+  let r;
+  try {
+    r = await (await fetch(
+      `/api/kripke?formula=${encodeURIComponent(formula)}&max_worlds=${maxWorlds}`
+    )).json();
+  } catch {
+    $('kripke-output').innerHTML = '<p class="api-error">Server unavailable.</p>';
+    return;
+  }
+  renderKripke(r);
+}
+
+function renderKripke(r) {
+  const el = $('kripke-output');
+  if (!r.ok) { el.innerHTML = `<div class="api-error">${esc(r.error)}</div>`; return; }
+  if (r.status === 'parse_error' || r.status === 'unsupported_formula') {
+    el.innerHTML = `<div class="api-error">${esc(r.explanation)}</div>`; return;
+  }
+  if (r.status === 'no_countermodel_within_bound') {
+    el.innerHTML = `
+      <p style="color:var(--green)">No countermodel found (max ${esc(String(r.max_worlds))} worlds).</p>
+      <p style="color:var(--muted);font-size:11px">${esc(r.bound_note)}</p>`;
+    return;
+  }
+  // countermodel_found
+  const val = r.valuation || {};
+  const worldRows = (r.worlds || []).map(w => {
+    const atoms = (val[String(w)] || []);
+    return `<tr><td>${esc(String(w))}</td><td>${atoms.length ? atoms.map(esc).join(', ') : '∅'}</td><td>${w === r.failing_world ? '<span style="color:var(--red)">✗ fails here</span>' : ''}</td></tr>`;
+  }).join('');
+  const orderStr = (r.order_pairs || []).length
+    ? r.order_pairs.map(p => `${esc(String(p[0]))}≤${esc(String(p[1]))}`).join(', ')
+    : 'discrete (reflexive only)';
+  el.innerHTML = `
+    <p style="font-size:11px;color:var(--muted);margin-bottom:6px">
+      Formula: <b style="color:var(--red)">${esc(r.formula)}</b>
+      · countermodel found · ${esc(r.bound_note)}</p>
+    <p style="font-size:11px;margin-bottom:8px">Order: ${orderStr}</p>
+    <table class="lattice-table">
+      <thead><tr><th>World</th><th>True atoms</th><th></th></tr></thead>
+      <tbody>${worldRows}</tbody>
+    </table>
+    <p style="font-size:11px;color:var(--amber);margin-top:8px">${esc(r.explanation)}</p>`;
 }
 
 /* ════════════════════════════════════════════════════════ init */

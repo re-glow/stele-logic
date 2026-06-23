@@ -52,6 +52,17 @@ def browser_lattice(formula: str = "P") -> dict:
     return lattice_json(formula)
 
 
+def browser_kripke(formula: str, max_worlds: int = 3) -> dict:
+    """Bounded finite Kripke countermodel search for a propositional formula.
+
+    Returns a JSON-serialisable dict with keys:
+      ok, formula, status, max_worlds, bound_note, worlds, order_pairs,
+      valuation, failing_world, explanation
+    """
+    from .web import kripke_json
+    return kripke_json(formula, max_worlds)
+
+
 def browser_demos() -> dict:
     """Return matrix demo data (truth tables, LEM, explosion, liar)."""
     from .web import _demos_json

@@ -234,6 +234,22 @@ def lattice_json(formula_str):
     return {"ok": True, "formula": phi_s, "rows": rows}
 
 
+def kripke_json(formula_str, max_worlds=4):
+    """Search for a finite Kripke countermodel and return structured JSON."""
+    if not formula_str:
+        return {"ok": False, "error": "missing formula parameter"}
+    from .kripke import kripke_explain, explanation_to_dict
+    try:
+        max_w = int(max_worlds)
+    except (TypeError, ValueError):
+        max_w = 4
+    max_w = max(1, min(max_w, 6))
+    ex = kripke_explain(formula_str, max_worlds=max_w)
+    d = explanation_to_dict(ex)
+    d["ok"] = True
+    return d
+
+
 def metrics_json():
     """Load bench/reports/latest.json or return a clear not-found response."""
     if not os.path.isfile(BENCH_REPORT):
@@ -296,6 +312,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, {"error": "missing formula parameter"})
             else:
                 self._send(200, lattice_json(formula))
+        elif path == "/api/kripke":
+            formula = qs.get("formula", "")
+            if not formula:
+                self._send(400, {"ok": False, "error": "missing formula parameter"})
+            else:
+                self._send(200, kripke_json(formula, qs.get("max_worlds", 4)))
         elif path == "/api/metrics":
             self._send(200, metrics_json())
         else:

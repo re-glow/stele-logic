@@ -1332,6 +1332,91 @@ python -m stele.cli term-check \
 
 ---
 
+## 24. 크립키 반례 모델 (직관 명제 논리)
+
+`stele.kripke`는 직관 명제 논리의 유한 크립키 의미론과 제한적 반례 탐색을 제공한다.
+
+### 24.1 세 층의 차이
+
+| 도구 | 질문 | 모듈 |
+|------|------|------|
+| 증명 검사 (`⊢`) | 이 증명 단계가 규칙에 맞는가? | `kernel.py` |
+| 행렬 진단 (`⊨`) | 이 공식이 K3/LP/boolean 다치 의미론에서 타당한가? | `matrix.py` |
+| 세계 격자 (`world`) | 공리를 가진 의미론적 세계에서 공식의 상태는? | `world.py` |
+| **크립키 반례** | 이 공식이 직관 논리에서 비타당한가? 유한 반례 존재? | `kripke.py` |
+
+크립키 모델은 증명 규칙 검사도, 다치 행렬 평가도 아니다. 직관 논리의 **의미론적 반례 탐색** 도구다.
+
+### 24.2 크립키 모델 구조
+
+```
+worlds    — 유한 세계 집합 {0, 1, 2, …}
+order     — 반사·추이적 전순서 (≤): w ≤ v이면 v는 w의 미래 세계
+valuation — 단조 원자 할당: w ≤ v이고 w ⊩ P이면 v ⊩ P
+```
+
+강제 관계 `w ⊩ A`:
+```
+w ⊩ P       iff  P is true at w
+w ⊩ false    never
+w ⊩ A ∧ B   iff  w ⊩ A and w ⊩ B
+w ⊩ A ∨ B   iff  w ⊩ A or  w ⊩ B
+w ⊩ A → B   iff  for all v ≥ w: v ⊩ A implies v ⊩ B
+w ⊩ ¬A      iff  for all v ≥ w: not v ⊩ A
+```
+
+### 24.3 CLI 사용
+
+```bash
+# 배중률 반례 탐색
+python -m stele.cli kripke "P or not P"
+
+# 이중부정 소거 반례 탐색
+python -m stele.cli kripke "not not P -> P"
+
+# P -> P는 반례 없음 (직관적으로 타당)
+python -m stele.cli kripke "P -> P"
+
+# 탐색 범위 확장
+python -m stele.cli kripke "((P -> Q) -> P) -> P" --max-worlds 4
+```
+
+출력 예시 (`P or not P`):
+```
+kripke  formula: P or not P
+  result:  countermodel found (not intuitionistically valid)
+  failing world: 0
+  worlds: [0, 1]
+  order:  reflexive + {0<=1}
+    world 0: {}
+    world 1: {P}
+```
+
+### 24.4 반례 해석
+
+위 출력의 의미: 세계 0에서 세계 1로 확장 가능한 모델에서, P가 아직 결정되지 않은 세계 0에서 `P ∨ ¬P`가 강제되지 않는다.
+- 세계 0에서 P는 false (아직 알 수 없음)
+- 세계 0에서 ¬P도 false (미래 세계 1에서 P가 true이므로)
+- 따라서 세계 0에서 `P ∨ ¬P`는 강제되지 않음
+
+### 24.5 주요 결과
+
+| 공식 | 결과 |
+|------|------|
+| `P -> P` | 반례 없음 (직관적 타당) |
+| `P or not P` | 반례 있음 (고전 전용) |
+| `not not P -> P` | 반례 있음 (고전 전용) |
+| `((P -> Q) -> P) -> P` | 반례 있음 (Peirce, 고전 전용) |
+
+### 24.6 한계
+
+- **명제 논리 전용**: 1차 논리 크립키 의미론 미구현
+- **유한 제한 탐색**: `None` 반환은 직관 타당성 보장이 아님
+- **완전성 없음**: 반례가 더 큰 모델에만 존재할 경우 탐지 불가
+- **UI 없음**: 현재 CLI 전용; Studio 통합 미구현
+
+---
+
 ## 25. 한계와 다음 단계
 
 - 현재는 **명제논리 + 1차 논리 단편**이다. 전체 1차 논리(함수 기호, 동치 등) 미구현.

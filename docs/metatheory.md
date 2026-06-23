@@ -403,7 +403,49 @@ python -m pytest -q
 
 ---
 
-## 7. 알려진 미검증 영역
+## 7. 유한 크립키 의미론 주장
+
+`stele/kripke.py`는 명제 직관 논리의 유한 크립키 의미론을 구현한다.
+
+### 7.1 건전성 상태
+
+**주장:** 직관 명제 논리의 자연연역 규칙은 유한 크립키 강제 관계에 건전하다.
+
+**상태:** 증명 스케치 + 유한 모델 회귀 테스트. Python 테스트는 기계 증명이 아니다.
+
+건전성 회귀 테스트 (`tests/test_kripke.py::TestClassicalSeparation`):
+- 직관 논리 타당 공식들은 탐색 범위(`max_worlds=4`) 내에서 반례 없음
+- LEM, DNE, Peirce 법칙은 유한 반례가 발견됨
+
+### 7.2 완전성 주의사항
+
+`find_countermodel`은 **유한 완전 탐색**(bounded exhaustive search)이다:
+- `None` 반환은 직관 타당성을 보장하지 않는다
+- 전체 크립키 완전성 정리(infinite models)는 구현되지 않음
+- 반례가 `max_worlds` 이상의 모델에만 존재할 경우 탐지 불가
+
+### 7.3 주요 반례
+
+| 공식 | 고전 타당 | Kripke 반례 |
+|------|---------|-------------|
+| P ∨ ¬P (LEM) | ✓ | 2-세계 선형 모델 (P: false→true) |
+| ¬¬P → P (DNE) | ✓ | 2-세계 선형 모델 (P: false→true) |
+| ((P→Q)→P)→P (Peirce) | ✓ | 3-세계 이하 모델 |
+
+### 7.4 모듈 역할 구분
+
+| 모듈 | 역할 |
+|------|------|
+| `kernel.py` | 증명 스크립트 검증 (신뢰 코어) |
+| `matrix.py` | 다치 의미론 (K3/LP/boolean) |
+| `world.py` | (matrix, axioms) 의미론적 세계 |
+| `kripke.py` | 유한 크립키 의미론 (직관 명제 논리) |
+
+`kripke.py`는 `matrix.py`를 임포트하지 않고, `matrix.py`는 `kripke.py`를 임포트하지 않는다.
+
+---
+
+## 8. 알려진 미검증 영역
 
 다음은 현재 테스트로 충분히 다루어지지 않은 영역이다.
 

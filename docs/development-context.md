@@ -47,6 +47,9 @@ stele/
   world.py   World(matrix_name, axioms) frozen dataclass
              + status(φ, world) → PROVABLE/REFUTABLE/BOTH/INDEPENDENT
              + lattice_status(φ, worlds) — 교차 세계 상태 질의
+  kripke.py  유한 크립키 의미론 (직관 명제 논리): KripkeModel, forces(), find_countermodel()
+             — matrix.py/kernel.py와 독립적; 명제 논리 전용; 유한 제한 탐색
+             — CLI: python -m stele.cli kripke "P or not P"
   diagnostics.py  ★UNTRUSTED 다중 패스 구조적 진단 (UndefinedSymbol, MissingHypothesis 등)
   proofgraph.py   증명 의존성 그래프 — 단계 간 의존 관계 + DOT 출력
   browser.py      browser_check() / browser_diagnose() / browser_graph() — Pyodide 브리지

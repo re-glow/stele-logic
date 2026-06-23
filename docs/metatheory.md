@@ -54,7 +54,8 @@
 | 이름 있는 API 유지 | `debruijn.py` — 기존 API 비변경 |
 | α-동치 결정 | `alpha_equiv` via de Bruijn (증명 변수만) |
 | de Bruijn shift/subst 포착 회피 | 구조적 shift 패턴 |
-| 1차 논리 객체 바인더 이름 유지 | `DBForallIntro`, `DBExistsElim` — obj_var 이름 보존 |
+| 1차 논리 객체 바인더 이름 유지 (proof-term 층) | `DBForallIntro`, `DBExistsElim` — obj_var 이름 보존 |
+| 공식 수준 객체 변수 de Bruijn | `to_debruijn_formula`, `alpha_equiv_formula` 구현됨 |
 
 ---
 
@@ -347,14 +348,18 @@ python -m pytest -q
 
 1차 논리 단편이 추가되어 두 종류의 바인더가 공존한다:
 - **증명 바인더** (v1, 완전 구현): `Lam`, `Case` 분기, `ExistsElim.proof_var` — DB 인덱스 사용
-- **객체 바인더** (v2, 이름 유지): `ForallIntro.obj_var`, `ExistsElim.obj_var` — 이름 그대로 유지
+- **객체 바인더** (proof-term 층, 이름 유지): `ForallIntro.obj_var`, `ExistsElim.obj_var` — 이름 그대로 유지
 
 `DBForallIntro`, `DBForallElim`, `DBExistsIntro`, `DBExistsElim`이 추가되었으나,
-객체 변수 이름은 de Bruijn 인덱스로 변환되지 않는다.
-`alpha_equiv`는 증명 변수 재명명에는 둔감하지만 객체 변수 재명명에는 민감하다.
-공식 수준의 α-동치는 `formula_alpha_equiv_fol`로 별도 확인한다.
+객체 변수 이름은 proof-term de Bruijn 층에서 인덱스로 변환되지 않는다.
+`alpha_equiv`(증명항 수준)는 증명 변수 재명명에는 둔감하지만 객체 변수 재명명에는 민감하다.
 
-두 종류 모두 DB 인덱스로 처리하는 `to_debruijn_fol`은 v3 예정이다.
+공식 수준의 α-동치는 별도의 de Bruijn 공식 층으로 처리한다:
+`alpha_equiv_formula(f1, f2)` (`stele.core.fol`).  이 함수는 `to_debruijn_formula`를
+사용해 nameless 형으로 변환한 뒤 구조적으로 비교하므로, 섀도잉 케이스에서도 올바르다.
+`formula_alpha_equiv_fol`은 `alpha_equiv_formula`에 위임한다(하위 호환성 유지).
+
+증명항 층에서 두 바인더 종류 모두를 DB 인덱스화하는 `to_debruijn_fol`은 별도 미래 작업으로 남는다.
 
 ---
 
@@ -367,6 +372,7 @@ python -m pytest -q
 | FOL-3 | β_forall 타입 보존 | 회귀 테스트: `test_fol.py::test_beta_forall_subject_reduction` |
 | FOL-4 | subst_obj 포착 회피 | 회귀 테스트: `test_fol.py::TestSubstObj::test_forall_capture_avoidance` |
 | FOL-5 | 신선도 조건 시행 | 회귀 테스트: `test_fol.py::TestForallTyping::test_forall_intro_freshness_violation` |
+| FOL-6 | 공식 α-동치 (섀도잉 포함) | 회귀 테스트: `test_fol_object_debruijn.py::TestAlphaEquivFormula` |
 
 ### FOL-1: ForallIntro/Elim 주체 환원
 
@@ -412,6 +418,7 @@ python -m pytest -q
 7. **`from_debruijn` Case 지원:** DBCase의 분기 변수 타입 정보 없이는 역변환 불가.
    타입 컨텍스트를 추가 인자로 받는 확장은 미구현이다.
 8. **1차 논리 β_exists 주체 환원:** `beta_exists` 환원 전후 타입 보존에 대한 속성 테스트 없음.
-9. **객체 바인더 de Bruijn 인덱스화:** `ForallIntro`/`ExistsElim.obj_var`는 이름 유지;
-   이를 DB 인덱스로 처리하는 `to_debruijn_fol`은 미구현.
+9. **proof-term 층 객체 바인더 DB 인덱스화:** `DBForallIntro`/`DBExistsElim.obj_var`는
+   이름 유지; proof-term 층의 `to_debruijn_fol`(obj_var까지 인덱스화)은 미구현.
+   공식 수준의 객체 변수 de Bruijn(`to_debruijn_formula`, `alpha_equiv_formula`)은 구현됨.
 10. **subst_obj 포착 회피 완전성:** 현재 대표 사례 테스트만 있음; 속성 기반 확인 없음.

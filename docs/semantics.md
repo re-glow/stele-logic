@@ -44,7 +44,7 @@ keywords ::= "false" | "not" | "and" | "or"
 ```ebnf
 formula     ::= quantifier | implication
 quantifier  ::= ("forall" | "exists") VAR "." formula
-implication ::= disjunction ("->" implication)?
+implication ::= disjunction ("->" formula)?
 disjunction ::= conjunction  ("or" conjunction)*
 conjunction ::= negation     ("and" negation)*
 negation    ::= "not" negation
@@ -453,6 +453,7 @@ ObjConst(name: str) — 객체 상수 (치환되지 않음)
 ```ebnf
 formula     ::= quantifier | implication      (* 확장된 최상위 규칙 *)
 quantifier  ::= ("forall" | "exists") VAR "." formula
+implication ::= disjunction ("->" formula)?  (* 우변에 한정사 허용 *)
 atom        ::= NAME "(" obj_term ("," obj_term)* ")"  (* Pred — 추가 *)
               | ...기존 규칙...
 

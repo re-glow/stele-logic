@@ -328,6 +328,18 @@ abort(t, C)                 거짓 제거; C는 목표 타입 어노테이션
 
 타입 어노테이션(`:` 뒤 또는 `inl`/`inr`/`abort`의 두 번째 인자)에는 기존 공식 문법(`->`, `and`, `or`, `not`, `false`, 괄호)이 그대로 적용된다.
 
+**1차 논리 표면 문법 확장** (Experimental — Section 10):
+
+```
+forall_intro x => body          전칭 도입; x는 객체 변수 이름
+forall_elim(f, a)               전칭 제거; f는 증명항, a는 객체 변수 이름
+exists_intro(a, h, exists x.A)  존재 도입; a=증인, h=증명, 세 번째 인자는 목표 타입
+exists_elim(e, x, h, body)      존재 제거; e=증인증명, x=객체변수, h=증명변수, body=본문
+```
+
+공식 어노테이션에서 한정사(`forall x. A`, `exists x. A`)와 술어(`P(x)`, `R(x,y)`)를 사용할 수 있다.
+`->` 오른편에 한정사를 쓸 때는 괄호 없이도 허용된다: `not A -> forall x. P(x)`.
+
 ### `term-check` CLI
 
 ```bash
@@ -336,6 +348,15 @@ python -m stele.cli term-check --term "fun x: A => x" --type "A -> A"
 
 # 증명항의 타입을 추론
 python -m stele.cli term-check --term "fun x: A => x" --infer
+
+# 컨텍스트와 함께 사용 (FOL 예시)
+python -m stele.cli term-check \
+    --context "f: forall x. P(x)" \
+    --term "forall_elim(f, a)" --infer
+
+python -m stele.cli term-check \
+    --context "f: forall x. P(x) -> Q(x); h: P(a)" \
+    --term "forall_elim(f, a)(h)" --infer
 ```
 
 ### `elaborate` CLI
@@ -573,11 +594,36 @@ exists_intro(a, p, exists x. A) ExistsIntro(ObjVar("a"), p, Exists("x", A))
 exists_elim(e, x, h, body)      ExistsElim(e, "x", "h", body)
 ```
 
-공식 어노테이션 (`:` 뒤 또는 `exists_intro` 세 번째 인자)에서 1차 논리 공식 사용 가능:
+공식 어노테이션 (`:` 뒤 또는 `exists_intro` 세 번째 인자)에서 1차 논리 공식 사용 가능.
+`->` 오른편에 한정사를 괄호 없이 쓸 수 있다:
+
+```python
+from stele.core.term_parser import parse_term
+from stele.parser import parse_formula
+from stele.core.typing import check, empty_ctx
+
+# 전칭 분배  ∀x.(P→Q) → ∀x.P → ∀x.Q
+term = parse_term(
+    "fun f: forall x. P(x) -> Q(x) => "
+    "fun g: forall x. P(x) => "
+    "forall_intro x => forall_elim(f, x)(forall_elim(g, x))"
+)
+expected = parse_formula(
+    "(forall x. P(x) -> Q(x)) -> (forall x. P(x)) -> forall x. Q(x)"
+)
+check(empty_ctx(), term, expected)  # raises TypingError if wrong
+
+# 직관적 드 모르간  ¬(∃x.P(x)) → ∀x.¬P(x)
+term_dm = parse_term(
+    "fun h: not (exists x. P(x)) => "
+    "forall_intro x => "
+    "fun px: P(x) => h(exists_intro(x, px, exists y. P(y)))"
+)
+check(empty_ctx(), term_dm,
+      parse_formula("not (exists x. P(x)) -> forall x. not P(x)"))
 ```
-forall_intro x => fun h: P(x) => h
-exists_intro(a, h, exists x . P(x))
-```
+
+동작하는 예시는 `examples/fol/` 디렉터리 참조.
 
 ### FOL 헬퍼 API
 

@@ -1257,7 +1257,82 @@ python -m http.server --directory dist 8000
 
 ---
 
-## 23. 한계와 다음 단계
+## 23. 실험적 1차 논리 증명항 (Experimental)
+
+> **상태:** Experimental — 파서, 타입검사기, β-환원은 완전하지만 Stele-Light 스크립트와 통합되지 않는다.
+
+`stele.core` 의 증명항 계산법은 전칭·존재 한정기호를 지원한다.
+이 기능은 Python API 및 `term-check` CLI로만 접근할 수 있다; Stele-Light 증명 스크립트(`.stele` 파일)에서는 아직 사용 불가능하다.
+
+### 23.1 공식 문법 (1차 논리 확장)
+
+```
+forall x. A          전칭 공식
+exists x. A          존재 공식
+P(x)                 단항 술어 (객체 변수 인수)
+R(x, y)              이항 술어
+A -> forall x. B     -> 오른편에 한정사를 괄호 없이 허용
+```
+
+### 23.2 증명항 표면 문법
+
+```
+forall_intro x => body          전칭 도입 (ForallIntro)
+forall_elim(t, a)               전칭 제거 (ForallElim): t: forall x.A, a: objvar
+exists_intro(a, h, exists x.A)  존재 도입 (ExistsIntro): 증인 a, 증명 h
+exists_elim(e, x, h, body)      존재 제거 (ExistsElim): 신선도 조건 있음
+```
+
+### 23.3 사용 예시
+
+```python
+from stele.core.term_parser import parse_term
+from stele.parser import parse_formula
+from stele.core.typing import check, empty_ctx
+
+# 전칭 분배 (자동화 가능한 형태)
+term = parse_term(
+    "fun f: forall x. P(x) -> Q(x) => "
+    "fun g: forall x. P(x) => "
+    "forall_intro x => forall_elim(f, x)(forall_elim(g, x))"
+)
+check(empty_ctx(), term,
+      parse_formula("(forall x. P(x) -> Q(x)) -> (forall x. P(x)) -> forall x. Q(x)"))
+
+# 직관적 드 모르간
+term_dm = parse_term(
+    "fun h: not (exists x. P(x)) => "
+    "forall_intro x => "
+    "fun px: P(x) => h(exists_intro(x, px, exists y. P(y)))"
+)
+check(empty_ctx(), term_dm,
+      parse_formula("not (exists x. P(x)) -> forall x. not P(x)"))
+```
+
+CLI 사용:
+
+```bash
+python -m stele.cli term-check \
+    --context "f: forall x. P(x) -> Q(x); h: P(a)" \
+    --term "forall_elim(f, a)(h)" --infer
+
+python -m stele.cli term-check \
+    --term "forall_intro x => fun h: P(x) => h" \
+    --type "forall x. P(x) -> P(x)"
+```
+
+추가 예시: `examples/fol/universals.py`, `examples/fol/existentials.py`, `examples/fol/de_morgan_fol.py`
+
+### 23.4 현재 한계
+
+- 동치(`=`) 및 함수 기호 미구현
+- Stele-Light 스크립트(`.stele` 파일)와 미통합
+- K3/LP 다치 의미론의 1차 논리 확장 미구현
+- Lean export 미지원
+
+---
+
+## 25. 한계와 다음 단계
 
 - 현재는 **명제논리 + 1차 논리 단편**이다. 전체 1차 논리(함수 기호, 동치 등) 미구현.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

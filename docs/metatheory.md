@@ -373,6 +373,7 @@ python -m pytest -q
 | FOL-4 | subst_obj 포착 회피 | 회귀 테스트: `test_fol.py::TestSubstObj::test_forall_capture_avoidance` |
 | FOL-5 | 신선도 조건 시행 | 회귀 테스트: `test_fol.py::TestForallTyping::test_forall_intro_freshness_violation` |
 | FOL-6 | 공식 α-동치 (섀도잉 포함) | 회귀 테스트: `test_fol_object_debruijn.py::TestAlphaEquivFormula` |
+| FOL-7 | 표면 문법 파서 일관성 (공식·항) | 회귀 테스트: `test_fol_surface.py` (81개) |
 
 ### FOL-1: ForallIntro/Elim 주체 환원
 

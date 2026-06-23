@@ -66,7 +66,7 @@ class _Pratt:
         left = self.disj()
         if self.peek() == "->":
             self.adv()
-            return Op("imp", (left, self.imp()))
+            return Op("imp", (left, self.formula()))
         return left
 
     def disj(self):

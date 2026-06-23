@@ -281,7 +281,35 @@ def cmd_elaborate(path, logic):
     return 0 if result.ok else 1
 
 
-def cmd_term_check(term_str, type_str, infer_mode):
+def _parse_context_str(context_str):
+    """Parse a semicolon-separated context string into a typing context dict.
+
+    Format: ``"name: formula; name2: formula2"``
+    Returns an empty dict for None or empty string.
+    Raises ParseError on malformed entries.
+    """
+    from .parser import parse_formula
+    from .errors import ParseError
+    if not context_str:
+        return {}
+    ctx = {}
+    for entry in context_str.split(";"):
+        entry = entry.strip()
+        if not entry:
+            continue
+        if ":" not in entry:
+            raise ParseError(
+                f"context entry {entry!r} must have the form 'name: formula'"
+            )
+        name, _, formula_str = entry.partition(":")
+        name = name.strip()
+        if not name:
+            raise ParseError("context entry has empty variable name")
+        ctx[name] = parse_formula(formula_str.strip())
+    return ctx
+
+
+def cmd_term_check(term_str, type_str, infer_mode, context_str=None):
     """Parse and typecheck (or infer the type of) a surface proof term."""
     from .core.term_parser import parse_term, TermParseError
     from .core.typing import infer as term_infer, check as term_check, TypingError
@@ -296,7 +324,12 @@ def cmd_term_check(term_str, type_str, infer_mode):
         print(f"X Term parse error: {e}")
         return 1
 
-    ctx = {}  # empty context — term must be closed
+    # Build typing context from --context flag
+    try:
+        ctx = _parse_context_str(context_str)
+    except ParseError as e:
+        print(f"X Context parse error: {e}")
+        return 1
 
     if infer_mode:
         try:
@@ -412,6 +445,8 @@ def main(argv=None):
                     help="expected formula type, e.g. 'A -> A'")
     tc.add_argument("--infer", dest="infer_mode", action="store_true",
                     help="infer the term's type instead of checking against --type")
+    tc.add_argument("--context", dest="context_str", default=None,
+                    help="typing context, e.g. 'f: forall x. P(x); h: P(a)'")
 
     tn = sub.add_parser(
         "term-normalize",
@@ -436,7 +471,8 @@ def main(argv=None):
     if args.cmd == "elaborate":
         return cmd_elaborate(args.file, args.logic)
     if args.cmd == "term-check":
-        return cmd_term_check(args.term, args.type_str, args.infer_mode)
+        return cmd_term_check(args.term, args.type_str, args.infer_mode,
+                              getattr(args, "context_str", None))
     if args.cmd == "term-normalize":
         return cmd_term_normalize(args.term)
     return 2

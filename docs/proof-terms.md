@@ -505,12 +505,26 @@ de Bruijn 표현은 순수 내부 구현이다.
 ### 9.5 1차 논리 바인더 (v2)
 
 `forall`/`exists` 한정기호가 v2에서 추가되었다.
-de Bruijn 층에서 **객체 바인더는 이름 유지** 방식으로 처리된다:
+proof-term de Bruijn 층에서 **객체 바인더는 이름 유지** 방식으로 처리된다:
 - `DBForallIntro(obj_var: str, body)` — obj_var는 이름 보존
 - `DBExistsElim(scrutinee, obj_var: str, body)` — obj_var 이름 보존; proof_var만 DB 인덱스
 
-`alpha_equiv`는 증명 변수 재명명에는 둔감하지만 객체 변수 재명명에는 민감하다.
-공식 수준의 α-동치는 `formula_alpha_equiv_fol(f1, f2)` (`stele.core.fol`)로 확인한다.
+`alpha_equiv`(증명항 수준)는 증명 변수 재명명에는 둔감하지만 객체 변수 재명명에는 민감하다.
+
+공식 수준의 α-동치는 별도의 de Bruijn 공식 층으로 처리한다:
+
+```python
+from stele.core.fol import to_debruijn_formula, alpha_equiv_formula
+
+alpha_equiv_formula(Forall("x", P("x")), Forall("y", P("y")))  # True
+# 섀도잉 케이스도 올바르게 처리
+alpha_equiv_formula(
+    Forall("x", Forall("x", P("x"))),   # 안쪽 x
+    Forall("y", Forall("z", P("y"))),   # 바깥쪽 y — 다른 구조
+)  # False
+```
+
+`formula_alpha_equiv_fol(f1, f2)` 는 하위 호환성을 위해 유지되며 `alpha_equiv_formula`에 위임한다.
 
 ---
 
@@ -571,7 +585,8 @@ exists_intro(a, h, exists x . P(x))
 from stele.core.fol import (
     fol_free_obj_vars,      # formula → set[str]
     subst_obj,              # formula × name × ObjTerm → formula (포착 회피)
-    formula_alpha_equiv_fol, # f1 × f2 → bool
+    alpha_equiv_formula,     # f1 × f2 → bool (de Bruijn 기반, 섀도잉 안전)
+    formula_alpha_equiv_fol, # 하위 호환; alpha_equiv_formula에 위임
 )
 from stele.core.reduce import (
     obj_free_in_term,       # proof term → set[str]
@@ -592,4 +607,5 @@ from stele.core.reduce import (
 | 증명항 표면 언어 → 스크립트 역방향 | 미구현 |
 | 동치(`=`), 함수 기호 | 1차 논리 확장; 미구현 |
 | 의존 타입 | 명제논리 단편 밖 |
-| 객체 바인더 de Bruijn 인덱스화 | 미구현; v3 예정 |
+| 객체 바인더 de Bruijn (공식 수준) | 구현됨: `to_debruijn_formula`, `alpha_equiv_formula` |
+| 객체 바인더 de Bruijn (proof-term 층) | `DBForallIntro.obj_var` 등 이름 유지; 미래 작업 |

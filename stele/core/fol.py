@@ -7,8 +7,8 @@ ExistsIntro/Elim in stele.core.terms).
 It does NOT touch the trusted kernel, matrix semantics, or the proof-script
 checker.  It is an optional extension layer alongside the propositional core.
 
-Object terms (v1)
------------------
+Object terms (named)
+--------------------
 ObjVar(name)   — an object variable; can be bound by Forall/Exists binders or
                  left free (acts as a constant when never bound).
 ObjConst(name) — an explicitly declared constant; never bound by quantifiers.
@@ -16,6 +16,13 @@ ObjConst(name) — an explicitly declared constant; never bound by quantifiers.
 In practice, the parser produces ObjVar for all object terms in predicate
 arguments.  ObjConst can be constructed programmatically to mark constants
 that should never be substituted.
+
+Object terms (nameless)
+-----------------------
+ObjBound(index) — bound object variable in de Bruijn form; index 0 = innermost
+ObjFree(name)   — free object variable in de Bruijn form
+
+These appear only in DB formula types (DBPredF args).
 
 Formula-level operations
 ------------------------
@@ -32,17 +39,27 @@ subst_obj(formula, var_name, obj_term) -> Formula
 subst_obj_in_obj_term(obj_term, var_name, replacement) -> ObjTerm
     Substitute within an object term (replaces ObjVar(var_name) only).
 
-formula_alpha_equiv_fol(f1, f2) -> bool
-    α-equivalence for first-order formulas (object-variable renaming).
-    Propositional connectives are compared structurally after negation
-    normalisation.
+to_debruijn_formula(formula, obj_ctx=None) -> DBFormula
+    Translate a named formula to its de Bruijn (nameless) form.
+    Two formulas are α-equivalent iff their DB forms are equal.
 
-Design note — two-namespace de Bruijn (future)
------------------------------------------------
-Object-variable binders (Forall, Exists, ForallIntro, ExistsElim) are kept
-named rather than de Bruijn indexed.  A separate de Bruijn index space for
-object variables (to_debruijn_fol) is left for a future extension.  The
-existing proof-variable de Bruijn layer (stele.core.debruijn) is unaffected.
+from_debruijn_formula(db_formula, obj_ctx=None) -> Formula
+    Translate a de Bruijn formula back to a named formula (roundtrip).
+
+alpha_equiv_formula(f1, f2) -> bool
+    α-equivalence using de Bruijn comparison — sound for all shadowing cases.
+    Supersedes formula_alpha_equiv_fol (which now delegates here).
+
+formula_alpha_equiv_fol(f1, f2) -> bool
+    Retained for backwards compatibility; delegates to alpha_equiv_formula.
+
+Design note — two namespaces
+-----------------------------
+Proof-variable binders (Lam, Case, ExistsElim.proof_var) are handled by the
+de Bruijn layer in stele.core.debruijn (proof-variable index space).
+Object-variable binders (Forall, Exists, ForallIntro.obj_var, ExistsElim.obj_var)
+are handled at the formula level by to_debruijn_formula (object-variable index
+space).  The two index spaces are completely separate: neither affects the other.
 """
 from dataclasses import dataclass
 from stele.ast import Var, Op, Pred, Forall, Exists
@@ -193,37 +210,239 @@ def subst_obj(formula, var_name, replacement):
 
 
 # ---------------------------------------------------------------------------
+# Nameless object-term representation (de Bruijn for object variables)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ObjBound:
+    """Bound object variable in de Bruijn nameless form.
+    index 0 refers to the innermost enclosing Forall/Exists binder."""
+    index: int
+
+    def __str__(self):
+        return f"#{self.index}"
+
+
+@dataclass(frozen=True)
+class ObjFree:
+    """Free object variable in de Bruijn nameless form, identified by name."""
+    name: str
+
+    def __str__(self):
+        return self.name
+
+
+# ---------------------------------------------------------------------------
+# Nameless formula types (de Bruijn object-variable context)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class DBFVarF:
+    """Nameless propositional variable."""
+    name: str
+
+
+@dataclass(frozen=True)
+class DBPredF:
+    """Nameless predicate.  args: tuple of ObjBound | ObjFree | ObjConst."""
+    name: str
+    args: tuple
+
+
+@dataclass(frozen=True)
+class DBForallF:
+    """Nameless universal quantifier.  The bound variable name is erased."""
+    body: object  # DBFormula
+
+
+@dataclass(frozen=True)
+class DBExistsF:
+    """Nameless existential quantifier.  The bound variable name is erased."""
+    body: object  # DBFormula
+
+
+@dataclass(frozen=True)
+class DBOpF:
+    """Nameless propositional connective."""
+    sym: str
+    args: tuple  # tuple[DBFormula]
+
+
+# ---------------------------------------------------------------------------
+# Translation helpers
+# ---------------------------------------------------------------------------
+
+def _translate_obj_term(obj_term, obj_ctx):
+    """Translate a named object term to nameless form.
+
+    obj_ctx is a list of bound variable names, innermost first.
+    ObjVar whose name appears in obj_ctx → ObjBound(index).
+    ObjVar whose name is not in obj_ctx → ObjFree(name).
+    ObjConst is returned unchanged.
+    """
+    if isinstance(obj_term, ObjVar):
+        try:
+            idx = obj_ctx.index(obj_term.name)
+            return ObjBound(idx)
+        except ValueError:
+            return ObjFree(obj_term.name)
+    return obj_term  # ObjConst unchanged
+
+
+def _untranslate_obj_term(obj_term, obj_ctx):
+    """Translate a nameless object term back to named form.
+
+    ObjBound(i) → ObjVar(obj_ctx[i]).
+    ObjFree(name) → ObjVar(name).
+    ObjConst is returned unchanged.
+
+    Raises ValueError if an ObjBound index is out of scope.
+    """
+    if isinstance(obj_term, ObjBound):
+        if obj_term.index >= len(obj_ctx):
+            raise ValueError(
+                f"ObjBound({obj_term.index}) is out of scope "
+                f"(context depth {len(obj_ctx)})"
+            )
+        return ObjVar(obj_ctx[obj_term.index])
+    if isinstance(obj_term, ObjFree):
+        return ObjVar(obj_term.name)
+    return obj_term  # ObjConst unchanged
+
+
+# ---------------------------------------------------------------------------
+# de Bruijn formula translation
+# ---------------------------------------------------------------------------
+
+def to_debruijn_formula(formula, obj_ctx=None):
+    """Translate a named formula to its de Bruijn (nameless) form.
+
+    Parameters
+    ----------
+    formula  : Formula (Var | Op | Pred | Forall | Exists)
+    obj_ctx  : list[str] | None
+        Bound object variable names in scope, innermost first.
+        Pass None (or omit) at the top level.
+
+    Returns
+    -------
+    A nameless formula built from DBFVarF / DBPredF / DBForallF /
+    DBExistsF / DBOpF, with ObjVar replaced by ObjBound / ObjFree
+    in Pred arguments.
+
+    Two named formulas f1, f2 are α-equivalent iff::
+
+        to_debruijn_formula(f1) == to_debruijn_formula(f2)
+
+    This comparison is sound for all shadowing cases, including
+    ``forall x. forall x. P(x)`` vs ``forall y. forall z. P(y)``
+    (which differ because the inner P argument is bound at different
+    depths), a case mishandled by renaming-based implementations.
+    """
+    if obj_ctx is None:
+        obj_ctx = []
+
+    if isinstance(formula, Var):
+        return DBFVarF(formula.name)
+
+    if isinstance(formula, Pred):
+        return DBPredF(
+            formula.name,
+            tuple(_translate_obj_term(a, obj_ctx) for a in formula.args),
+        )
+
+    if isinstance(formula, Forall):
+        return DBForallF(to_debruijn_formula(formula.body, [formula.var] + obj_ctx))
+
+    if isinstance(formula, Exists):
+        return DBExistsF(to_debruijn_formula(formula.body, [formula.var] + obj_ctx))
+
+    if isinstance(formula, Op):
+        return DBOpF(
+            formula.sym,
+            tuple(to_debruijn_formula(a, obj_ctx) for a in formula.args),
+        )
+
+    raise TypeError(
+        f"to_debruijn_formula: unexpected formula type {type(formula).__name__!r}"
+    )
+
+
+def from_debruijn_formula(db_formula, obj_ctx=None):
+    """Translate a de Bruijn formula back to a named formula.
+
+    Generates fresh object variable names for each Forall/Exists binder.
+    Useful for roundtrip tests and human-readable output.
+
+    Parameters
+    ----------
+    db_formula : DBFormula (DBFVarF | DBPredF | DBForallF | DBExistsF | DBOpF)
+    obj_ctx    : list[str] | None   — bound names in scope, innermost first
+    """
+    if obj_ctx is None:
+        obj_ctx = []
+
+    if isinstance(db_formula, DBFVarF):
+        return Var(db_formula.name)
+
+    if isinstance(db_formula, DBPredF):
+        return Pred(
+            db_formula.name,
+            tuple(_untranslate_obj_term(a, obj_ctx) for a in db_formula.args),
+        )
+
+    if isinstance(db_formula, DBForallF):
+        fresh = _fresh_obj("x", set(obj_ctx))
+        return Forall(fresh, from_debruijn_formula(db_formula.body, [fresh] + obj_ctx))
+
+    if isinstance(db_formula, DBExistsF):
+        fresh = _fresh_obj("x", set(obj_ctx))
+        return Exists(fresh, from_debruijn_formula(db_formula.body, [fresh] + obj_ctx))
+
+    if isinstance(db_formula, DBOpF):
+        return Op(
+            db_formula.sym,
+            tuple(from_debruijn_formula(a, obj_ctx) for a in db_formula.args),
+        )
+
+    raise TypeError(
+        f"from_debruijn_formula: unexpected type {type(db_formula).__name__!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# α-equivalence (de Bruijn-based, sound for all shadowing cases)
+# ---------------------------------------------------------------------------
+
+def alpha_equiv_formula(f1, f2) -> bool:
+    """Return True iff f1 and f2 are α-equivalent as first-order formulas.
+
+    Uses de Bruijn structural comparison, which is sound for all shadowing
+    cases.  Free object variable names must match exactly.
+
+    Propositional connectives are compared structurally.  Negation is NOT
+    normalised here; use ``_feq`` (stele.core.typing) when normalisation is
+    needed.
+    """
+    try:
+        return to_debruijn_formula(f1) == to_debruijn_formula(f2)
+    except (TypeError, ValueError):
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Formula α-equivalence (object-variable level)
 # ---------------------------------------------------------------------------
 
 def formula_alpha_equiv_fol(f1, f2) -> bool:
     """Return True iff f1 and f2 are α-equivalent as first-order formulas.
 
-    Equality is checked modulo renaming of bound object variables in
-    Forall and Exists.  Propositional structure is compared structurally
-    (negation is NOT normalised here; use _feq from typing.py if needed).
+    Delegates to alpha_equiv_formula, which uses de Bruijn comparison for
+    sound structural equality modulo bound variable renaming.
 
-    Free object variable names MUST match exactly (as in standard α-equivalence).
+    Propositional structure is compared structurally (negation is NOT
+    normalised here; use _feq from typing.py if needed).
+
+    Free object variable names MUST match exactly.
     """
-    if type(f1) != type(f2):
-        return False
-    if isinstance(f1, Var):
-        return f1.name == f2.name
-    if isinstance(f1, Pred):
-        return f1.name == f2.name and f1.args == f2.args
-    if isinstance(f1, Forall):
-        if f1.var == f2.var:
-            return formula_alpha_equiv_fol(f1.body, f2.body)
-        # Rename f2.var → f1.var in f2.body, then compare
-        f2_renamed = subst_obj(f2.body, f2.var, ObjVar(f1.var))
-        return formula_alpha_equiv_fol(f1.body, f2_renamed)
-    if isinstance(f1, Exists):
-        if f1.var == f2.var:
-            return formula_alpha_equiv_fol(f1.body, f2.body)
-        f2_renamed = subst_obj(f2.body, f2.var, ObjVar(f1.var))
-        return formula_alpha_equiv_fol(f1.body, f2_renamed)
-    if isinstance(f1, Op):
-        if f1.sym != f2.sym or len(f1.args) != len(f2.args):
-            return False
-        return all(formula_alpha_equiv_fol(a, b) for a, b in zip(f1.args, f2.args))
-    return f1 == f2
+    return alpha_equiv_formula(f1, f2)

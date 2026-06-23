@@ -48,7 +48,7 @@ from .terms import (TVar, Lam, App,
                     Inl, Inr, Case,
                     Abort,
                     ForallIntro, ForallElim, ExistsIntro, ExistsElim)
-from .fol import (ObjVar, fol_free_obj_vars, subst_obj)
+from .fol import (ObjVar, fol_free_obj_vars, subst_obj, alpha_equiv_formula)
 
 
 # ---------------------------------------------------------------------------
@@ -109,19 +109,7 @@ def normalize_neg(f):
 def _feq(a, b) -> bool:
     """Formula equality modulo negation normalisation and quantifier α-equivalence."""
     a, b = normalize_neg(a), normalize_neg(b)
-    if type(a) != type(b):
-        return False
-    if isinstance(a, Forall):
-        if a.var == b.var:
-            return _feq(a.body, b.body)
-        b_renamed = subst_obj(b.body, b.var, ObjVar(a.var))
-        return _feq(a.body, b_renamed)
-    if isinstance(a, Exists):
-        if a.var == b.var:
-            return _feq(a.body, b.body)
-        b_renamed = subst_obj(b.body, b.var, ObjVar(a.var))
-        return _feq(a.body, b_renamed)
-    return a == b
+    return alpha_equiv_formula(a, b)
 
 
 def is_imp(f) -> bool:

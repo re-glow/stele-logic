@@ -418,18 +418,20 @@ subst_top(arg, body)       — β-환원 단계: subst(body, 0, arg)
 | 바인더 종류 | 묶는 대상 | de Bruijn 처리 |
 |-------------|-----------|----------------|
 | 증명 바인더 | 증명항 변수 (`Lam`, `Case`, `ExistsElim.proof_var`) | DB 인덱스 |
-| 객체 바인더 | 1차 논리 항 변수 (`ForallIntro`, `ExistsElim.obj_var`) | **이름 유지** |
+| 객체 바인더 | 1차 논리 항 변수 (`ForallIntro`, `ExistsElim.obj_var`) | **이름 유지 (proof-term 층)** |
 
-v2에서 객체 바인더는 **이름 있는 채로 de Bruijn 층에 전달**된다
-(`DBForallIntro(obj_var: str, body)`, `DBExistsElim(obj_var: str, body)`).
-`to_debruijn`은 증명 바인더만 인덱스로 변환하고, 객체 변수 이름은 보존한다.
+v2에서 증명항 de Bruijn 층(`DBForallIntro`, `DBExistsElim`)은 `obj_var`를 이름 그대로 보존한다.
+`alpha_equiv`(증명항 수준)는 증명 변수 재명명에는 둔감하지만, **객체 변수 재명명에는 민감하다**.
 
-`alpha_equiv`는 증명 변수 이름 변경에는 둔감하지만,
-**객체 변수 이름 변경에는 민감하다** (이름이 보존되기 때문).
-공식 수준의 객체 변수 α-동치는 `formula_alpha_equiv_fol` (`stele.core.fol`)로 별도 확인한다.
+공식 수준의 객체 변수 α-동치는 별도의 de Bruijn 공식 층으로 처리한다 (`stele.core.fol`):
 
-두 바인더 종류를 모두 de Bruijn 인덱스로 처리하는 `to_debruijn_fol`(분리된 obj_env 환경 사용)은
-v3 예정이다.
+- **`to_debruijn_formula(formula, obj_ctx=None)`** — 명명된 공식을 nameless 형으로 변환.
+  `Forall`/`Exists` 바인더가 `obj_var` 이름을 지우고 바인딩 깊이(de Bruijn 인덱스)로 대체.
+  `ObjVar(name)` → `ObjBound(index)` (바인딩된 경우) 또는 `ObjFree(name)` (자유 변수).
+- **`alpha_equiv_formula(f1, f2)`** — 두 공식을 nameless 형으로 변환해 구조적으로 비교.
+  섀도잉(중첩 동명 바인더) 등 모든 경우에 올바르다.
+
+두 de Bruijn 공간(증명 변수 인덱스, 객체 변수 인덱스)은 완전히 독립적이다.
 
 ---
 
@@ -545,4 +547,5 @@ exists_elim(e, x, h, h)                    -- ExistsElim(e, "x", "h", TVar("h"))
 | 증명 탐색 / 자동화 | Stele는 검증기이지 증명기가 아님 |
 | 의존 타입 | 프로포지션으로서의 타입; 명제논리 단편 밖 |
 | 증명항 → 스크립트 역방향 | 미구현 |
-| 객체 바인더 de Bruijn 인덱스화 | 미구현; `to_debruijn_fol` v3 예정 |
+| 객체 바인더 de Bruijn 인덱스화 (공식 수준) | 구현됨: `to_debruijn_formula`, `alpha_equiv_formula` (`stele.core.fol`) |
+| 객체 바인더 de Bruijn 인덱스화 (proof-term 층) | `DBForallIntro.obj_var` 등은 이름 유지; 미래 작업 후보 |

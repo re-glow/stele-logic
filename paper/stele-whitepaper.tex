@@ -1,0 +1,926 @@
+% Stele: A Lightweight Formal Verification Framework for Mathematical Reasoning
+% LaTeX source -- Version 1.0.0
+% Build: latexmk -pdf stele-whitepaper.tex
+%        pdflatex stele-whitepaper.tex  (twice for references)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{enumitem}
+
+% ---- Code listing style ----
+\definecolor{codebg}{rgb}{0.97,0.97,0.97}
+\lstdefinestyle{stele}{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{gray!50},
+  xleftmargin=8pt,
+  xrightmargin=4pt,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+\lstset{style=stele}
+
+% ---- Theorem environments ----
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\theoremstyle{plain}
+\newtheorem{claim}{Claim}
+
+% ---- Macros ----
+\newcommand{\stele}{\textsc{Stele}}
+\newcommand{\kernel}{\texttt{kernel.py}}
+\newcommand{\untrusted}{\textsc{untrusted}}
+\newcommand{\todo}[1]{\textcolor{orange}{[TODO: #1]}}
+
+\hypersetup{
+  pdftitle={Stele: A Lightweight Formal Verification Framework},
+  pdfauthor={Stele Project},
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!40!black,
+  urlcolor=blue!70!black,
+}
+
+% ====================================================================
+\begin{document}
+% ====================================================================
+
+\title{\stele: A Lightweight Formal Verification Framework \\
+  for Mathematical Reasoning}
+\author{Stele Research Project \\[4pt]
+  \small Version 1.0.0 \\
+  \small \url{https://github.com/re-glow/stele-logic}}
+\date{}
+\maketitle
+
+% ====================================================================
+\begin{abstract}
+% ====================================================================
+We present \stele, a lightweight formal verification framework for
+mathematical reasoning, designed as a small, auditable proof-checking
+platform with explicit trust boundaries.
+The core contribution is \emph{Stele-Light}, a natural-deduction
+proof language in which users supply every inference step and the
+trusted kernel verifies each step against a declared rule schema.
+The trusted kernel is a 142-line Python module with zero runtime
+dependencies.
+
+Beyond the kernel, \stele{} provides: a Curry--Howard proof-term
+core with bidirectional type checking and $\beta$-reduction for
+intuitionistic propositional logic; structural diagnostics that
+locate missing hypotheses, invalid transitions, undefined symbols,
+and unused assumptions; matrix-valued semantic diagnostics for
+Boolean, K3 (strong Kleene), and LP (Logic of Paradox) logics;
+a bounded Kripke countermodel search for intuitionistic non-theorems;
+versioned proof certificates with an independent re-verification
+path; a browser-local Studio via Pyodide/WebAssembly; and an
+optional statistical ML baseline for proof classification.
+The system has zero runtime dependencies for the core verification
+path and 1808 tests.
+
+\stele{} is not a theorem prover, SMT/SAT solver, AI-powered
+verifier, or full proof assistant.
+All metatheoretic claims about the proof-term layer are supported
+by regression and property-based tests, not by machine-checked
+formal proofs.
+\end{abstract}
+
+% ====================================================================
+\section{Introduction}
+\label{sec:intro}
+% ====================================================================
+
+Students and researchers working with formal arguments --- in logic
+courses, foundations of mathematics, or proof-theoretic investigations
+--- need tools that are small, auditable, and honest about what they
+verify.
+Existing options occupy two extremes.
+Full proof assistants such as Lean 4~\cite{Moura2021}, Rocq
+(formerly Coq)~\cite{Rocq}, and Isabelle/HOL~\cite{Nipkow2002} are
+powerful but require substantial learning investment, have large
+codebases, and can be difficult to deploy or audit in educational
+settings.
+At the other extreme, AI-based proof assistance can generate
+plausible-looking derivations without making the trust boundary
+precise.
+
+\stele{} occupies a different niche: a \emph{small, inspectable
+proof-checking framework} with explicit, documented trust
+boundaries.
+The user writes every inference step; the kernel decides whether
+each step is a valid instance of the declared rule.
+The kernel does not search for proofs and does not use semantic
+knowledge of the target logic --- it only matches step conclusions
+against rule schemata syntactically.
+This design makes the trust boundary precise and auditable:
+\kernel{} is 142 lines of pure Python with no external dependencies.
+
+Around this kernel, \stele{} provides several optional layers that
+assist reasoning without entering the trust boundary: structural
+diagnostics, a proof-term core for Curry--Howard exploration,
+matrix semantic diagnostics, Kripke model search, and a
+browser-local interactive Studio.
+These layers are systematically labeled \untrusted{} and require
+re-verification by the kernel for any claim of proof validity.
+
+\subsection*{Contributions}
+
+\begin{enumerate}[leftmargin=*]
+  \item A small, dependency-free trusted proof kernel with a
+        documented trust boundary and rule-data separation.
+  \item A Curry--Howard proof-term calculus for intuitionistic
+        propositional logic with bidirectional type checking,
+        $\beta$-reduction, and a de Bruijn binder layer.
+  \item A structural diagnostics platform with nine stable
+        diagnostic codes and per-code explanations.
+  \item Matrix semantic diagnostics for Boolean, K3, and LP
+        logics, with per-rule soundness reports.
+  \item A bounded Kripke countermodel search for propositional
+        intuitionistic logic.
+  \item Versioned proof certificates and an independent
+        re-verification path (\texttt{minicheck}).
+  \item A browser-local deployment via Pyodide/WebAssembly with
+        no server-side computation.
+  \item An optional ML baseline with corpus discipline,
+        benchmark card, and measured metrics.
+\end{enumerate}
+
+% ====================================================================
+\section{Positioning and Non-goals}
+\label{sec:positioning}
+% ====================================================================
+
+\stele{} is a \textbf{proof checker and semantic diagnostics
+platform}.
+It is explicitly not:
+
+\begin{itemize}
+  \item \textbf{A theorem prover.}
+        \stele{} does not search for proofs.
+  \item \textbf{An SMT or SAT solver.}
+        There is no constraint solving, satisfiability checking,
+        or arithmetic reasoning.
+  \item \textbf{An AI-powered verifier.}
+        ML components are optional, isolated, and \untrusted{}.
+  \item \textbf{A production proof assistant.}
+        \stele{} lacks dependent types, a module system,
+        higher-order unification, tactics, and theorem libraries.
+  \item \textbf{A full first-order prover.}
+        The proof-script surface is propositional.
+  \item \textbf{A formally verified system.}
+        Metatheoretic properties are supported by tests and
+        proof sketches, not by machine-checked proofs.
+\end{itemize}
+
+\stele{} is:
+
+\begin{itemize}
+  \item A \textbf{rule-checked natural-deduction proof language}
+        with a small, auditable trusted kernel.
+  \item A \textbf{proof-term and metatheory playground} for
+        exploring Curry--Howard correspondences.
+  \item A \textbf{semantic diagnostics platform} for Boolean,
+        K3, and LP matrix logics and bounded Kripke models.
+  \item A \textbf{reproducible research software artifact} with
+        zero runtime dependencies and a comprehensive test suite.
+\end{itemize}
+
+% ====================================================================
+\section{Architecture and Trust Boundary}
+\label{sec:arch}
+% ====================================================================
+
+\subsection{Design Principles}
+
+The architecture follows two principles:
+
+\begin{enumerate}
+  \item \textbf{De Bruijn criterion.} The trusted code should be
+        small enough for a human auditor to read completely.
+        \kernel{} is 142 lines; the full trust surface including
+        supporting modules (\texttt{ast.py}, \texttt{proof.py},
+        \texttt{logic.py}, \texttt{parser.py}) is under 700 lines.
+
+  \item \textbf{Rule-data separation.} Inference rules are not
+        compiled into the kernel.
+        They live in \texttt{logic.py} as \texttt{RuleSchema}
+        frozen dataclass instances.
+        Adding a new logic means adding a \texttt{RuleSchema}
+        set; it never requires modifying the kernel.
+\end{enumerate}
+
+\subsection{Layer Diagram}
+
+\begin{verbatim}
+TRUSTED: kernel.py (142 lines, stdlib only)
+  ast.py · proof.py · parser.py · logic.py · errors.py
+  ------------------------------------------------
+UNTRUSTED / OPTIONAL layers
+  diagnostics.py   structural diagnostics
+  proofgraph.py    dependency graph
+  proofstate.py    proof-state hints
+  matrix.py        many-valued semantics
+  world.py         world/lattice demo
+  kripke.py        Kripke countermodel search
+  certificate.py   certificate emission
+  minicheck.py     independent re-checker
+  elaborate.py     script-to-term elaboration
+  core/            proof-term calculus (IPL+IQL)
+  browser.py       Pyodide bridge
+  web.py           HTTP Studio server
+  ------------------------------------------------
+EXTERNAL / ISOLATED
+  stele_ml/        optional ML baseline
+  stele_lean/      optional Lean 4 bridge
+\end{verbatim}
+
+\subsection{The Kernel}
+
+The kernel (\texttt{stele/kernel.py}) contains four functions:
+\texttt{match}, \texttt{instantiate}, \texttt{check\_theorem},
+and the internal \texttt{\_check\_block}.
+\texttt{match} performs syntactic first-order pattern matching:
+given a rule schema pattern and a concrete formula, it either
+returns a substitution or \texttt{None}.
+No semantic interpretation of connectives is used.
+\texttt{check\_theorem} walks the proof tree, dispatching each
+\texttt{have} step to a rule lookup and \texttt{match} call,
+and each \texttt{suppose} block to a recursive check with a
+scoped environment.
+
+\subsection{Separation of Concerns}
+
+A key invariant enforced by regression tests is that
+\kernel{} does not import \texttt{matrix.py} and
+\texttt{matrix.py} does not import \kernel{}.
+Matrix semantics and proof-rule checking are strictly
+separate concerns: a formula can be a tautology in one
+matrix but not in another, independently of whether a
+proof script demonstrates it.
+
+% ====================================================================
+\section{Stele-Light Proof Language}
+\label{sec:language}
+% ====================================================================
+
+\subsection{Syntax}
+
+A Stele-Light proof has the following structure:
+
+\begin{lstlisting}
+theorem <name> [using <logic>]:
+  assume <label>: <formula>     -- introduce a hypothesis
+  suppose <label>: <formula>    -- begin a dischargeable sub-proof
+    have <label>: <formula> by <rule> <ref>...
+    ...
+  have <label>: <formula> by <rule> <ref>...
+  conclude <formula> by <ref>
+\end{lstlisting}
+
+\noindent
+\texttt{suppose} blocks introduce dischargeable assumptions.
+When a \texttt{suppose} block closes, the assumption is no
+longer available; the enclosing rule (e.g., \texttt{imp\_intro})
+must reference both the suppose label and the block's conclusion.
+
+\subsection{Formula Grammar}
+
+\begin{align*}
+  \text{formula} &\;::=\; \text{implication} \\
+  \text{implication} &\;::=\; \text{disjunction}
+    \;(\texttt{->}\;\text{formula})? \\
+  \text{disjunction} &\;::=\;
+    \text{conjunction}\;(\texttt{or}\;\text{conjunction})^* \\
+  \text{conjunction} &\;::=\;
+    \text{negation}\;(\texttt{and}\;\text{negation})^* \\
+  \text{negation} &\;::=\; \texttt{not}\;\text{negation}
+    \;\mid\; \text{atom} \\
+  \text{atom} &\;::=\; \text{VAR} \;\mid\; \texttt{false}
+    \;\mid\; \texttt{(}\;\text{formula}\;\texttt{)}
+\end{align*}
+
+Negation is sugar: $\lnot A \equiv A \to \bot$.
+The parser rewrites \texttt{not}\;$A$ to
+$\texttt{Op}(\texttt{"not"}, (A,))$; the type checker
+normalizes this to $A \to \bot$ for type-level operations.
+
+\subsection{Built-in Logics and Rules}
+
+\begin{table}[H]
+\centering
+\caption{Built-in logics}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Logic & Mode & Notes \\
+\midrule
+\texttt{intuitionistic\_prop} & proof & 12 rules (IPL NJ) \\
+\texttt{classical\_prop} & proof & 12 + 3: \texttt{dne}, \texttt{lem}, \texttt{pbc} \\
+\texttt{K3} & matrix & Strong Kleene three-valued \\
+\texttt{LP} & matrix & Logic of Paradox (Priest) \\
+\texttt{boolean} & matrix & Classical Boolean \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The intuitionistic rule set comprises: \texttt{copy}, \texttt{mp},
+\texttt{and\_intro}, \texttt{and\_elim\_left},
+\texttt{and\_elim\_right}, \texttt{neg\_elim},
+\texttt{ex\_falso}, \texttt{or\_intro\_left},
+\texttt{or\_intro\_right}, \texttt{imp\_intro} (discharge),
+\texttt{neg\_intro} (discharge), \texttt{or\_elim}
+(two discharges).
+
+\subsection{Example: Double-Negation Elimination}
+
+\begin{lstlisting}
+theorem dne_consequent:
+  assume h1: not not P
+  have h2: P by dne h1
+  conclude P by h2
+\end{lstlisting}
+
+Accepted under \texttt{classical\_prop}; rejected under
+\texttt{intuitionistic\_prop} because \texttt{dne} is absent
+from the intuitionistic rule set.
+
+% ====================================================================
+\section{Proof-Term Core and Elaboration}
+\label{sec:proofterms}
+% ====================================================================
+
+\subsection{Curry--Howard Correspondence}
+
+The proof-term core (\texttt{stele.core}) implements a simply
+typed $\lambda$-calculus corresponding to intuitionistic
+propositional logic (IPL), with an experimental extension to
+a first-order logic (FOL) fragment.
+The correspondence is standard:
+
+\begin{align*}
+  A \to B &\;\longleftrightarrow\; \lambda x{:}A.\;e : A \to B \\
+  A \land B &\;\longleftrightarrow\; \langle e_1, e_2 \rangle : A \times B \\
+  A \lor B  &\;\longleftrightarrow\; \mathrm{inl}(e) \mathbin{/} \mathrm{inr}(e) : A + B \\
+  \bot &\;\longleftrightarrow\; \text{empty type} \\
+  \forall x.\,A(x) &\;\longleftrightarrow\; \Lambda x.\,e \text{ (experimental)}
+\end{align*}
+
+\subsection{Bidirectional Type Checking}
+
+The type checker operates in two modes: a \emph{checking} mode
+(given a type, verify the term has it) and an \emph{inference}
+mode (derive the type of a term).
+All constructors are frozen dataclasses; the checker traverses
+them recursively.
+
+\subsection{de Bruijn Binders}
+
+Proof-variable binders use de Bruijn indices
+(\texttt{stele.core.debruijn}).
+The named API is preserved for user-facing code; the internal
+representation uses indices to eliminate $\alpha$-renaming
+issues in substitution.
+Object-level variables in the FOL fragment remain named;
+de Bruijn conversion at the object level is partially
+implemented.
+
+\subsection{Script-to-Term Elaboration}
+
+\texttt{crosscheck\_theorem} provides a three-stage pipeline:
+(1) kernel check of the proof script,
+(2) elaboration to a Curry--Howard proof term,
+(3) type check of the elaborated term.
+All three must succeed; any failure is reported distinctly.
+The elaboration path currently supports the full intuitionistic
+rule set; classical rules are not elaborated.
+
+\subsection{Reduction and Normalization}
+
+\texttt{normalize} reduces a closed proof term via
+$\beta$-reduction (call-by-name).
+A fuel counter prevents non-termination; the default is 1000
+steps.
+$\eta$-reduction is not implemented.
+
+\subsection{Metatheory Status}
+
+The following claims are supported by proof sketches in
+\texttt{docs/metatheory.md} and by regression tests, but are
+\textbf{not machine-checked}:
+
+\begin{enumerate}
+  \item \textbf{Subject reduction}: well-typed terms remain
+        well-typed after one reduction step.
+        Status: proof sketch + regression tests + optional
+        property-based tests (Hypothesis).
+  \item \textbf{Normalization}: every closed IPL term
+        normalizes.
+        Status: follows from strong normalization for STLC;
+        fuel limit provides a practical bound.
+  \item \textbf{Confluence}: local confluence holds for
+        $\beta$-reduction; Church--Rosser follows by Newman's
+        lemma.
+        Status: proof sketch; complete proof not machine-checked.
+  \item \textbf{Consistency}: no closed term of type $\bot$
+        can be constructed.
+        Status: verified for the rule set by construction;
+        regression tests confirm specific absence of
+        proof-of-false terms.
+\end{enumerate}
+
+\begin{remark}
+  Python regression tests are evidence of implementation
+  correctness, not mathematical proof.
+  A machine-checked metatheory would require formalizing these
+  claims in a proof assistant such as Lean, Rocq, or Agda.
+  This is a documented future direction.
+\end{remark}
+
+% ====================================================================
+\section{Structural Diagnostics and Proof-State Tooling}
+\label{sec:diagnostics}
+% ====================================================================
+
+\subsection{Structural Diagnostics}
+
+\texttt{stele.diagnostics} performs multi-pass structural
+analysis of a proof script outside the kernel.
+Diagnostics are labeled \untrusted{} and do not constitute
+proof verification.
+Nine stable codes are defined:
+
+\begin{table}[H]
+\centering
+\caption{Stable diagnostic codes}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Code & Description \\
+\midrule
+\texttt{UndefinedSymbol} & Variable used before introduction \\
+\texttt{MissingHypothesis} & Referenced label not in scope \\
+\texttt{UnsupportedConclusion} & Conclusion does not follow from steps \\
+\texttt{CircularDependency} & Step references itself transitively \\
+\texttt{UnusedAssumption} & Assumed formula never referenced \\
+\texttt{UndefinedDefinition} & Definition references undeclared name \\
+\texttt{InvalidTransition} & Rule application structurally inconsistent \\
+\texttt{TypeMismatch} & Rule argument has wrong formula type \\
+\texttt{KripkeCountermodelFound} & Conclusion has a Kripke countermodel \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each code has a \texttt{DiagnosticExplanation} providing
+a short description, likely cause, fix suggestion, and
+example.
+
+\subsection{Dependency Graph}
+
+\texttt{stele.proofgraph} builds a labeled directed
+dependency graph.
+Each node is a labeled step; edges represent logical
+dependencies.
+Graph analysis detects cycles, unused assumptions, and
+isolated steps.
+DOT output is supported for external visualization.
+
+\subsection{Proof-State Inspection}
+
+\texttt{stele.proofstate} provides \untrusted{} proof-state
+snapshots and rule-applicability hints.
+\texttt{proof\_state\_from\_text} returns a \texttt{ProofState}
+recording available labels and formulas, scope depths,
+open assumptions, discharged labels, and the current pending
+goal.
+\texttt{suggest\_rule\_hints} applies 10 structural
+patterns to suggest candidate next steps.
+All hints have \texttt{trusted=False}; they must be
+kernel-rechecked before use.
+
+% ====================================================================
+\section{Semantic Diagnostics}
+\label{sec:semantics}
+% ====================================================================
+
+\subsection{Matrix Semantics}
+
+A \texttt{Matrix} consists of a set of truth values,
+designated values, and truth tables for the connectives.
+Three matrices are built in:
+
+\begin{table}[H]
+\centering
+\caption{Built-in matrices}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Matrix & Values & Designated & Notes \\
+\midrule
+\texttt{boolean} & \{T, F\} & \{T\} & Classical \\
+\texttt{K3} & \{T, I, F\} & \{T\} & Strong Kleene~\cite{Kleene1952} \\
+\texttt{LP} & \{T, I, F\} & \{T, I\} & Logic of Paradox~\cite{Priest1979} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The K3 and LP tables follow standard conventions, fixed by test:
+$I \to F = I$, $F \to I = T$.
+
+\texttt{rule\_soundness(schema, matrix)} checks whether each
+rule schema preserves designated values in all assignments.
+Classical LEM is unsound in K3 (counterexample: $A{=}I$);
+explosion is sound in K3 but not in LP.
+
+\subsection{World and Lattice Demo}
+
+\texttt{stele.world} is a toy propositional world system where
+each \texttt{World} carries a matrix and an axiom set.
+This is a pedagogical demonstration, not set-theoretic forcing
+or a completeness theorem.
+
+\subsection{Kripke Countermodel Search}
+
+\texttt{stele.kripke} implements finite bounded Kripke model
+search for intuitionistic propositional logic.
+Given a formula, the searcher enumerates Kripke frames with up
+to $n$ worlds (default $n=4$), checking the intuitionistic
+forcing condition at each world.
+
+For \texttt{P or not P} (LEM), the search finds:
+
+\begin{lstlisting}
+worlds: [0, 1]   order: reflexive + {0 <= 1}
+  world 0: {}       (neither P nor not-P forced)
+  world 1: {P}      (P is forced)
+\end{lstlisting}
+
+This correctly shows LEM is not intuitionistically valid.
+
+\begin{remark}[Limitations]
+  The search is bounded and incomplete.
+  It may fail to find a countermodel that exists beyond the
+  frame bound.
+  The search is propositional only.
+\end{remark}
+
+% ====================================================================
+\section{Proof Certificates and Minicheck}
+\label{sec:certs}
+% ====================================================================
+
+\subsection{Certificate Format}
+
+After a successful kernel verification, \stele{} can emit a
+versioned JSON certificate recording each proof step as a
+structured AST node.
+The certificate format is versioned (\texttt{"version": "1"})
+and includes the theorem name, logic, conclusion, and all
+intermediate steps with their rules and references.
+
+\subsection{Minicheck}
+
+\texttt{stele.minicheck} re-verifies a certificate without
+importing \texttt{stele.kernel} or \texttt{stele.parser}.
+It implements its own minimal rule-matching logic from first
+principles, operating only on the JSON certificate.
+This provides a partial independence guarantee: a tampered
+certificate that passes minicheck without having passed the
+kernel would indicate a minicheck bug.
+
+Tests include tamper detection (modifying step formulas,
+removing steps, changing rule names) and cross-validation.
+
+\begin{remark}
+  Minicheck is Python and is not formally verified.
+  A stronger guarantee would require a checker in a different
+  language (Rust, OCaml) or a proof assistant.
+  This is a documented future direction.
+\end{remark}
+
+% ====================================================================
+\section{Browser Deployment and Distribution}
+\label{sec:deployment}
+% ====================================================================
+
+\stele{} Studio runs the full trusted kernel inside the browser
+via Pyodide~\cite{Pyodide} (Python compiled to WebAssembly).
+No proof text is sent to any external server.
+The Studio provides five interactive panels: Verify, Diagnose,
+Graph, Semantic, and Proof State.
+
+Four distribution modes are available:
+
+\begin{description}
+  \item[Hosted site] GitHub Pages, auto-deployed on push to \texttt{main}.
+  \item[Single-file HTML] \texttt{stele.html} embeds the Stele
+    source; Pyodide loaded from CDN.
+  \item[Standalone executable] Built with PyInstaller (${\sim}$50\,MB).
+  \item[Local Python] \texttt{python -m stele}; Python 3.10+,
+    no extra dependencies.
+\end{description}
+
+The first-load Pyodide runtime is approximately 8\,MB, cached
+by the browser after the initial visit.
+
+% ====================================================================
+\section{Optional ML Baseline and Corpus Discipline}
+\label{sec:ml}
+% ====================================================================
+
+\subsection{Architecture}
+
+\texttt{stele\_ml/} is an optional, isolated package providing
+a statistical proof classification baseline.
+It is entirely outside the trusted verification path
+(enforced by \texttt{test\_ml\_isolation.py}).
+The model is a Multinomial Naive Bayes classifier (Laplace
+smoothing $\alpha{=}1.0$, bag-of-words features, pure Python
+stdlib).
+
+\subsection{Measured Metrics}
+
+The following metrics are from the pipeline evaluation on the
+committed 40-example synthetic sample (model trained on 400
+in-memory examples, seed=0):
+
+\begin{table}[H]
+\centering
+\caption{ML baseline metrics (40-example synthetic sample)}
+\begin{tabular}{@{}lrl@{}}
+\toprule
+Metric & Value & Note \\
+\midrule
+Validity accuracy & 0.85 & 34/40 examples correct \\
+Exact match & 0.60 & Validity AND all codes correct \\
+Micro F1 (codes) & 0.50 & Weighted across predictions \\
+Macro F1 (codes) & 0.36 & Averaged over codes with support \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{These numbers must not be cited as general accuracy
+claims.}
+They are measurements on a 40-example synthetic corpus that
+is not representative of real user proofs.
+
+\subsection{Corpus Discipline}
+
+Data discipline features include: manifest schema with
+\texttt{label\_stats} and \texttt{creation\_command}; a
+3-way train/dev/test split builder (\texttt{build\_dataset.py});
+failure-mode analysis per code in evaluation reports; and a
+benchmark card at \texttt{docs/benchmark-card.md} documenting
+known limitations and reproduction steps.
+
+% ====================================================================
+\section{Evaluation and Testing}
+\label{sec:testing}
+% ====================================================================
+
+\stele{} has 1808 tests (1804 passing, 4 skipped without
+Hypothesis), organized across 44 test files.
+Tests are run in CI on Python 3.10, 3.11, and 3.12.
+
+Key test categories:
+
+\begin{itemize}
+  \item Kernel correctness:
+    \texttt{test\_kernel\_valid.py} (correct proofs accepted),
+    \texttt{test\_kernel\_invalid.py} (incorrect proofs rejected).
+  \item Gallery honesty: \texttt{test\_gallery.py} verifies all
+    15 curated examples against the live kernel on every CI run.
+  \item Trust boundary: \texttt{test\_regression\_invariants.py}
+    enforces mutual non-import between kernel/matrix and ML isolation.
+  \item Certificates: \texttt{test\_minicheck.py} includes tamper
+    detection and cross-validation tests.
+  \item ML discipline: \texttt{test\_ml\_corpus\_discipline.py}
+    checks manifest schema, split disjointness, report schema, and
+    absence of overclaims.
+  \item Property-based tests: \texttt{test\_proof\_term\_properties.py}
+    (optional; requires Hypothesis).
+\end{itemize}
+
+The core CI workflow (\texttt{.github/workflows/ci.yml}) requires
+only \texttt{pytest} --- no ML, LaTeX, or Lean dependencies.
+
+% ====================================================================
+\section{Related Work}
+\label{sec:related}
+% ====================================================================
+
+\paragraph{Proof assistants.}
+Lean 4~\cite{Moura2021}, Rocq/Coq~\cite{Rocq},
+Isabelle/HOL~\cite{Nipkow2002}, and Agda~\cite{Norell2009}
+are full proof assistants offering dependent types, rich tactic
+languages, large theorem libraries, and machine-checked
+metatheory.
+\stele{} is not a replacement for these tools; it is designed
+for settings where a small, auditable checker is more
+appropriate.
+
+\paragraph{Curry--Howard correspondence and proof terms.}
+The Curry--Howard correspondence between intuitionistic proofs
+and typed programs is foundational to the proof-term
+core~\cite{SorensenUrzyczyn2006}.
+\stele{}'s bidirectional type-checking architecture is
+standard~\cite{PierceT98}.
+
+\paragraph{Kripke semantics.}
+Kripke models for intuitionistic propositional logic provide the
+semantic underpinning for the countermodel search.
+The forcing semantics is standard; see, e.g., \cite{TroelstraVanDalen1988}.
+
+\paragraph{Many-valued logics.}
+LP (Logic of Paradox) was introduced by Priest as a
+paraconsistent logic in which contradictions do not trivialize
+the system~\cite{Priest1979}.
+K3 (strong Kleene) provides three-valued semantics for
+sentences with truth-value gaps~\cite{Kleene1952}.
+Both are matrix logics in the sense of many-valued logic
+\cite{TODO:Malinowski}.
+
+\paragraph{Proof certificates.}
+The idea of emitting independently verifiable proof certificates
+is well-established~\cite{TODO:LF}.
+\stele{}'s certificate format is a lightweight JSON encoding;
+the minicheck re-checker provides an independent software check.
+
+\paragraph{ML for theorem proving.}
+Several systems apply machine learning to guide tactic selection
+or proof generation in full proof assistants~\cite{TODO:LeanDojo}.
+\stele{}'s ML baseline is a proof \emph{classification}
+model, not a proof-generation system.
+It is explicitly \untrusted{} and evaluated only on a small
+synthetic corpus.
+
+% ====================================================================
+\section{Limitations}
+\label{sec:limitations}
+% ====================================================================
+
+\begin{itemize}
+  \item \textbf{Propositional surface.}
+    The Stele-Light proof language is propositional.
+    No quantifier syntax exists at the script level.
+  \item \textbf{No equality or function symbols.}
+    The formula language has no arithmetic, equality, or
+    function terms.
+  \item \textbf{No proof search.}
+    If the user does not supply every inference step, \stele{}
+    cannot supply them.
+  \item \textbf{Elaboration intuitionistic only.}
+    The script-to-term elaboration supports only intuitionistic
+    rules; classical proofs cannot be elaborated.
+  \item \textbf{FOL experimental.}
+    The FOL proof-term fragment is experimental; there is no
+    surface syntax and object-variable de Bruijn conversion is
+    incomplete.
+  \item \textbf{No dependent types.}
+    The proof-term calculus is simply typed.
+  \item \textbf{Metatheory not machine-checked.}
+    Subject reduction, normalization, confluence, and consistency
+    are supported by proof sketches and tests, not by
+    machine-checked proofs.
+  \item \textbf{Kripke search bounded.}
+    The countermodel search is bounded (${\le}4$ worlds default)
+    and is neither sound nor complete as a proof procedure.
+  \item \textbf{ML small corpus.}
+    The ML baseline trains on a 40--400 record synthetic corpus;
+    metrics on this corpus are not general accuracy claims.
+  \item \textbf{Minicheck not formally verified.}
+    The re-checker is an independent Python implementation, not
+    a mechanically proved checker.
+  \item \textbf{Browser requires CDN.}
+    The Pyodide runtime (${\sim}$8\,MB) is fetched from CDN;
+    fully offline mode is future work.
+\end{itemize}
+
+% ====================================================================
+\section{Future Work}
+\label{sec:future}
+% ====================================================================
+
+\begin{itemize}
+  \item First-order surface syntax: adding quantifiers to
+    Stele-Light with corresponding kernel rules.
+  \item Equality and function symbols in the formula language.
+  \item Structural rule policies (weakening, contraction,
+    exchange) for linear, relevant, and hyperintensional logics.
+  \item Rust or OCaml minicheck for a stronger independence
+    guarantee.
+  \item Machine-checked metatheory: formalizing subject
+    reduction and confluence in Lean or Rocq.
+  \item Lean bridge maturation: bidirectional import/export
+    for a larger propositional fragment.
+  \item ML data scaling after corpus discipline validation.
+  \item Fully offline browser mode by bundling Pyodide.
+  \item Kripke semantics for first-order logic.
+\end{itemize}
+
+% ====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ====================================================================
+
+\stele{} is a lightweight, auditable formal verification
+framework occupying a niche between informal mathematical
+notation and full proof assistants.
+Its primary contribution is a small trusted kernel --- 142 lines,
+zero runtime dependencies --- that checks natural-deduction
+proofs against declared rule schemata syntactically.
+
+Around this kernel, \stele{} provides optional layers for
+proof-term extraction, structural diagnostics, matrix semantic
+analysis, bounded Kripke countermodel search, proof certificates,
+and browser-local deployment.
+Every layer outside the kernel is labeled \untrusted{} and
+documented as such.
+Metatheoretic claims are supported by tests and proof sketches,
+not machine-checked proofs, and this limitation is consistently
+documented.
+
+\stele{} v1.0.0 comprises 1808 tests, 15 curated gallery
+examples with CI-enforced honesty labels, and zero runtime
+dependencies for the core verification path.
+
+% ====================================================================
+\appendix
+\section{Component Status Table}
+\label{app:status}
+% ====================================================================
+
+\begin{table}[H]
+\centering
+\caption{Component status summary}
+\small
+\begin{tabular}{@{}p{4.5cm}lp{3.5cm}p{3cm}@{}}
+\toprule
+Component & Status & Evidence & Key Limitation \\
+\midrule
+Proof checker (Stele-Light) & Stable &
+  1808 tests; kernel\_valid/invalid &
+  Propositional only \\
+Intuitionistic rules (12) & Stable &
+  All kernel tests & --- \\
+Classical extensions (dne/lem/pbc) & Stable &
+  test\_classical\_principles & Not intuitionistic \\
+Structural diagnostics & Stable &
+  test\_diagnostics & UNTRUSTED; not all modes \\
+Dependency graph & Stable &
+  test\_proofgraph & DOT; needs Graphviz \\
+Matrix semantics (K3/LP/bool) & Stable &
+  test\_matrix, test\_rule\_soundness &
+  Propositional; discharge skipped \\
+World/lattice demo & Stable (demo) &
+  test\_world, test\_world\_lattice & Toy demo; not forcing \\
+Proof-term core (IPL) & Stable &
+  test\_proof\_terms, test\_elaboration & Intuitionistic only \\
+Proof-term reduction & Stable &
+  test\_reduction & Fuel-limited; no $\eta$ \\
+de Bruijn binders & Stable &
+  test\_debruijn & Proof vars only \\
+Proof-state hints & Stable (UNTRUSTED) &
+  test\_proofstate (78) & Hints need recheck \\
+Kripke countermodel search & Experimental &
+  test\_kripke & Bounded; propositional \\
+Proof certificates & Stable &
+  test\_certificate & JSON; not formally verified \\
+Minicheck & Stable &
+  test\_minicheck & Python; not formally verified \\
+Classical proof-term bridge & Experimental &
+  test\_classical\_experimental & Formula translation only \\
+FOL proof-term fragment & Experimental &
+  test\_fol & No surface; incomplete \\
+Browser Studio (Pyodide) & Stable &
+  test\_studio & CDN required \\
+Single-file HTML & Stable &
+  test\_single\_html & CDN for Pyodide \\
+Standalone executable & Stable &
+  test\_packaging & PyInstaller to build \\
+ML baseline & Optional / Experimental &
+  test\_ml\_baseline & 40-record sample; UNTRUSTED \\
+Lean 4 bridge & Optional / Experimental &
+  test\_lean\_bridge & Propositional; needs Lean 4 \\
+Metatheory (subject reduction etc.) & Proof sketches + tests &
+  docs/metatheory.md & Not machine-checked \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ====================================================================
+\bibliographystyle{plain}
+\bibliography{references}
+% ====================================================================
+
+\end{document}

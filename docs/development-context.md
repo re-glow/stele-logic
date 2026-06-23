@@ -104,6 +104,9 @@ stele_lean/  — Lean 4 브릿지 (optional, isolated, experimental)
 docs/semantics.md   — 형식 문법(BNF/EBNF) + 타입 규칙 + 환원 규칙 참조 명세
 docs/metatheory.md  — 7개 메타이론 주장과 현황(주체 환원·정규화·합류성·일관성 등)
 docs/proof-terms.md — 증명항 API + 정교화 가이드 + CLI 사용법
+docs/whitepaper.md  — 기술 백서 (Markdown primary); paper/stele-whitepaper.tex (LaTeX 소스)
+                      동기화 정책: LaTeX와 Markdown을 함께 업데이트할 것; 생성된 PDF는 커밋하지 말 것
+paper/              — LaTeX 백서 소스 (stele-whitepaper.tex, references.bib, README.md)
 docs/release-checklist.md  — 릴리스 전 체크리스트
 bench/       — 벤치마크 평가 데이터셋 + stele.eval 리포트
 packaging/   — PyInstaller 독립 실행 앱 빌드

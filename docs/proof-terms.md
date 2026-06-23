@@ -642,11 +642,98 @@ from stele.core.reduce import (
 
 ---
 
-## 11. 제외 범위 (재확인)
+## 11. 실험적 고전 증명항 브릿지 (Experimental)
+
+**상태: 실험적** — 안정 API 아님. `stele/core/classical_experimental.py` 참조.
+
+### 11.1 접근 방법: 이중부정 번역 (Gödel–Gentzen)
+
+고전 명제 공식을 직관 명제 공식으로 변환한 뒤, 기존 직관 증명항 검사기로 검증한다.
+
+고전 공식 φ를 직관 공식 φ^N으로 번역:
+
+```
+P^N         = ¬¬P
+false^N     = false
+(A ∧ B)^N   = A^N ∧ B^N
+(A → B)^N   = A^N → B^N
+(¬A)^N      = ¬(A^N)
+(A ∨ B)^N   = ¬(¬A^N ∧ ¬B^N)
+```
+
+핵심 성질: CPC ⊢ φ  이면  IPC ⊢ φ^N  (Gödel–Gentzen 정리).
+
+### 11.2 구현된 기능
+
+- `negative_translate_formula(φ, mode="godel_gentzen"|"glivenko")` — 공식 수준 번역
+- `check_negative_translation(term, φ, ctx)` — 수동 작성 증명항을 번역 공식에 대해 검사
+- `is_negative_translation_supported(φ)` — 명제 공식 여부 확인
+- `classical_principle_name(φ)` — LEM/DNE/Peirce 패턴 인식
+
+### 11.3 예시: DNE 번역 검사
+
+DNE = `¬¬P → P`는 고전적으로 타당하다.
+
+번역: DNE^N = `¬¬(¬¬P) → ¬¬P`
+
+이 공식은 직관적으로 증명 가능하다:
+
+```python
+from stele.core.classical_experimental import check_negative_translation
+from stele.core.terms import Lam, App, TVar
+from stele.ast import Var, Op
+
+P = Var("P")
+BOT = Op("bot", ())
+nP = Op("imp", (P, BOT))                    # P → ⊥
+nnP = Op("imp", (nP, BOT))                  # (P→⊥)→⊥
+nnnP = Op("imp", (nnP, BOT))                # ((P→⊥)→⊥)→⊥
+nnnnP = Op("imp", (nnnP, BOT))              # (((P→⊥)→⊥)→⊥)→⊥
+
+term = Lam("h", nnnnP,
+           Lam("k", nP,
+               App(TVar("h"),
+                   Lam("f", nnP,
+                       App(TVar("f"), TVar("k"))))))
+
+dne = Op("imp", (Op("not", (Op("not", (P,)),)), P))
+check_negative_translation(term, dne)  # 성공: TypingError 없음
+```
+
+### 11.4 미구현 사항 (설계 노트)
+
+**직접 고전 증명항 (λμ-계산법)**
+
+고전 논리의 증명항을 직접 표현하려면 λμ-계산법(Parigot 1992)이나
+제어 연산자(`callcc`, `throw`)를 포함하는 계산법이 필요하다:
+
+- **연속 변수(continuation variables)**: μ-바인더가 현재 연속을 포착
+- **명령 판단(command judgment)**: `c : #`  (계산이 값이 아닌 제어 흐름을 반환)
+- **환원 규칙**: μ-환원 + 구조적 환원
+- **CPS 번역과의 관계**: λμ는 CPS 번역의 직접 항 표현
+
+Stele은 현재 이 경로를 구현하지 않는다. 이유:
+
+1. 직관 증명항 코어를 고전 제어 연산자로 확장하면 합류성/정규화 성질이 달라진다.
+2. 이중부정 번역이 대표적 고전 원리의 검증에 충분하다.
+3. 향후 필요 시 `stele/core/control_experimental.py` 등 별도 모듈로 추가 예정.
+
+| 항목 | 상태 |
+|------|------|
+| λμ-계산법 | 미구현 (미래 작업) |
+| `callcc` / `throw` | 미구현 |
+| 연속 타이핑 | 미구현 |
+| 고전 정규화/합류성 주장 | 없음 |
+| 자동 증명 번역 | 미구현 |
+| 증명 탐색 | 미구현 |
+
+---
+
+## 12. 제외 범위 (재확인)
 
 | 항목 | 이유 |
 |------|------|
-| 고전 증명항 (dne, lem, pbc) | 제어 연산자 또는 이중부정 번역이 필요; 별도 설계 예정 |
+| 고전 증명항 (λμ/callcc) | 제어 연산자 필요; 이중부정 번역 브릿지만 실험적 구현 (§11) |
 | K3 / LP 다치 증명항 | K3·LP는 의미론 모듈; 증명항 계산법이 아님 |
 | 증명 탐색 | 검증기 ≠ 증명기; Stele의 핵심 정체성 밖 |
 | η-환원 | 미구현; 미래 작업 후보 |

@@ -250,6 +250,59 @@ def kripke_json(formula_str, max_worlds=4):
     return d
 
 
+def state_json(source, logic, cursor_line=None, goal=None):
+    """Return proof-state snapshot (UNTRUSTED).  No verification performed."""
+    from .proofstate import proof_state_from_text, proof_state_to_dict
+    try:
+        cl = int(cursor_line) if cursor_line is not None else None
+    except (TypeError, ValueError):
+        cl = None
+    state = proof_state_from_text(source, logic=logic or None, cursor_line=cl)
+    result = proof_state_to_dict(state)
+    result["ok"] = True
+    result["_untrusted"] = True
+    result["_disclaimer"] = (
+        "UNTRUSTED: proof state is not verified. "
+        "The kernel must re-check every step."
+    )
+    return result
+
+
+def hints_json(source, logic, cursor_line=None, goal=None):
+    """Return rule-applicability hints (UNTRUSTED).  No verification performed."""
+    from .proofstate import (proof_state_from_text, suggest_rule_hints,
+                             rule_hints_to_list)
+    from .parser import parse_formula
+    from .errors import ParseError
+    try:
+        cl = int(cursor_line) if cursor_line is not None else None
+    except (TypeError, ValueError):
+        cl = None
+    state = proof_state_from_text(source, logic=logic or None, cursor_line=cl)
+
+    goal_f = None
+    if goal:
+        try:
+            goal_f = parse_formula(goal)
+        except (ParseError, Exception):
+            pass
+
+    hints = suggest_rule_hints(state, goal=goal_f)
+    return {
+        "ok": True,
+        "theorem": state.theorem,
+        "logic": state.logic,
+        "target": state.target,
+        "pending_goal": state.pending_goal,
+        "hints": rule_hints_to_list(hints),
+        "_untrusted": True,
+        "_disclaimer": (
+            "UNTRUSTED: hints are local structural suggestions only. "
+            "Hints are NOT verified. The kernel must re-check every step."
+        ),
+    }
+
+
 def metrics_json():
     """Load bench/reports/latest.json or return a clear not-found response."""
     if not os.path.isfile(BENCH_REPORT):
@@ -341,6 +394,14 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/graph":
             self._send(200, graph_source(
                 req.get("source", ""), req.get("logic")))
+        elif path == "/api/state":
+            self._send(200, state_json(
+                req.get("source", ""), req.get("logic"),
+                req.get("cursor_line"), req.get("goal")))
+        elif path == "/api/hints":
+            self._send(200, hints_json(
+                req.get("source", ""), req.get("logic"),
+                req.get("cursor_line"), req.get("goal")))
         else:
             self._send(404, {"error": "not found"})
 

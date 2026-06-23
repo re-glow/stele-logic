@@ -36,6 +36,28 @@ def browser_graph(proof_text: str, logic: str = "intuitionistic_prop") -> dict:
     return graph_source(proof_text, logic)
 
 
+def browser_state(proof_text: str, logic: str = "intuitionistic_prop",
+                  cursor_line: int = None, goal: str = None) -> dict:
+    """Return proof-state snapshot (UNTRUSTED).  No verification performed.
+
+    Returns {ok, theorem, logic, target, context, available_labels, ...,
+             _untrusted: True, _disclaimer: str}.
+    """
+    from .web import state_json
+    return state_json(proof_text, logic, cursor_line, goal)
+
+
+def browser_hints(proof_text: str, logic: str = "intuitionistic_prop",
+                  cursor_line: int = None, goal: str = None) -> dict:
+    """Return rule-applicability hints (UNTRUSTED).  No verification performed.
+
+    Returns {ok, theorem, logic, target, hints: [...],
+             _untrusted: True, _disclaimer: str}.
+    """
+    from .web import hints_json
+    return hints_json(proof_text, logic, cursor_line, goal)
+
+
 # ---------------------------------------------------------------------------
 # Semantic tools
 # ---------------------------------------------------------------------------

@@ -1501,6 +1501,85 @@ or_intro_left, or_intro_right, imp_intro, neg_intro, or_elim
 
 ---
 
+## 26. 증명 상태 및 규칙 힌트 (Proof State & Hints)
+
+**이 기능은 UNTRUSTED 레이어다.** 증명을 검증하지 않는다. 커널(`stele/kernel.py`)이 유일한 신뢰 기관이다.
+
+### CLI
+
+```bash
+# 증명 파일의 전체 컨텍스트 출력
+python -m stele.cli state examples/dne.stele --logic classical_prop
+
+# 특정 줄 위치의 컨텍스트 출력
+python -m stele.cli state examples/dne.stele --line 3
+
+# 규칙 적용 가능성 힌트 출력
+python -m stele.cli hints examples/dne.stele --logic classical_prop
+
+# 목표 공식 직접 지정
+python -m stele.cli hints examples/imp_self.stele --goal "P -> P"
+```
+
+출력 예시 (`state`):
+```
+PROOF STATE — imp_self  (logic: intuitionistic_prop)
+═══════════════════════════════════════════════════════
+Target/conclusion: P -> P
+
+Context Γ:
+  [✗]   h1: P  [suppose]  line 2
+  [✗]     h2: P  [have]  line 3
+  [✓]   h3: P -> P  [have]  line 4
+
+Available labels: h3
+Closed (discharged): h1, h2
+
+⚠ UNTRUSTED: proof state is structural only. The kernel must re-check every step.
+```
+
+### Web API
+
+```
+POST /api/state
+  {"source": "...", "logic": "...", "cursor_line": null, "goal": null}
+
+POST /api/hints
+  {"source": "...", "logic": "...", "cursor_line": null, "goal": null}
+```
+
+응답 필드:
+- `_untrusted: true` — 항상 포함
+- `_disclaimer` — 신뢰 경계 안내 문자열
+- `/api/state` → `context`, `available_labels`, `closed_labels`, `target`, `pending_goal`
+- `/api/hints` → `hints: [{rule, title, why_applicable, required_refs, candidate_line_template, confidence, trusted: false}, ...]`
+
+### 힌트 패턴 (10종)
+
+| 규칙 | 트리거 |
+|------|--------|
+| `mp` | 컨텍스트에 `A → B`와 `A`가 있을 때 |
+| `and_elim_left/right` | 컨텍스트에 `A ∧ B`가 있을 때 |
+| `neg_elim` | 컨텍스트에 `A`와 `¬A`가 있을 때 |
+| `ex_falso` | 컨텍스트에 `⊥`이 있을 때 |
+| `imp_intro` | 목표가 `A → B`일 때 |
+| `and_intro` | 목표가 `A ∧ B`일 때 |
+| `or_intro_left/right` | 목표가 `A ∨ B`이고 컨텍스트에 해당 성분이 있을 때 |
+| `neg_intro` | 목표가 `¬A`일 때 |
+| `dne` (고전) | 컨텍스트에 `¬¬A`가 있을 때 |
+| `lem` (고전) | 목표가 `A ∨ ¬A`일 때 |
+| `pbc` (고전) | 고전 논리 사용 시 저신뢰도 폴백 |
+
+### 정직성 요건
+
+힌트 설명에서 금지 용어: "prove automatically", "complete the proof", "AI theorem proving",  
+"guaranteed next step", "trusted assistant".
+
+허용 용어: "hint", "candidate next step", "possible rule application", "untrusted suggestion",  
+"kernel-rechecked".
+
+---
+
 ## 27. 한계와 다음 단계
 
 - 현재는 **명제논리 + 1차 논리 단편**이다. 전체 1차 논리(함수 기호, 동치 등) 미구현.

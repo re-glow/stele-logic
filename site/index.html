@@ -620,6 +620,31 @@
             </div>
             <div id="lattice-result" aria-live="polite" aria-atomic="false"></div>
           </div>
+
+          <div class="sem-section">
+            <div class="sem-title">Kripke Countermodel</div>
+            <p class="panel-intro">
+              Bounded finite Kripke countermodel search for intuitionistic propositional logic.
+              Finds a world where a formula fails to be forced. Propositional formulas only.
+              Bounded search — <em>absence of a countermodel is not a proof of validity</em>.
+            </p>
+            <div class="toolbar">
+              <label for="kripke-input">Formula:</label>
+              <input id="kripke-input" type="text" value="P or not P"
+                     class="lattice-input-field"
+                     placeholder="e.g. P or not P"
+                     aria-label="Formula for Kripke countermodel search">
+              <label for="kripke-worlds-select">Max worlds:</label>
+              <select id="kripke-worlds-select" style="width:auto">
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+              </select>
+              <button class="btn btn-secondary" id="btn-kripke" data-stele>
+                ▶ Find Countermodel
+              </button>
+            </div>
+            <div id="kripke-result" aria-live="polite" aria-atomic="false"></div>
+          </div>
         </section>
 
         <!-- ── Panel: Examples ────────────────────────────────────────────── -->

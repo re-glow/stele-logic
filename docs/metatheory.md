@@ -443,6 +443,22 @@ python -m pytest -q
 
 `kripke.py`는 `matrix.py`를 임포트하지 않고, `matrix.py`는 `kripke.py`를 임포트하지 않는다.
 
+### 7.5 노출 표면 (v1.1 추가)
+
+크립키 반례 탐색은 다음 3개 표면을 통해 사용자에게 노출된다:
+
+| 표면 | 진입점 |
+|------|--------|
+| CLI | `python -m stele.cli kripke "P or not P"` |
+| Studio 로컬 API | `GET /api/kripke?formula=...&max_worlds=N` |
+| Pyodide/공개 사이트 | `browser_kripke("P or not P", max_worlds=3)` |
+
+진단 통합: `diagnose_theorem(thm, "intuitionistic_prop")`이 고전 전용 규칙(dne/lem/pbc)을
+사용한 증명을 검사할 때 `KripkeCountermodelFound` (info) 진단을 **추가로** 붙인다.
+이는 기존 kernel 오류를 대체하지 않으며, 증명 실패와 의미론적 비타당성을 혼동해서는 안 된다.
+
+테스트: `tests/test_kripke_integration.py` (61개)
+
 ---
 
 ## 8. 알려진 미검증 영역

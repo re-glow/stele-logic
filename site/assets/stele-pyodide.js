@@ -5,7 +5,7 @@
  *   1. Load Pyodide from the pinned CDN.
  *   2. Fetch stele_source.zip and extract into Pyodide's virtual filesystem.
  *   3. Import stele.browser inside Pyodide.
- *   4. Expose wrapper functions: check, diagnose, graph, soundness, lattice, examples.
+ *   4. Expose wrapper functions: check, diagnose, graph, soundness, lattice, kripke, examples.
  *   5. Manage loading state in the Studio section (not a full-page overlay).
  *   6. Expose window.stele.loadPreset() for the gallery/tutorial sections.
  *
@@ -536,6 +536,51 @@ async function runLattice() {
   }
 }
 
+// ── Panel: Semantics — Kripke Countermodel ────────────────────────────────
+
+async function runKripke() {
+  const formula   = document.getElementById("kripke-input").value.trim();
+  const maxWorlds = parseInt(document.getElementById("kripke-worlds-select").value) || 3;
+  const out       = document.getElementById("kripke-result");
+  if (!formula) { out.innerHTML = `<p class="dim-text">Enter a formula above.</p>`; return; }
+  out.innerHTML = `<p class="dim-text">Searching…</p>`;
+  try {
+    const r = await callBrowser("browser_kripke", { formula, max_worlds: maxWorlds });
+    if (r.status === "parse_error" || r.status === "unsupported_formula") {
+      out.innerHTML = `<p style='color:var(--red)'>${esc(r.explanation)}</p>`; return;
+    }
+    if (r.status === "no_countermodel_within_bound") {
+      out.innerHTML = `
+        <p style='color:var(--green)'>No countermodel found (max ${esc(String(r.max_worlds))} worlds).</p>
+        <p style='color:var(--muted);font-size:.75rem'>${esc(r.bound_note)}</p>`;
+      return;
+    }
+    // countermodel_found
+    const val = r.valuation || {};
+    const worldRows = (r.worlds || []).map(w => {
+      const atoms = val[String(w)] || [];
+      const fail  = w === r.failing_world ? `<span style='color:var(--red)'>✗ fails here</span>` : "";
+      return `<tr><td>${esc(String(w))}</td><td>${atoms.length ? atoms.map(esc).join(", ") : "∅"}</td><td>${fail}</td></tr>`;
+    }).join("");
+    const orderStr = (r.order_pairs || []).length
+      ? r.order_pairs.map(p => `${esc(String(p[0]))}≤${esc(String(p[1]))}`).join(", ")
+      : "discrete (reflexive only)";
+    out.innerHTML = `
+      <p style='font-size:.8rem;color:var(--muted);margin-bottom:6px'>
+        Formula: <strong style='color:var(--red)'>${esc(r.formula)}</strong>
+        · countermodel found
+      </p>
+      <p style='font-size:.75rem;margin-bottom:8px'>Order: ${orderStr}</p>
+      <table class="lattice-table">
+        <thead><tr><th>World</th><th>True atoms</th><th></th></tr></thead>
+        <tbody>${worldRows}</tbody>
+      </table>
+      <p style='font-size:.75rem;color:var(--amber);margin-top:8px'>${esc(r.explanation)}</p>`;
+  } catch (e) {
+    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
+  }
+}
+
 // ── Panel: Examples ────────────────────────────────────────────────────────
 
 const EXAMPLE_DESCRIPTIONS = {
@@ -739,6 +784,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bind("btn-graph",     runGraph);
   bind("btn-soundness", runSoundness);
   bind("btn-lattice",   runLattice);
+  bind("btn-kripke",    runKripke);
 
   // Legacy gallery "Load & Try" buttons (hardcoded in HTML, if any)
   document.querySelectorAll(".gcard-btn").forEach(btn => {

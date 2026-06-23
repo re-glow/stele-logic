@@ -271,6 +271,133 @@ def find_countermodel(
 
 
 # ---------------------------------------------------------------------------
+# Structured explanation (for CLI, web API, and diagnostics)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class KripkeExplanation:
+    """Structured result of a Kripke countermodel search.
+
+    status values:
+      "countermodel_found"          — a finite countermodel was found
+      "no_countermodel_within_bound" — search exhausted the bound; not a validity proof
+      "parse_error"                 — the formula could not be parsed
+      "unsupported_formula"         — formula contains non-propositional constructs
+    """
+    formula: str            # pretty-printed formula
+    status: str
+    max_worlds: int
+    bound_note: str         # one-line caveat about the result
+    worlds: Optional[list]          # world ids, or None
+    order_pairs: Optional[list]     # [[w, v], …] non-reflexive pairs, or None
+    valuation: Optional[dict]       # {world_id: [atom, …]}, or None
+    failing_world: Optional[object] # world where formula fails, or None
+    explanation: str                # human-readable sentence
+
+
+def kripke_explain(
+    formula_or_str,
+    max_worlds: int = 4,
+    *,
+    formula_str: str = "",
+) -> KripkeExplanation:
+    """Run bounded Kripke countermodel search and return a structured explanation.
+
+    formula_or_str may be a Formula object or a formula string.
+    formula_str overrides the display string (optional).
+    """
+    from .ast import pretty as pretty_formula
+    from .parser import parse_formula
+    from .errors import ParseError
+
+    # Resolve formula
+    if isinstance(formula_or_str, str):
+        raw = formula_or_str
+        try:
+            formula = parse_formula(raw)
+        except ParseError as e:
+            return KripkeExplanation(
+                formula=raw, status="parse_error", max_worlds=max_worlds,
+                bound_note="Formula could not be parsed.",
+                worlds=None, order_pairs=None, valuation=None, failing_world=None,
+                explanation=f"Parse error: {e}",
+            )
+    else:
+        formula = formula_or_str
+        raw = formula_str or pretty_formula(formula)
+
+    display = formula_str or pretty_formula(formula)
+
+    # Reject non-propositional formulas
+    try:
+        _ = _atoms(formula)
+    except Exception:
+        return KripkeExplanation(
+            formula=display, status="unsupported_formula", max_worlds=max_worlds,
+            bound_note="Kripke semantics covers propositional logic only.",
+            worlds=None, order_pairs=None, valuation=None, failing_world=None,
+            explanation="Formula contains non-propositional constructs (FOL/quantifiers); Kripke semantics not applicable.",
+        )
+
+    cm = find_countermodel(formula, max_worlds=max_worlds)
+
+    if cm is None:
+        return KripkeExplanation(
+            formula=display,
+            status="no_countermodel_within_bound",
+            max_worlds=max_worlds,
+            bound_note=(
+                f"No countermodel found up to {max_worlds} worlds. "
+                "This is NOT a proof of intuitionistic validity — "
+                "bounded search, not completeness."
+            ),
+            worlds=None, order_pairs=None, valuation=None, failing_world=None,
+            explanation=(
+                f"No finite Kripke countermodel found within {max_worlds} worlds. "
+                "The formula may be intuitionistically valid, or a larger model may be needed."
+            ),
+        )
+
+    m = cm.model
+    w0 = cm.world
+    order_pairs = sorted((a, b) for (a, b) in m.order if a != b)
+    val_dict = {
+        wid: sorted(atom for (u, atom) in m.valuation if u == wid)
+        for wid in m.worlds
+    }
+    return KripkeExplanation(
+        formula=display,
+        status="countermodel_found",
+        max_worlds=max_worlds,
+        bound_note="Bounded finite Kripke countermodel found.",
+        worlds=list(m.worlds),
+        order_pairs=[[a, b] for a, b in order_pairs],
+        valuation=val_dict,
+        failing_world=w0,
+        explanation=(
+            f"At world {w0}, '{display}' is not forced. "
+            f"This is a finite Kripke countermodel showing the formula is not "
+            f"intuitionistically valid in this model."
+        ),
+    )
+
+
+def explanation_to_dict(ex: KripkeExplanation) -> dict:
+    """Serialise a KripkeExplanation to a JSON-compatible dict."""
+    return {
+        "formula":       ex.formula,
+        "status":        ex.status,
+        "max_worlds":    ex.max_worlds,
+        "bound_note":    ex.bound_note,
+        "worlds":        ex.worlds,
+        "order_pairs":   ex.order_pairs,
+        "valuation":     {str(k): v for k, v in (ex.valuation or {}).items()},
+        "failing_world": ex.failing_world,
+        "explanation":   ex.explanation,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Pretty printing
 # ---------------------------------------------------------------------------
 

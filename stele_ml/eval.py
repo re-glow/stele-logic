@@ -29,6 +29,41 @@ from stele_ml.classifier import MultinomialNB, OneVsRestNB
 from stele_ml._metrics import compute_metrics
 
 
+def compute_failure_analysis(metrics: dict, codes: list[str]) -> dict:
+    """Identify per-code failure modes from a metrics dict.
+
+    under_predicted: recall < 0.5 and support > 0 (model misses most positives)
+    over_predicted:  precision < 0.5 and fp > 0 (false-positive prone)
+    well_predicted:  f1 >= 0.5
+    no_support:      code absent from test set
+    """
+    under, over, well, no_sup = [], [], [], []
+    for code in codes:
+        m = metrics.get("per_code", {}).get(code, {})
+        if m.get("support", 0) == 0:
+            no_sup.append(code)
+            continue
+        f1 = m.get("f1", 0.0)
+        fp = m.get("fp", 0)
+        if f1 >= 0.5:
+            well.append(code)
+        elif fp > 0 and m.get("precision", 0.0) < 0.5:
+            over.append(code)
+        else:
+            under.append(code)
+    return {
+        "note": (
+            "under_predicted = recall < 0.5 (model misses positives); "
+            "over_predicted = precision < 0.5 with FP > 0; "
+            "well_predicted = F1 >= 0.5."
+        ),
+        "no_support_in_test": sorted(no_sup),
+        "over_predicted": sorted(over),
+        "under_predicted": sorted(under),
+        "well_predicted": sorted(well),
+    }
+
+
 def load_model(model_dir: str | pathlib.Path) -> dict:
     """Load model artifact from model_dir/model.json."""
     path = pathlib.Path(model_dir) / "model.json"
@@ -140,19 +175,23 @@ def main(argv: list[str] | None = None) -> int:
 
     # Write report
     if args.report:
+        failure_analysis = compute_failure_analysis(
+            metrics, artifact.get("codes", [])
+        )
         report = {
             "dataset": {
                 "source": data_desc,
                 "n_eval": len(records),
             },
+            "failure_mode_analysis": failure_analysis,
+            "metrics": metrics,
             "model": {
-                "path": str(args.model),
-                "type": "MultinomialNaiveBayes (stdlib baseline)",
-                "n_vocab": artifact["n_vocab"],
                 "n_train": artifact.get("n_train"),
                 "n_test": artifact.get("n_test"),
+                "n_vocab": artifact["n_vocab"],
+                "path": str(args.model),
+                "type": "MultinomialNaiveBayes (stdlib baseline)",
             },
-            "metrics": metrics,
             "note": (
                 "Evaluation of stdlib Naive Bayes baseline. "
                 "All values are measured from actual predictions. "

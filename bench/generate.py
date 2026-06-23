@@ -122,6 +122,20 @@ def write_shards(
     return shard_names
 
 
+def compute_label_stats(records: list[dict]) -> dict:
+    """Count valid/invalid and per-code frequencies across a record list."""
+    n_valid = sum(1 for r in records if r.get("expected_valid"))
+    code_dist: dict[str, int] = {}
+    for r in records:
+        for code in r.get("expected_codes") or []:
+            code_dist[code] = code_dist.get(code, 0) + 1
+    return {
+        "n_invalid": len(records) - n_valid,
+        "n_valid": n_valid,
+        "code_distribution": dict(sorted(code_dist.items())),
+    }
+
+
 def write_manifest(
     out_dir: str | pathlib.Path,
     *,
@@ -131,6 +145,8 @@ def write_manifest(
     shard_size: int,
     n_per_corpus: dict[str, int],
     shard_names: list[str],
+    label_stats: dict | None = None,
+    creation_command: str | None = None,
 ) -> None:
     """Write manifest.json to out_dir."""
     out = pathlib.Path(out_dir)
@@ -142,8 +158,10 @@ def write_manifest(
             "shard_size": shard_size,
         },
         "corpora": sorted(n_per_corpus.keys()),
+        "creation_command": creation_command,
         "generator": GENERATOR_VERSION_STR,
         "generator_version": GENERATOR_VERSION,
+        "label_stats": label_stats,
         "n_per_corpus": dict(sorted(n_per_corpus.items())),
         "n_shards": len(shard_names),
         "n_total": n_total,
@@ -291,6 +309,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # Write shards and manifest
     shard_names = write_shards(records, args.out, args.shard_size)
+    cmd = (
+        f"python bench/generate.py"
+        f" --corpus {args.corpus}"
+        f" --n {args.n}"
+        f" --out {args.out}"
+        f" --seed {args.seed}"
+        f" --shard-size {args.shard_size}"
+    )
     write_manifest(
         args.out,
         corpus_arg=args.corpus,
@@ -299,6 +325,8 @@ def main(argv: list[str] | None = None) -> int:
         shard_size=args.shard_size,
         n_per_corpus=n_per,
         shard_names=shard_names,
+        label_stats=compute_label_stats(records),
+        creation_command=cmd,
     )
 
     out = pathlib.Path(args.out)

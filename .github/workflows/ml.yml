@@ -1,0 +1,88 @@
+name: ML Baseline (optional)
+
+# Manual trigger only — not part of core CI.
+# Core CI (ci.yml) never runs this; it requires no ML dependencies.
+on:
+  workflow_dispatch:
+    inputs:
+      n_generated:
+        description: "Number of in-memory examples to train on (default: 400)"
+        required: false
+        default: "400"
+      seed:
+        description: "RNG seed (default: 0)"
+        required: false
+        default: "0"
+
+jobs:
+  ml-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install core test dependencies
+        run: pip install pytest
+
+      - name: Run core tests (must pass without ML deps)
+        run: python -m pytest -q
+
+      - name: Regenerate committed sample corpus
+        run: |
+          python bench/generate.py \
+            --corpus all \
+            --n 40 \
+            --out bench/generated/sample \
+            --seed 0 \
+            --shard-size 20
+
+      - name: Build train/dev/test split
+        run: |
+          python stele_ml/build_dataset.py \
+            --source bench/generated/sample \
+            --out stele_ml/data/sample_split \
+            --seed 0
+
+      - name: Train baseline (in-memory corpus)
+        run: |
+          python -m stele_ml.train \
+            --n-generated ${{ github.event.inputs.n_generated }} \
+            --seed ${{ github.event.inputs.seed }} \
+            --out stele_ml/artifacts/baseline \
+            --report stele_ml/reports/training_report.json
+
+      - name: Evaluate on committed sample
+        run: |
+          python -m stele_ml.eval \
+            --model stele_ml/artifacts/baseline \
+            --data bench/generated/sample \
+            --report stele_ml/reports/baseline_report.json
+
+      - name: Print evaluation summary
+        run: |
+          python -c "
+          import json, pathlib
+          r = json.loads(pathlib.Path('stele_ml/reports/baseline_report.json').read_text())
+          m = r['metrics']
+          print(f'validity_accuracy : {m[\"validity_accuracy\"]:.4f}')
+          print(f'exact_match       : {m[\"exact_match\"]:.4f}')
+          print(f'micro_f1          : {m[\"micro_f1\"]:.4f}')
+          print(f'macro_f1          : {m[\"macro_f1\"]:.4f}')
+          fa = r.get('failure_mode_analysis', {})
+          print(f'under_predicted   : {fa.get(\"under_predicted\", [])}')
+          print(f'well_predicted    : {fa.get(\"well_predicted\", [])}')
+          "
+
+      - name: Upload reports as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-reports-${{ github.run_id }}
+          path: |
+            stele_ml/reports/baseline_report.json
+            stele_ml/reports/training_report.json
+            stele_ml/data/sample_split/split_manifest.json
+          retention-days: 30

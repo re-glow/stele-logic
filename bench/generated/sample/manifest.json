@@ -10,8 +10,21 @@
     "diagnostic_errors",
     "prop_nd"
   ],
+  "creation_command": "python bench/generate.py --corpus all --n 40 --out bench/generated/sample --seed 0 --shard-size 20",
   "generator": "bench.generate v1",
   "generator_version": 1,
+  "label_stats": {
+    "code_distribution": {
+      "InvalidTransition": 2,
+      "MissingHypothesis": 4,
+      "UndefinedDefinition": 4,
+      "UndefinedSymbol": 4,
+      "UnsupportedConclusion": 3,
+      "UnusedAssumption": 3
+    },
+    "n_invalid": 13,
+    "n_valid": 27
+  },
   "n_per_corpus": {
     "definition_use": 8,
     "diagnostic_errors": 8,

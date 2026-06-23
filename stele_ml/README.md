@@ -47,6 +47,20 @@ pip install -r stele_ml/requirements-ml.txt
 
 ## Commands
 
+### Corpus generation (reproducible)
+
+```bash
+# Regenerate the committed 40-example sample (deterministic)
+python bench/generate.py --corpus all --n 40 \
+    --out bench/generated/sample --seed 0 --shard-size 20
+
+# Build train/dev/test split from the committed sample
+python stele_ml/build_dataset.py \
+    --source bench/generated/sample \
+    --out stele_ml/data/sample_split \
+    --seed 0
+```
+
 ### Train
 
 ```bash
@@ -66,7 +80,7 @@ python -m stele_ml.train --n-generated 1000 --out stele_ml/artifacts/baseline --
 ### Evaluate
 
 ```bash
-# Evaluate on committed sample, write report
+# Evaluate on committed sample, write report (includes failure-mode analysis)
 python -m stele_ml.eval \
     --model stele_ml/artifacts/baseline \
     --data bench/generated/sample \
@@ -112,8 +126,15 @@ The committed `reports/baseline_report.json` contains:
 | `macro_f1` | F1 averaged over codes that appear in the test set |
 | `per_code.{code}.f1` | Per-code F1 for each diagnostic code |
 | `per_code.{code}.support` | Number of test examples with this code |
+| `failure_mode_analysis.under_predicted` | Codes with recall < 0.5 (model misses positives) |
+| `failure_mode_analysis.over_predicted` | Codes with precision < 0.5 and false positives |
+| `failure_mode_analysis.well_predicted` | Codes with F1 >= 0.5 |
 
-Codes with `support=0` in the test set are excluded from macro averages.
+Codes with `support=0` in the test set are excluded from macro averages and listed
+under `failure_mode_analysis.no_support_in_test`.
+
+See `docs/benchmark-card.md` for full dataset description, known limitations, and
+reproducibility instructions.
 
 ---
 
@@ -124,10 +145,11 @@ stele_ml/
   __init__.py       Package init
   featurize.py      Bag-of-words tokenizer + vocabulary builder + feature vectors
   classifier.py     MultinomialNB + OneVsRestNB (stdlib, JSON-serializable)
-  data.py           Dataset loading (JSONL shards, bench labels, in-memory generation)
+  data.py           Dataset loading + split_three_way() for 3-way splits
   _metrics.py       P/R/F1 computation (micro, macro, per-code)
+  build_dataset.py  Build deterministic train/dev/test split from a corpus
   train.py          Training CLI
-  eval.py           Evaluation CLI
+  eval.py           Evaluation CLI (includes failure-mode analysis in reports)
   infer.py          Inference CLI
   artifacts/
     baseline/

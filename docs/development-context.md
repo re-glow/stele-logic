@@ -94,6 +94,12 @@ site/             — 공개 사이트 (HTML/CSS/JS, Pyodide 기반)
   index.html        랜딩페이지: 튜토리얼·갤러리·Studio
   examples_gallery.json  갤러리 정직성 테스트 소스 (15개 항목)
 stele_ml/    — ML 기준선 (optional, isolated, experimental)
+               · build_dataset.py: 결정론적 train/dev/test 3-분할 빌더
+               · data.py: split_three_way() 추가 (seeded shuffle, disjoint, exhaustive)
+               · eval.py: failure_mode_analysis 섹션 포함 보고서 출력
+               · reports/baseline_report.json: 실측 평가 보고서 (failure_mode_analysis 포함)
+               · data-discipline 정책: manifests.json에 label_stats + creation_command 포함
+               · 벤치마크 카드: docs/benchmark-card.md 참조
 stele_lean/  — Lean 4 브릿지 (optional, isolated, experimental)
 docs/semantics.md   — 형식 문법(BNF/EBNF) + 타입 규칙 + 환원 규칙 참조 명세
 docs/metatheory.md  — 7개 메타이론 주장과 현황(주체 환원·정규화·합류성·일관성 등)

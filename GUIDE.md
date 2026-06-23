@@ -1036,11 +1036,29 @@ python bench/generate.py --corpus all --n 50 --out bench/generated/test --valida
 
 신뢰 코어(`stele/`)와 완전히 격리된 선택적 ML 패키지가 제공된다.
 
+### 코퍼스 생성 및 분할
+
 ```bash
-# 기본 기준선 훈련 (400개 생성 예제, 의존성 없음)
+# 커밋된 40개 샘플 재생성 (결정론적)
+python bench/generate.py --corpus all --n 40 \
+    --out bench/generated/sample --seed 0 --shard-size 20
+
+# 3-방향 train/dev/test 분할 생성
+python stele_ml/build_dataset.py \
+    --source bench/generated/sample \
+    --out stele_ml/data/sample_split \
+    --seed 0
+```
+
+생성된 `manifest.json`에는 `label_stats`(유효/무효 수, 코드 빈도)와 `creation_command`가 포함된다.
+
+### 훈련 및 평가
+
+```bash
+# 기본 기준선 훈련 (400개 메모리 내 생성 예제, 의존성 없음)
 python -m stele_ml.train --out stele_ml/artifacts/baseline
 
-# 평가
+# 평가 (실패 모드 분석 포함)
 python -m stele_ml.eval \
     --model stele_ml/artifacts/baseline \
     --data bench/generated/sample \
@@ -1051,17 +1069,18 @@ python -m stele_ml.infer --model stele_ml/artifacts/baseline \
     --file examples/dne.stele --json
 ```
 
-커밋된 기준선 측정값(`stele_ml/reports/baseline_report.json`에서 생성됨):
+### 측정값
 
-- **유효성 정확도:** 0.85 (40개 샘플 평가)
-- **정확 일치:** 0.60
-- **마이크로 F1:** 0.50
+커밋된 `stele_ml/reports/baseline_report.json`에서 실측값을 읽을 것.
+이 문서의 수치는 현재 값이 아닐 수 있으므로 보고서 파일을 직접 확인하라.
 
-> **정직성:** 위 수치는 소형 합성 코퍼스에서의 실측값이며 최종 성능 주장이 아니다.
-> 심볼릭 체커(`stele/kernel.py`)가 권위 있는 검증자이며 ML은 근사 기준선이다.
+보고서에는 `failure_mode_analysis` 섹션이 포함되며 과소예측/과대예측 코드를 나열한다.
+
+> **정직성:** 모든 수치는 소형 합성 코퍼스 실측값이며 최종 성능 주장이 아니다.
+> 심볼릭 체커(`stele/kernel.py`)가 권위 있는 검증자이며 ML은 UNTRUSTED 근사 기준선이다.
 > scikit-learn은 선택 사항(`stele_ml/requirements-ml.txt`)이며 핵심 CI에 필요 없다.
 
-자세한 내용: [`stele_ml/README.md`](stele_ml/README.md)
+자세한 내용: [`stele_ml/README.md`](stele_ml/README.md), [`docs/benchmark-card.md`](docs/benchmark-card.md)
 
 ## 20. Lean 4 브리지 (`stele_lean`)
 

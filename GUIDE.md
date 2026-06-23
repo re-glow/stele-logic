@@ -4,6 +4,8 @@ Stele-Light는 자연연역 증명을 **사람이 읽을 수 있게** 적는 표
 
 증명항 계산법(Curry–Howard) 레이어 및 스크립트 정교화: [`docs/proof-terms.md`](docs/proof-terms.md)
 
+기술 아키텍처 전체: **[`docs/whitepaper.md`](docs/whitepaper.md)** (기술 백서/preprint)
+
 Stele now has a proof-term core and an elaboration path from supported proof scripts into typed proof terms.  
 CLI: `python -m stele.cli elaborate FILE` · `python -m stele.cli term-check --term TERM --type TYPE`
 

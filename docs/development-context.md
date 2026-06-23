@@ -74,6 +74,10 @@ stele/core/   terms.py / typing.py / reduce.py / term_parser.py / debruijn.py / 
               — de Bruijn 바인더 표현(debruijn.py, 증명 변수만)
               — 1차 논리 단편(fol.py): ForallIntro/Elim/ExistsIntro/Elim (experimental)
               — 표면 문법 파서(parse_term)
+              — classical_experimental.py: 실험적 이중부정 번역 브릿지 (Gödel–Gentzen)
+                  · negative_translate_formula / check_negative_translation
+                  · 명제 공식 전용; 직관 코어 미변경; λμ/callcc 미구현
+                  · 커널 밖, 안정 API 아님
 stele/elaborate.py  — 스크립트 → 증명항 정교화(crosscheck_theorem), 직관 논리만 지원
 site/             — 공개 사이트 (HTML/CSS/JS, Pyodide 기반)
   index.html        랜딩페이지: 튜토리얼·갤러리·Studio

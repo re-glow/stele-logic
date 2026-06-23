@@ -38,6 +38,7 @@ Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`
 | Single-file HTML (`stele.html`) | **Stable** | `python tools/build_single_html.py` → `dist/stele.html` | CDN required for Pyodide; full offline mode is future work |
 | Standalone executable | **Stable** | `python packaging/build_app.py` → `dist/SteleStudio` | PyInstaller required to build; binary size ~50 MB |
 | ML baseline (`stele_ml/`) | **Optional / Experimental** | `pip install -r stele_ml/requirements-ml.txt` | Isolated from trusted path; experimental; not for production use |
+| Classical proof-term bridge | **Experimental** | `stele.core.classical_experimental` | Formula-level negative translation (Gödel–Gentzen); no λμ/callcc; no automatic proof translation; intuitionistic core unchanged |
 | Lean bridge (`stele_lean/`) | **Optional / Experimental** | Requires Lean 4 installation | Isolated; propositional fragment only; experimental |
 
 ## Distribution modes

@@ -61,7 +61,13 @@ stele/
   errors.py       ProofError, DiagnosticCode, 오류 타입 정의
   types.py        타입 앨리어스, 공통 타입 정의
   eval.py         벤치마크 평가 하네스 (bench/labels.jsonl 기반 metrics 계산)
-  cli.py     check / soundness / lattice / graph / diagnose / demos / elaborate
+  certificate.py  증명 인증서 방출 (emit_certificate, formula_to_json/from_json)
+                  버전화된 JSON 형식; stele.kernel 검증 통과 후에만 방출
+  minicheck.py    소형 독립 인증서 검사기 (minicheck)
+                  stele.kernel / stele.parser / stele.diagnostics / stele.proof 미임포트
+                  자체 규칙 검사 로직; discharge 규칙 포함; 공유: stele.ast + stele.certificate
+  cli.py     check / soundness / lattice / graph / diagnose / demos / elaborate /
+             cert / minicheck / kripke / term-check / term-normalize
   web.py     Stele Studio HTTP 서버(stdlib http.server) + JSON API 엔드포인트
   webapp/index.html  단일 파일 Stele Studio SPA
 examples/  proof: dne, dne_law, valid_*, invalid_*, peirce, lem, neg_intro, or_elim, ...

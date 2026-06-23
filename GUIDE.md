@@ -1432,7 +1432,76 @@ kripke  formula: P or not P
 
 ---
 
-## 25. 한계와 다음 단계
+## 25. 증명 인증서 및 소형 독립 검사기
+
+### 25.1 목적
+
+주 커널로 검증한 증명을 **버전화된 JSON 인증서**로 저장하고,
+주 커널 코드를 재사용하지 않는 소형 검사기(`minicheck`)로 재검증할 수 있다.
+
+### 25.2 cert 명령 — 인증서 방출
+
+```bash
+# 인증서를 stdout에 출력
+python -m stele.cli cert examples/imp_self.stele
+
+# 인증서를 파일로 저장
+python -m stele.cli cert examples/imp_self.stele --out imp_self.json
+python -m stele.cli cert examples/dne.stele --logic classical_prop --out dne.json
+```
+
+`cert`는 주 커널로 먼저 검증하고, 성공 시에만 인증서를 방출한다.  
+검증 실패 시 `ProofError`를 표시하고 종료한다.
+
+### 25.3 minicheck 명령 — 독립 재검증
+
+```bash
+python -m stele.cli minicheck imp_self.json
+# OK  certificate for 'imp_self' verified under 'intuitionistic_prop'
+
+python -m stele.cli minicheck dne.json
+# OK  certificate for 'dne_consequent' verified under 'classical_prop'
+```
+
+`minicheck`는 `stele.kernel`, `stele.parser`, `stele.diagnostics`, `stele.proof`를 임포트하지 않는다.  
+독립적인 규칙 검사 코드로 인증서를 재검증한다(같은 Python 프로세스에서 실행됨).
+
+### 25.4 인증서 형식 (v1)
+
+```json
+{
+  "format": "stele-proof-certificate",
+  "version": "1",
+  "theorem": "imp_self",
+  "logic": "intuitionistic_prop",
+  "conclusion": {"kind": "op", "op": "imp", "args": [...]},
+  "steps": [
+    {"kind": "suppose_open", "label": "h1", "formula": {...}},
+    {"kind": "have",         "label": "h2", "formula": {...}, "rule": "copy", "refs": ["h1"]},
+    {"kind": "suppose_close","label": "h1"},
+    {"kind": "have",         "label": "h3", "formula": {...}, "rule": "imp_intro", "refs": ["h1", "h2"]},
+    {"kind": "conclude",     "ref": "h3",   "formula": {...}}
+  ],
+  "metadata": {"generator": "stele", "stele_version": "1.0.0"}
+}
+```
+
+`suppose_open` / `suppose_close` 괄호가 방전(discharge) 규칙의 부분 증명 범위를 명시한다.
+
+### 25.5 지원 규칙
+
+**직관 + 고전:** copy, mp, and_intro, and_elim_left, and_elim_right, neg_elim, ex_falso,  
+or_intro_left, or_intro_right, imp_intro, neg_intro, or_elim  
+**고전 전용:** dne, lem, pbc
+
+### 25.6 한계
+
+- Python 구현이므로 주 커널과 동일 프로세스에서 실행된다 — 완전한 프로세스 격리가 아니다.
+- 인증서 v1; 향후 형식 변경 시 version 필드 증가.
+
+---
+
+## 27. 한계와 다음 단계
 
 - 현재는 **명제논리 + 1차 논리 단편**이다. 전체 1차 논리(함수 기호, 동치 등) 미구현.
 - 상대성은 *규칙 가용성* 수준에서 작동한다(§7의 정직한 한계).

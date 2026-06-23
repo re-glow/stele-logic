@@ -40,6 +40,7 @@ Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`
 | ML baseline (`stele_ml/`) | **Optional / Experimental** | `pip install -r stele_ml/requirements-ml.txt` | Isolated from trusted path; experimental; not for production use |
 | Classical proof-term bridge | **Experimental** | `stele.core.classical_experimental` | Formula-level negative translation (Gödel–Gentzen); no λμ/callcc; no automatic proof translation; intuitionistic core unchanged |
 | Lean bridge (`stele_lean/`) | **Optional / Experimental** | Requires Lean 4 installation | Isolated; propositional fragment only; experimental |
+| Proof certificates & minicheck | **Stable** | `python -m stele.cli cert FILE; python -m stele.cli minicheck CERT.json` | Versioned JSON certificate; independent-ish re-verification path (no kernel/parser import in minicheck); same Python process |
 
 ## Distribution modes
 

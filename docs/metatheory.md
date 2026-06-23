@@ -497,7 +497,89 @@ Gödel–Gentzen 이중부정 번역으로 고전 명제 공식을 직관 공식
 
 ---
 
-## 9. 알려진 미검증 영역
+## 9. 증명 인증서 및 독립 소형 검사기 (v1.2 추가)
+
+**상태:** 안정 기능. `stele/certificate.py`, `stele/minicheck.py`.
+
+### 9.1 목적
+
+주 커널이 검증한 증명을 **증명 인증서**(proof certificate, 버전화된 JSON)로 직렬화하고,
+주 커널 코드를 재사용하지 않는 소형 독립 검사기(`minicheck`)로 재검증한다.
+
+### 9.2 인증서 형식
+
+```
+format: "stele-proof-certificate", version: "1"
+theorem, logic, conclusion: <공식 JSON>
+steps: assume | suppose_open | suppose_close | have | conclude
+metadata: {generator: "stele", stele_version: ...}
+```
+
+공식 JSON: `{"kind":"var","name":"P"}` / `{"kind":"bot"}` / `{"kind":"op","op":"imp","args":[...]}`
+
+방출 시 주 커널이 먼저 검증한다(`emit_certificate`는 `ProofError` 시 방출 거부).
+
+### 9.3 Minicheck 독립 경계
+
+`minicheck.py`는 다음을 임포트하지 않는다:
+- `stele.kernel` — 주 체커의 검증 로직
+- `stele.parser` — 원본 .stele 파서
+- `stele.diagnostics`
+- `stele.proof` — 증명 AST 노드
+
+공유 허용: `stele.ast` (순수 동결 데이터클래스) + `stele.certificate` (공식 JSON 역직렬화만).
+
+**중요:** 미래의 Rust/OCaml 포팅이 더 강한 독립성을 제공할 수 있다.
+현재 Python 구현은 주 체커와 같은 런타임에서 실행된다.
+
+### 9.4 Minicheck 커버 규칙
+
+| 규칙 | 직관 | 고전 |
+|------|------|------|
+| copy, mp, and_intro, and_elim_left/right | ✓ | ✓ |
+| neg_elim, ex_falso, or_intro_left/right | ✓ | ✓ |
+| imp_intro, neg_intro, or_elim | ✓ | ✓ |
+| dne, lem, pbc | — | ✓ |
+
+논리 경계 시행: 고전 규칙(`dne`, `lem`, `pbc`)은 `intuitionistic_prop` 하에서 거부.
+Discharge 규칙 시행: `suppose_open`/`suppose_close` 괄호에서 재구성된 닫힌 부분 증명 기록으로 확인.
+
+### 9.5 CLI
+
+```bash
+python -m stele.cli cert examples/imp_self.stele --logic intuitionistic_prop
+python -m stele.cli cert examples/dne.stele --logic classical_prop --out dne.json
+python -m stele.cli minicheck dne.json
+```
+
+### 9.6 테스트 커버리지
+
+| 범주 | 테스트 파일 | 테스트 수 |
+|------|-----------|----------|
+| 공식 직렬화 라운드트립 | `test_certificate.py` | 10 |
+| 인증서 방출 (직관/고전/불유효 거부) | `test_certificate.py` | 9 |
+| JSON 라운드트립 및 형식 검증 | `test_certificate.py` | 5 |
+| Minicheck 수락 (6가지 증명 유형) | `test_minicheck.py` | 7 |
+| 논리 경계 시행 | `test_minicheck.py` | 5 |
+| 공식 변조 탐지 | `test_minicheck.py` | 5 |
+| 규칙 변조 탐지 | `test_minicheck.py` | 3 |
+| 참조 변조 탐지 | `test_minicheck.py` | 3 |
+| 구조 변조 탐지 | `test_minicheck.py` | 5 |
+| Discharge 규칙 변조 | `test_minicheck.py` | 3 |
+| 교차 검증 | `test_minicheck.py` | 6 |
+| 격리 (임포트 검사) | `test_minicheck.py` | 5 |
+
+### 9.7 한계 및 정직성
+
+- Python 구현이므로 주 커널과 동일 프로세스에서 실행된다.
+- 독립성은 코드 레벨 격리이지, 하드웨어/프로세스 레벨 격리가 아니다.
+- 인증서 형식은 v1이며 향후 호환 불보장 변경 시 version 필드가 증가한다.
+- "독립 검증"이라는 표현을 쓸 때 "독립적인 Python 코드 경로"를 의미하며,
+  형식 검증이나 하드웨어 수준 격리를 주장하지 않는다.
+
+---
+
+## 10. 알려진 미검증 영역
 
 다음은 현재 테스트로 충분히 다루어지지 않은 영역이다.
 

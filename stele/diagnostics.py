@@ -437,3 +437,202 @@ def _attach_kripke_hint(thm, diags):
         None,
         "info",
     ))
+
+
+# ---------------------------------------------------------------------------
+# Diagnostic explanations (static catalog)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class DiagnosticExplanation:
+    """Human-readable explanation of a diagnostic code.
+
+    Fields:
+      code          — stable diagnostic code string
+      short         — one-line summary
+      likely_cause  — common root cause
+      how_to_fix    — actionable suggestion
+      example       — illustrative snippet (may be empty string)
+      related       — guide section or rule reference
+    """
+    code: str
+    short: str
+    likely_cause: str
+    how_to_fix: str
+    example: str
+    related: str
+
+
+_EXPLANATION_CATALOG = {
+    "UndefinedSymbol": DiagnosticExplanation(
+        code="UndefinedSymbol",
+        short="A cited label does not exist anywhere in this proof.",
+        likely_cause=(
+            "Typo in the label name, or referencing a label before it is introduced."
+        ),
+        how_to_fix=(
+            "Check the spelling of the label. Ensure it is introduced "
+            "(via assume, suppose, or have) before it is cited."
+        ),
+        example=(
+            "assume h1: P -> Q\n"
+            "assume h2: P\n"
+            "have h3: Q by mp h1 missing  # 'missing' was never introduced"
+        ),
+        related="GUIDE.md §4",
+    ),
+    "MissingHypothesis": DiagnosticExplanation(
+        code="MissingHypothesis",
+        short="A cited label exists but is not in scope at this point.",
+        likely_cause=(
+            "Referencing a label introduced inside a suppose block "
+            "after that block has closed (scope leak)."
+        ),
+        how_to_fix=(
+            "Move the reference inside the suppose block, or restructure "
+            "the proof so discharged labels are not reused."
+        ),
+        example=(
+            "suppose h1: P\n"
+            "    have h2: P by copy h1\n"
+            "  have h3: P by copy h2  # h2 is out of scope here"
+        ),
+        related="GUIDE.md §6 (discharge rules)",
+    ),
+    "UnsupportedConclusion": DiagnosticExplanation(
+        code="UnsupportedConclusion",
+        short="The conclude formula does not match the referenced label.",
+        likely_cause=(
+            "The conclude formula was edited without updating the cited "
+            "label, or the wrong label was cited."
+        ),
+        how_to_fix=(
+            "Ensure the formula after 'conclude' exactly matches the formula "
+            "held by the cited label."
+        ),
+        example=(
+            "assume h1: P\n"
+            "conclude Q by h1  # h1 holds P, not Q"
+        ),
+        related="GUIDE.md §5",
+    ),
+    "CircularDependency": DiagnosticExplanation(
+        code="CircularDependency",
+        short="The proof dependency graph contains a directed cycle.",
+        likely_cause=(
+            "Two or more steps mutually depend on each other."
+        ),
+        how_to_fix=(
+            "Review the refs of each step. Ensure no step (directly or "
+            "indirectly) depends on itself."
+        ),
+        example="",
+        related="GUIDE.md §10",
+    ),
+    "UnusedAssumption": DiagnosticExplanation(
+        code="UnusedAssumption",
+        short="An assumption is declared but never contributes to the conclusion.",
+        likely_cause=(
+            "An extra assume was added and forgotten, or the proof was "
+            "restructured leaving an assumption behind."
+        ),
+        how_to_fix=(
+            "Remove the unused assume line, or use the assumption "
+            "in the proof chain leading to the conclusion."
+        ),
+        example=(
+            "assume h1: P\n"
+            "assume h2: Q  # never used\n"
+            "conclude P by h1"
+        ),
+        related="GUIDE.md §4",
+    ),
+    "UndefinedDefinition": DiagnosticExplanation(
+        code="UndefinedDefinition",
+        short="A definition body references a name not defined in this file.",
+        likely_cause=(
+            "The definition refers to another definition that is missing "
+            "or misspelled."
+        ),
+        how_to_fix=(
+            "Add the missing definition above this one, or correct the spelling."
+        ),
+        example="",
+        related="GUIDE.md §9",
+    ),
+    "InvalidTransition": DiagnosticExplanation(
+        code="InvalidTransition",
+        short="A proof step applies a rule to valid refs but the application fails.",
+        likely_cause=(
+            "The cited premises do not have the formula shapes required "
+            "by the rule, or the claimed conclusion does not match what "
+            "the rule produces."
+        ),
+        how_to_fix=(
+            "Check the rule's premise requirements in GUIDE.md §7. "
+            "Ensure cited labels hold the correct formula shapes."
+        ),
+        example=(
+            "assume h1: P -> Q\n"
+            "assume h2: R\n"
+            "have h3: Q by mp h1 h2  # mp needs A -> B and A; h2 is R, not P"
+        ),
+        related="GUIDE.md §7 (inference rules)",
+    ),
+    "TypeMismatch": DiagnosticExplanation(
+        code="TypeMismatch",
+        short="A sort-level or type mismatch was detected.",
+        likely_cause=(
+            "A term or type in the proof-term layer does not satisfy "
+            "the typing judgment."
+        ),
+        how_to_fix=(
+            "Review the proof-term structure. This error is uncommon in "
+            "surface Stele-Light proofs."
+        ),
+        example="",
+        related="docs/semantics.md",
+    ),
+    "KripkeCountermodelFound": DiagnosticExplanation(
+        code="KripkeCountermodelFound",
+        short=(
+            "A finite Kripke countermodel was found for the conclusion "
+            "under intuitionistic logic."
+        ),
+        likely_cause=(
+            "The formula is classically valid but not intuitionistically "
+            "valid. The proof uses a classical-only rule (e.g. dne, lem, pbc)."
+        ),
+        how_to_fix=(
+            "Switch to classical_prop if the classical rule is intentional. "
+            "Or restructure the proof using only intuitionistic rules."
+        ),
+        example="",
+        related="GUIDE.md §24 (Kripke semantics)",
+    ),
+}
+
+_FALLBACK_EXPLANATION = DiagnosticExplanation(
+    code="(unknown)",
+    short="No explanation available for this diagnostic code.",
+    likely_cause="The diagnostic code is not in the static catalog.",
+    how_to_fix="Check the proof structure for the location flagged by this diagnostic.",
+    example="",
+    related="GUIDE.md",
+)
+
+
+def explain_diagnostic(diag) -> DiagnosticExplanation:
+    """Return a static DiagnosticExplanation for the given Diagnostic.
+
+    Never raises.  Falls back to a generic explanation for unknown codes.
+    """
+    return _EXPLANATION_CATALOG.get(diag.code, _FALLBACK_EXPLANATION)
+
+
+def explain_diagnostic_code(code: str) -> DiagnosticExplanation:
+    """Return a static DiagnosticExplanation for the given code string.
+
+    Never raises.  Falls back to a generic explanation for unknown codes.
+    """
+    return _EXPLANATION_CATALOG.get(code, _FALLBACK_EXPLANATION)

@@ -579,7 +579,73 @@ python -m stele.cli minicheck dne.json
 
 ---
 
-## 10. 알려진 미검증 영역
+## 10. 증명 상태 및 규칙 힌트 레이어 (v1.3 추가)
+
+**상태:** 안정 기능. `stele/proofstate.py`.
+
+**신뢰 경계 위치:** `proofstate.py`는 완전히 UNTRUSTED 레이어다.
+`stele/kernel.py`는 임포트하지 않고, `stele/diagnostics.py`도 임포트하지 않는다.
+
+### 기능
+
+- `proof_state(thm, logic_name, cursor_line=None) -> ProofState` — 파싱된 정리에서 컨텍스트 스냅샷 추출
+- `proof_state_from_text(text, logic, cursor_line=None) -> ProofState` — 텍스트에서 직접 추출 (파싱 오류 시 `parse_error` 필드 설정)
+- `suggest_rule_hints(state, goal=None, max_hints=8) -> list[RuleHint]` — 로컬 구조적 패턴 매칭으로 후보 규칙 제안
+- `visible_context_at(thm, line)`, `available_labels_at(thm, line)` — 커서 위치 기반 컨텍스트 조회
+
+### 데이터 모델
+
+| 타입 | 설명 |
+|------|------|
+| `ContextEntry` | 레이블·공식·종류(assume/suppose/have)·줄번호·스코프 깊이·가용성 |
+| `RuleHint` | 규칙명·제목·적용 근거·refs·템플릿·신뢰도·`trusted=False`(항상) |
+| `ProofState` | 정리명·논리·목표·컨텍스트 목록·가용/폐쇄 레이블·파싱 오류 |
+
+### 힌트 패턴 (10종)
+
+구조적 패턴 매칭만 수행; 증명 탐색 없음; ML/LLM 호출 없음.
+
+| 규칙 | 트리거 조건 |
+|------|------------|
+| `mp` | Γ에 `A→B`와 `A` |
+| `and_elim_left/right` | Γ에 `A∧B` |
+| `neg_elim` | Γ에 `A`와 `¬A` |
+| `ex_falso` | Γ에 `⊥` |
+| `imp_intro` | 목표가 `A→B` |
+| `and_intro` | 목표가 `A∧B` |
+| `or_intro_left/right` | 목표가 `A∨B`이고 해당 성분이 Γ에 존재 |
+| `neg_intro` | 목표가 `¬A` |
+| `dne` (고전) | Γ에 `¬¬A` |
+| `lem` (고전) | 목표가 `A∨¬A` |
+| `pbc` (고전) | 고전 논리 폴백 |
+
+### DiagnosticExplanation 카탈로그
+
+`stele/diagnostics.py`에 `DiagnosticExplanation` frozen dataclass와 정적 카탈로그 `_EXPLANATION_CATALOG` 추가.
+9개 안정 코드 전부 항목 존재. `explain_diagnostic(diag)` 및 `explain_diagnostic_code(code)` 진입점.
+
+### CLI / Web API / Browser
+
+- CLI: `python -m stele.cli state FILE`, `python -m stele.cli hints FILE`
+- Web API: `POST /api/state`, `POST /api/hints`
+- Browser: `browser_state(proof_text, logic)`, `browser_hints(proof_text, logic)`
+
+### 테스트 현황
+
+78개 테스트 (`tests/test_proofstate.py`). 회귀 테스트 포함:
+- 신뢰 경계 확인 (proofstate.py → kernel.py 임포트 없음)
+- 모든 힌트 `trusted=False` 확인
+- 무효 증명에서도 상태 추출 성공 확인
+
+### 정직성 제약
+
+- 힌트는 "가능한 다음 단계" 수준의 제안이며, 커널이 재검사해야만 유효성이 확인된다.
+- "자동 증명", "완성된 증명", "보장된 다음 단계" 같은 표현을 쓰지 않는다.
+- 모든 API 응답에 `_untrusted: true`와 `_disclaimer` 필드가 포함된다.
+
+---
+
+## 11. 알려진 미검증 영역
 
 다음은 현재 테스트로 충분히 다루어지지 않은 영역이다.
 

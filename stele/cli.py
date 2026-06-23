@@ -447,6 +447,105 @@ def cmd_minicheck(cert_path):
         return 1
 
 
+def cmd_state(path, logic, line, goal):
+    """Show proof-state snapshot at a given cursor position (UNTRUSTED)."""
+    from .proofstate import proof_state_from_text, proof_state_to_dict
+
+    try:
+        source = open(path, encoding="utf-8").read()
+    except OSError as e:
+        print(f"X cannot read {path}: {e}")
+        return 1
+
+    state = proof_state_from_text(source, logic=logic or None, cursor_line=line)
+    if state.parse_error:
+        print(f"X parse error: {state.parse_error}")
+        return 1
+
+    sep = "═" * 55
+    print(f"PROOF STATE — {state.theorem}  (logic: {state.logic})")
+    print(sep)
+    print(f"Target/conclusion: {state.target or '(none)'}")
+    if state.pending_goal:
+        print(f"Pending goal:      {state.pending_goal}")
+    print()
+
+    if state.context:
+        print("Context Γ:")
+        for e in state.context:
+            scope_mark = "  " * e.scope_depth
+            avail_mark = "✓" if e.available else "✗"
+            print(f"  [{avail_mark}] {scope_mark}{e.label}: {e.formula_str}"
+                  f"  [{e.kind}]"
+                  + (f"  line {e.line}" if e.line else ""))
+    else:
+        print("Context Γ: (empty)")
+
+    print()
+    if state.available_labels:
+        print("Available labels: " + ", ".join(state.available_labels))
+    else:
+        print("Available labels: (none)")
+    if state.closed_labels:
+        print("Closed (discharged): " + ", ".join(state.closed_labels))
+
+    print()
+    print("⚠ UNTRUSTED: proof state is structural only. "
+          "The kernel must re-check every step.")
+    return 0
+
+
+def cmd_hints(path, logic, line, goal):
+    """Show rule-applicability hints for the current proof state (UNTRUSTED)."""
+    from .proofstate import (proof_state_from_text, suggest_rule_hints)
+    from .parser import parse_formula
+    from .errors import ParseError
+
+    try:
+        source = open(path, encoding="utf-8").read()
+    except OSError as e:
+        print(f"X cannot read {path}: {e}")
+        return 1
+
+    state = proof_state_from_text(source, logic=logic or None, cursor_line=line)
+    if state.parse_error:
+        print(f"X parse error: {state.parse_error}")
+        return 1
+
+    goal_f = None
+    if goal:
+        try:
+            goal_f = parse_formula(goal)
+        except (ParseError, Exception) as e:
+            print(f"X goal parse error: {e}")
+            return 1
+
+    hints = suggest_rule_hints(state, goal=goal_f)
+
+    sep = "═" * 55
+    print(f"RULE HINTS — {state.theorem}  (logic: {state.logic})")
+    print(sep)
+    print(f"Target: {state.target or '(none)'}")
+    print()
+
+    if not hints:
+        print("No hints available for the current proof state.")
+    else:
+        print("Possible next moves (untrusted suggestions):")
+        for h in hints:
+            tag = f"[{h.confidence.upper()}]"
+            print(f"\n  {tag}  {h.rule} — {h.title}")
+            print(f"    Why: {h.why_applicable}")
+            print(f"    Template:")
+            for tl in h.candidate_line_template.splitlines():
+                print(f"      {tl}")
+
+    print()
+    print("⚠ Hints are UNTRUSTED suggestions — "
+          "the kernel must re-check every step.")
+    return 0
+
+
 def cmd_kripke(formula_str, max_worlds):
     """Search for a finite Kripke countermodel for a propositional formula."""
     from .parser import parse_formula
@@ -568,6 +667,30 @@ def main(argv=None):
     )
     mc.add_argument("cert", help="path to certificate JSON file")
 
+    st = sub.add_parser(
+        "state",
+        help="show proof-state context at a given cursor line (UNTRUSTED)",
+    )
+    st.add_argument("file", help="path to .stele proof file")
+    st.add_argument("--logic", default=None,
+                    help="proof logic (default: theorem's 'using' clause or intuitionistic_prop)")
+    st.add_argument("--line", type=int, default=None,
+                    help="cursor line number (1-based); omit to show full proof state")
+    st.add_argument("--goal", default=None,
+                    help="formula for the pending goal (overrides concluded formula)")
+
+    hi = sub.add_parser(
+        "hints",
+        help="show rule-applicability hints for the current proof state (UNTRUSTED)",
+    )
+    hi.add_argument("file", help="path to .stele proof file")
+    hi.add_argument("--logic", default=None,
+                    help="proof logic (default: theorem's 'using' clause or intuitionistic_prop)")
+    hi.add_argument("--line", type=int, default=None,
+                    help="cursor line number (1-based); omit for full proof state")
+    hi.add_argument("--goal", default=None,
+                    help="formula for the goal (overrides concluded formula)")
+
     kr = sub.add_parser(
         "kripke",
         help="search for a finite Kripke countermodel for a propositional formula",
@@ -607,6 +730,10 @@ def main(argv=None):
         return cmd_cert(args.file, args.logic, args.out)
     if args.cmd == "minicheck":
         return cmd_minicheck(args.cert)
+    if args.cmd == "state":
+        return cmd_state(args.file, args.logic, args.line, args.goal)
+    if args.cmd == "hints":
+        return cmd_hints(args.file, args.logic, args.line, args.goal)
     return 2
 
 

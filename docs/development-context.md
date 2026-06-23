@@ -66,8 +66,13 @@ stele/
   minicheck.py    소형 독립 인증서 검사기 (minicheck)
                   stele.kernel / stele.parser / stele.diagnostics / stele.proof 미임포트
                   자체 규칙 검사 로직; discharge 규칙 포함; 공유: stele.ast + stele.certificate
+  proofstate.py   증명 상태 스냅샷 + 규칙 힌트 (UNTRUSTED 레이어)
+                  proof_state / proof_state_from_text / suggest_rule_hints / visible_context_at
+                  stele.kernel 미임포트; stele.diagnostics 미임포트
+                  ContextEntry / RuleHint(trusted=False 항상) / ProofState 데이터 모델
+                  DiagnosticExplanation 카탈로그는 stele/diagnostics.py에 추가됨
   cli.py     check / soundness / lattice / graph / diagnose / demos / elaborate /
-             cert / minicheck / kripke / term-check / term-normalize
+             cert / minicheck / kripke / term-check / term-normalize / state / hints
   web.py     Stele Studio HTTP 서버(stdlib http.server) + JSON API 엔드포인트
   webapp/index.html  단일 파일 Stele Studio SPA
 examples/  proof: dne, dne_law, valid_*, invalid_*, peirce, lem, neg_intro, or_elim, ...

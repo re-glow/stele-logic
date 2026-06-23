@@ -328,6 +328,47 @@ table.tt th{background:var(--surf2);color:var(--muted);font-weight:600}
 td.des{background:#0b1e14;color:var(--green);font-weight:700}
 .corner{color:var(--violet)}
 
+/* ── proof state ─────────────────────────────────────────────── */
+.ctx-grid{display:grid;grid-template-columns:auto 1fr;gap:0 12px;margin:6px 0}
+.ctx-row{display:contents}
+.ctx-avail{font-size:11px;color:var(--green);padding:3px 0}
+.ctx-avail.closed{color:var(--muted);text-decoration:line-through}
+.ctx-label{font-size:11.5px;font-weight:700;padding:3px 0;white-space:nowrap}
+.ctx-label.closed{color:var(--muted)}
+.ctx-formula{font-size:11px;color:var(--cyan);padding:3px 0}
+.ctx-formula.closed{color:var(--muted)}
+.ctx-kind{font-size:9.5px;color:var(--muted);padding:3px 0;white-space:nowrap}
+.hint-list{list-style:none;margin:0;padding:0}
+.hint-item{
+  background:var(--surf2);border-left:2px solid var(--bord2);
+  padding:8px 11px;margin-bottom:6px;
+}
+.hint-item.high{border-left-color:var(--green)}
+.hint-item.medium{border-left-color:var(--cyan)}
+.hint-item.low{border-left-color:var(--muted)}
+.hint-head{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+.hint-conf{font-size:9px;letter-spacing:.18em;font-weight:700;padding:1px 5px}
+.hint-conf.high{color:var(--green);border:1px solid var(--green)}
+.hint-conf.medium{color:var(--cyan);border:1px solid var(--cyan)}
+.hint-conf.low{color:var(--muted);border:1px solid var(--muted)}
+.hint-rule{font-size:12px;font-weight:700;color:var(--violet)}
+.hint-title{font-size:11px;color:var(--text)}
+.hint-why{font-size:11px;color:var(--muted);margin-bottom:4px}
+.hint-tmpl{
+  background:var(--bg);border:1px solid var(--border);
+  padding:5px 9px;font-size:11px;color:var(--cyan);
+  white-space:pre;overflow-x:auto;display:block;margin-top:3px;
+}
+.state-target{
+  font-size:12.5px;padding:6px 11px;margin-bottom:12px;
+  border-left:2px solid var(--violet);background:var(--surf2);
+}
+.state-target b{color:var(--violet)}
+.untrusted-note{
+  font-size:10.5px;color:var(--amber);padding:5px 10px;
+  border:1px solid #2a1e00;background:#130d00;margin-bottom:12px;
+}
+
 /* ── api error ───────────────────────────────────────────────── */
 .api-error{
   padding:10px 12px;border-left:2px solid var(--red);
@@ -381,6 +422,9 @@ td.des{background:#0b1e14;color:var(--green);font-weight:700}
   <button class="tab-btn" role="tab" id="tab-pluralism"
           aria-selected="false" aria-controls="panel-pluralism"
           data-tab="pluralism" tabindex="-1">PLURALISM</button>
+  <button class="tab-btn" role="tab" id="tab-state"
+          aria-selected="false" aria-controls="panel-state"
+          data-tab="state" tabindex="-1">PROOF STATE</button>
 </nav>
 
 <main>
@@ -561,6 +605,52 @@ td.des{background:#0b1e14;color:var(--green);font-weight:700}
         </select>
       </div>
       <div id="mx-output" class="section-body" aria-live="polite"></div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════╗ -->
+<!-- ║  TAB 6 — PROOF STATE & HINTS (UNTRUSTED)  ║ -->
+<!-- ╚═══════════════════════════════════════════╝ -->
+<div id="panel-state" role="tabpanel" aria-labelledby="tab-state"
+     class="panel" hidden>
+  <div class="panel-toolbar">
+    <span class="panel-title">PROOF STATE &amp; HINTS</span>
+    <div class="toolbar-row">
+      <label for="state-logic" class="toolbar-label">Logic</label>
+      <select id="state-logic" class="logic-sel">
+        <option value="intuitionistic_prop">intuitionistic_prop</option>
+        <option value="classical_prop">classical_prop</option>
+      </select>
+      <label for="state-goal" class="toolbar-label">Goal override</label>
+      <input id="state-goal" class="formula-input" type="text"
+             placeholder="e.g. P -> P" style="width:130px"
+             aria-label="Goal formula override (optional)" />
+      <button class="btn-primary" id="btn-state">ANALYZE</button>
+    </div>
+  </div>
+  <div class="untrusted-note" role="note">
+    ⚠ UNTRUSTED LAYER — proof state and hints are structural suggestions only.
+    The kernel (stele/kernel.py) remains the sole authority. Every suggested
+    step must be independently re-checked by the kernel before use.
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Context pane -->
+    <section class="pane">
+      <div class="pane-head"><h2 class="pane-title">CONTEXT Γ</h2></div>
+      <div class="pane-body" id="state-ctx-output" aria-live="polite">
+        <p class="idle-msg">Write a proof in the VERIFY tab and press ANALYZE.</p>
+      </div>
+    </section>
+
+    <!-- Hints pane -->
+    <section class="pane">
+      <div class="pane-head"><h2 class="pane-title">POSSIBLE NEXT MOVES</h2></div>
+      <div class="pane-body" id="state-hints-output" aria-live="polite">
+        <p class="idle-msg">Candidate rule applications appear here after analysis.</p>
+      </div>
     </section>
 
   </div>
@@ -1236,6 +1326,119 @@ function renderKripke(r) {
       <tbody>${worldRows}</tbody>
     </table>
     <p style="font-size:11px;color:var(--amber);margin-top:8px">${esc(r.explanation)}</p>`;
+}
+
+/* ════════════════════════════════════════════════════════ proof state */
+$('btn-state').addEventListener('click', runState);
+
+async function runState() {
+  const source = $('src').value;
+  const logic  = $('state-logic').value;
+  const goal   = $('state-goal').value.trim() || null;
+  const ctxEl  = $('state-ctx-output');
+  const hntEl  = $('state-hints-output');
+  setHUD('running', 'ANALYZING');
+  ctxEl.innerHTML = '<p class="idle-msg">Loading…</p>';
+  hntEl.innerHTML = '<p class="idle-msg">Loading…</p>';
+
+  let sr, hr;
+  try {
+    const [sRes, hRes] = await Promise.all([
+      fetch('/api/state', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({source, logic, goal}),
+      }),
+      fetch('/api/hints', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({source, logic, goal}),
+      }),
+    ]);
+    sr = await sRes.json();
+    hr = await hRes.json();
+  } catch {
+    ctxEl.innerHTML = '<p class="api-error">Server unavailable.</p>';
+    hntEl.innerHTML = '<p class="api-error">Server unavailable.</p>';
+    setHUD('err', 'OFFLINE');
+    return;
+  }
+  renderStateCtx(sr, ctxEl);
+  renderStateHints(hr, hntEl);
+  setHUD('ok', 'STATE READY');
+}
+
+function renderStateCtx(r, el) {
+  if (!r.ok) {
+    el.innerHTML = `<div class="api-error">${esc(r.error||'unknown error')}</div>`;
+    return;
+  }
+  if (r.parse_error) {
+    el.innerHTML = `<div class="api-error">Parse error: ${esc(r.parse_error)}</div>`;
+    return;
+  }
+  let html = '';
+  if (r.target) {
+    const pg = r.pending_goal ? `<br><span style="font-size:11px;color:var(--muted)">pending: ${esc(r.pending_goal)}</span>` : '';
+    html += `<div class="state-target">Goal: <b>${esc(r.target)}</b>${pg}</div>`;
+  }
+
+  const ctx = r.context || [];
+  if (!ctx.length) {
+    html += `<p class="idle-msg">No context entries.</p>`;
+  } else {
+    html += `<div class="ctx-grid" role="table" aria-label="Proof context">`;
+    for (const e of ctx) {
+      const cls = e.available ? '' : ' closed';
+      const avail = e.available ? '✓' : '✗';
+      const indent = '·'.repeat(e.scope_depth * 2);
+      html += `
+        <span class="ctx-avail${cls}" title="${e.available?'in scope':'out of scope'}">${avail}</span>
+        <span>
+          <span class="ctx-label${cls}">${indent ? esc(indent)+' ' : ''}${esc(e.label)}:</span>
+          <span class="ctx-formula${cls}"> ${esc(e.formula)}</span>
+          <span class="ctx-kind"> [${esc(e.kind)}${e.line?' · line '+e.line:''}]</span>
+        </span>`;
+    }
+    html += `</div>`;
+  }
+
+  if (r.available_labels && r.available_labels.length) {
+    html += `<p style="font-size:11px;color:var(--muted);margin-top:10px">
+      Available: ${r.available_labels.map(esc).join(', ')}</p>`;
+  }
+  if (r.closed_labels && r.closed_labels.length) {
+    html += `<p style="font-size:11px;color:var(--muted)">
+      Closed: ${r.closed_labels.map(esc).join(', ')}</p>`;
+  }
+  el.innerHTML = html;
+}
+
+function renderStateHints(r, el) {
+  if (!r.ok) {
+    el.innerHTML = `<div class="api-error">${esc(r.error||'unknown error')}</div>`;
+    return;
+  }
+  const hints = r.hints || [];
+  if (!hints.length) {
+    el.innerHTML = `<p class="idle-msg">No hints available for the current state.</p>`;
+    return;
+  }
+  let html = `<ul class="hint-list" aria-label="Rule hints">`;
+  for (const h of hints) {
+    const conf = h.confidence || 'low';
+    html += `<li class="hint-item ${esc(conf)}">
+      <div class="hint-head">
+        <span class="hint-conf ${esc(conf)}">${esc(conf.toUpperCase())}</span>
+        <span class="hint-rule">${esc(h.rule)}</span>
+        <span class="hint-title">— ${esc(h.title)}</span>
+      </div>
+      <div class="hint-why">${esc(h.why_applicable)}</div>
+      <code class="hint-tmpl">${esc(h.candidate_line_template)}</code>
+    </li>`;
+  }
+  html += `</ul>`;
+  html += `<p style="font-size:10.5px;color:var(--muted);margin-top:8px">
+    Hints are UNTRUSTED suggestions — the kernel must re-check every step.</p>`;
+  el.innerHTML = html;
 }
 
 /* ════════════════════════════════════════════════════════ init */

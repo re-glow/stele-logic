@@ -3,6 +3,21 @@
     "n_eval": 40,
     "source": "bench/generated/sample"
   },
+  "failure_mode_analysis": {
+    "no_support_in_test": [],
+    "note": "under_predicted = recall < 0.5 (model misses positives); over_predicted = precision < 0.5 with FP > 0; well_predicted = F1 >= 0.5.",
+    "over_predicted": [],
+    "under_predicted": [
+      "MissingHypothesis",
+      "UnsupportedConclusion",
+      "UnusedAssumption"
+    ],
+    "well_predicted": [
+      "InvalidTransition",
+      "UndefinedDefinition",
+      "UndefinedSymbol"
+    ]
+  },
   "metrics": {
     "exact_match": 0.6,
     "exact_n_correct": 24,

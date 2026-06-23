@@ -103,7 +103,7 @@ def split_train_test(
     test_ratio: float = 0.2,
     seed: int = 0,
 ) -> tuple[list[dict], list[dict]]:
-    """Deterministic stratified-by-order train/test split.
+    """Deterministic 2-way train/test split (seeded shuffle).
 
     Shuffles index list with the given seed, then takes the first
     round(n * test_ratio) shuffled indices as the test set.
@@ -116,6 +116,36 @@ def split_train_test(
     train = [records[i] for i in range(n) if i not in test_set]
     test = [records[i] for i in range(n) if i in test_set]
     return train, test
+
+
+def split_three_way(
+    records: list[dict],
+    train_ratio: float = 0.7,
+    dev_ratio: float = 0.15,
+    seed: int = 0,
+) -> tuple[list[dict], list[dict], list[dict]]:
+    """Deterministic 3-way split (seeded shuffle). Returns (train, dev, test).
+
+    Split is stable: same (records order, seed, ratios) always produces the
+    same partition. IDs within each split are disjoint by construction.
+
+    Leakage note: within a corpus family, records sharing the same proof
+    template may appear across splits. This is a known limitation of synthetic
+    template-based generation.
+    """
+    n = len(records)
+    indices = list(range(n))
+    random.Random(seed).shuffle(indices)
+    n_train = max(1, round(n * train_ratio))
+    n_dev = max(1, round(n * dev_ratio))
+    # Ensure test is non-empty when n >= 3
+    if n >= 3 and n - n_train - n_dev < 1:
+        n_dev = max(0, n_dev - 1)
+    shuffled = [records[i] for i in indices]
+    train = shuffled[:n_train]
+    dev = shuffled[n_train : n_train + n_dev]
+    test = shuffled[n_train + n_dev :]
+    return train, dev, test
 
 
 def records_to_xy(

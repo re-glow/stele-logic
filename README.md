@@ -1,4 +1,4 @@
-# Stele — v1.0.0
+# Stele — v1.1.0
 
 **Formal Verification Framework for Mathematical Reasoning**
 (수학적 추론의 형식 검증 프레임워크)
@@ -15,7 +15,7 @@ Language guide: `GUIDE.md` · Decisions/rationale: `DECISIONS.md` · Results: `R
 Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`docs/semantics.md`](docs/semantics.md) · Metatheory: [`docs/metatheory.md`](docs/metatheory.md) · Maintainer context: `CLAUDE.md`
 **Technical whitepaper:** [`docs/whitepaper.md`](docs/whitepaper.md) (Markdown) · [`paper/stele-whitepaper.tex`](paper/stele-whitepaper.tex) (LaTeX source) · [`paper/README.md`](paper/README.md) (build instructions)
 
-## v1.0 Capability Matrix
+## v1.1 Capability Matrix
 
 | Capability | v1.0 Status | How to use | Limitations |
 |---|---|---|---|
@@ -41,8 +41,8 @@ Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`
 | ML baseline (`stele_ml/`) | **Optional / Experimental** | `pip install -r stele_ml/requirements-ml.txt` | Isolated from trusted path; experimental; not for production use |
 | Classical proof-term bridge | **Experimental** | `stele.core.classical_experimental` | Formula-level negative translation (Gödel–Gentzen); no λμ/callcc; no automatic proof translation; intuitionistic core unchanged |
 | Lean bridge (`stele_lean/`) | **Optional / Experimental** | Requires Lean 4 installation | Isolated; propositional fragment only; experimental |
-| Proof certificates & minicheck | **Stable** | `python -m stele.cli cert FILE; python -m stele.cli minicheck CERT.json` | Versioned JSON certificate; independent-ish re-verification path (no kernel/parser import in minicheck); same Python process |
-| Proof state & hints | **Stable** | `python -m stele.cli state FILE; python -m stele.cli hints FILE` | UNTRUSTED: structural context snapshot + local rule-applicability hints; no proof search; no ML; all suggestions must be kernel-rechecked |
+| Proof certificates & minicheck | **Experimental** | `python -m stele.cli cert FILE; python -m stele.cli minicheck CERT.json` | Versioned JSON certificate; independent Python re-verification path (no kernel/parser import in minicheck); same process; not formally verified |
+| Proof state & hints | **Experimental / Untrusted** | `python -m stele.cli state FILE; python -m stele.cli hints FILE` | UNTRUSTED: structural context snapshot + local rule-applicability hints; no proof search; no ML; all suggestions must be kernel-rechecked |
 
 ## Distribution modes
 
@@ -166,18 +166,24 @@ python -m stele.cli check examples/dne.stele --logic intuitionistic_prop
 python -m stele.cli check examples/matrix_k3.stele --logic K3      # 행렬 모드
 python -m stele.cli soundness --logic classical_prop --matrix K3   # 규칙 건전성
 python -m stele.cli lattice "P or Q"                               # 세계 격자 데모
+python -m stele.cli kripke "P or not P"                            # 크립키 반례 (v1.1)
+python -m stele.cli cert examples/dne.stele --logic classical_prop # 인증서 방출 (v1.1, Experimental)
+python -m stele.cli state examples/dne.stele                       # 증명 상태 (v1.1, Untrusted)
 python -m stele.cli demos
 python -m pytest -q
 ```
 
-## Limitations (v1.0)
+## Limitations (v1.1)
 
-- **Propositional logic only** — the Stele-Light proof language does not support first-order quantifiers (`forall`, `exists`) at the script level. The proof-term core has an experimental FOL fragment, but no surface syntax.
+- **Stele-Light remains propositional** — the proof-script language does not support first-order quantifiers (`forall`, `exists`) at the surface level. The proof-term core (`stele.core`) has an experimental FOL fragment, but FOL proof scripts are not yet supported.
 - **Proof checker, not prover** — Stele does not search for proofs. The user writes every step; the kernel checks them.
 - **Relativity = rule availability** — the kernel shows that a proof using `dne` fails in `intuitionistic_prop` because the rule is absent. Semantic non-derivability requires matrix/Kripke semantics (separate module).
-- **Metatheory is documented, not machine-checked** — `docs/metatheory.md` records proof sketches and regression tests for subject reduction, normalization, confluence, and consistency. These are not machine-verified (Lean/Coq/Agda) proofs.
-- **Single-file HTML requires internet (v1)** — `stele.html` loads Pyodide from CDN (~8 MB, cached after first load). A fully offline mode is future work.
-- **ML baseline and Lean bridge are optional/experimental** — `stele_ml/` and `stele_lean/` are isolated outside the trusted checking path. They are not claimed as production-ready or core features.
+- **Kripke countermodel search is bounded** — `find_countermodel()` searches ≤4 worlds by default. Absence of a countermodel is not a proof of intuitionistic validity (no completeness theorem implemented).
+- **Certificates and minicheck are experimental** — minicheck is an independent Python code path, not a separate process or formally verified checker. It shares the same Python runtime as the main kernel.
+- **Proof-state hints are UNTRUSTED** — structural suggestions only; no proof search; all hints must be kernel-rechecked before use.
+- **Metatheory is documented, not machine-checked** — `docs/metatheory.md` records proof sketches and regression/property tests. These are not machine-verified (Lean/Coq/Agda) proofs.
+- **Single-file HTML requires internet (v1.1)** — `stele.html` loads Pyodide from CDN (~8 MB, cached after first load). A fully offline mode is future work.
+- **ML baseline and Lean bridge are optional/experimental** — isolated outside the trusted checking path; measured metrics cover the generated synthetic corpus only.
 
 ## Development
 
@@ -314,23 +320,28 @@ stele/
   web.py      Stele Studio HTTP 서버(stdlib) + JSON API 엔드포인트
   webapp/index.html  Stele Studio 단일 파일 프런트엔드
 examples/     증명·행렬·세계 예제 (.stele + .py)
-tests/        1,298개 테스트 (4 skipped without Hypothesis)
+tests/        1,836개 통과 (4 skipped without Hypothesis)
 ```
 
 ## 구현된 것 / 로드맵
 
-**현재 구현:**
+**v1.1 구현 (전체 목록):**
 - 자연연역 증명검증기 (proof 모드, 커널 신뢰 코어)
-- 공통 명제 규칙 전체 (`neg_elim`, `ex_falso`, `or_intro`, `neg_intro`, `or_elim` 포함)
-- 고전 전용 규칙 (`dne`, `lem`, `pbc`) + 상대성 데모
-- 다치 의미론 (K3, LP, boolean) + 행렬 모드 표면 문법 (`.stele` 지시문)
-- 규칙 건전성 자동 보고 (`soundness` 명령)
-- 의미론적 세계 `World(matrix, axioms)` + 4-상태 `status()` (PROVABLE/REFUTABLE/BOTH/INDEPENDENT)
-- 세계 격자 데모 — CH-스타일 명제 독립성 패턴 (`lattice` 명령)
+- 공통 명제 규칙 전체 + 고전 전용 규칙 (`dne`, `lem`, `pbc`) + 상대성 데모
+- 다치 의미론 (K3, LP, boolean) + 행렬 모드 + 규칙 건전성 + 세계 격자 데모
+- 유한 크립키 의미론 (직관 명제 논리, bounded search) — Experimental
+- 증명항 코어 (Curry–Howard) + 스크립트 정교화 + β-환원 + de Bruijn
+- 실험적 1차 논리 단편 (ForallIntro/Elim/ExistsIntro/Elim, proof-term 층) — Experimental
+- 실험적 고전 증명항 브릿지 (Gödel–Gentzen 이중부정 번역) — Experimental
+- 증명 인증서 + 소형 독립 검사기 (minicheck) — Experimental
+- 증명 상태 스냅샷 + 구조적 규칙 힌트 (UNTRUSTED) — Experimental
+- ML 기준선 (`stele_ml/`, optional, experimental) + 3-분할 + 벤치마크 카드
+- Lean 4 브릿지 (`stele_lean/`, optional, experimental) + 기술 백서
 
-**다음 작업 (로드맵):**
+**v1.2+ 후보 로드맵:**
+- Stele-Light 표면에 FOL 한정사 (`forall`, `exists`) 추가
 - 구조 규칙 정책 (약화·축약 제거 → 선형·관련성·초일관 세계)
-- 1차 논리 (한정사, 치환, freshness)
-- Lean 4 export (고전·직관 단편 한정)
+- Lean 브릿지 고도화 (Lean 4 export 범위 확대)
 - 커널 Rust/OCaml 포팅 (sum type + 망라적 패턴매칭)
-- ML/SLM 증명검증 보조 (커널이 재검사; `stele_ml/` 참고 — optional, experimental)
+- Minicheck Rust/OCaml 독립 포팅 (프로세스 수준 격리)
+- FOL 의미론 + proof-term 층 객체 변수 de Bruijn 완성

@@ -17,11 +17,11 @@
 관련 문서: 언어 가이드 `GUIDE.md`, 결정·근거 `DECISIONS.md`, 실행 결과 `RESULTS.md`,
 형식 문법/타입/환원 규칙 `docs/semantics.md`, 메타이론 주장 `docs/metatheory.md`.
 
-## 구조 (v1.0)
+## 구조 (v1.1)
 
 ```
 stele/
-  __version__.py  버전 ("1.0.0")
+  __version__.py  버전 ("1.1.0")
   ast.py      식 표현(연결사 무지 Op) + pretty 출력기
   proof.py    증명 노드(Assume/Have/Suppose/Conclude/Theorem) + MatrixDirective
   parser.py   직접 구현한 토크나이저 + 재귀하강 파서 (의존성 없음)
@@ -29,17 +29,25 @@ stele/
   kernel.py   ★ 신뢰 코어: 1차 구문 매처 + 증명트리 검사 (proof 모드)
   diagnostics.py  ★ UNTRUSTED 구조적 진단 (신뢰 코어 분리)
   proofgraph.py   증명 의존성 그래프 + DOT 출력
-  browser.py      Pyodide 브리지 (browser_check/diagnose/graph)
+  browser.py      Pyodide 브리지 (browser_check/diagnose/graph/kripke/state/hints)
   errors.py       오류 타입
   matrix.py   다치 의미론: Matrix, K3/LP/boolean + rule_soundness()
   world.py    World(matrix, axioms) + status() + lattice_status()
-  cli.py      check / soundness / lattice / graph / diagnose / elaborate / demos
+  kripke.py   유한 크립키 의미론 (직관 명제 논리, bounded) — Experimental
+  certificate.py  증명 인증서 방출 (kernel-gated) — Experimental
+  minicheck.py    소형 독립 인증서 검사기 (kernel/parser 미임포트) — Experimental
+  proofstate.py   증명 상태 + 규칙 힌트 (UNTRUSTED) — Experimental
+  elaborate.py    스크립트→증명항 정교화 (crosscheck_theorem)
+  types.py    타입 앨리어스
+  eval.py     벤치마크 평가 하네스
+  cli.py      check / soundness / lattice / graph / diagnose / elaborate / demos /
+              kripke / cert / minicheck / state / hints / term-check / term-normalize
   web.py      Stele Studio HTTP 서버(stdlib) + JSON API
   webapp/index.html   Stele Studio SPA
-  core/       증명항 계산법: terms/typing/reduce/debruijn/fol/term_parser
+  core/       증명항 계산법: terms/typing/reduce/debruijn/fol/term_parser/classical_experimental
 examples/  *.stele  (증명·행렬·진단)
 site/      공개 사이트 HTML/CSS/JS (Pyodide, 튜토리얼, 갤러리)
-tests/     pytest 1,298개 수집 (1,294 통과; 4 skipped without Hypothesis)
+tests/     pytest 1,836개 통과 (4 skipped without Hypothesis)
 ```
 
 ## 실행
@@ -52,6 +60,9 @@ python -m stele.cli check examples/dne.stele --logic classical_prop
 python -m stele.cli check examples/dne.stele --logic intuitionistic_prop   # 거부됨
 python -m stele.cli soundness --logic classical_prop --matrix K3
 python -m stele.cli lattice "P or Q"
+python -m stele.cli kripke "P or not P"                      # 크립키 반례 (Experimental)
+python -m stele.cli cert examples/dne.stele --logic classical_prop  # 인증서 (Experimental)
+python -m stele.cli state examples/dne.stele                 # 증명 상태 (Untrusted)
 python -m stele.cli demos
 python -m stele.web        # 브라우저 UI (기본 포트 8765)
 ```
@@ -94,18 +105,18 @@ python -m pytest -q                          # Hypothesis 없이도 통과
 - `git tag -a vX.Y.Z -m "Stele vX.Y.Z"` 로 annotated 태그 생성.
 - 태그 push 시 `.github/workflows/release.yml`이 실행파일과 `stele.html`을 빌드.
 
-## 로드맵 (v1.0 이후 다음 작업 후보)
+## 로드맵 (v1.1 이후 다음 작업 후보)
 
 **검증 코어:**
-- 증명 상태 추적 (열린 목표·해소된 가정)
-- 오류 진단 강화 (순환 의존성, 더 정밀한 위치 추정)
-- 1차 논리 표면 문법 (Stele-Light에 한정사 추가)
+- Stele-Light 표면에 FOL 한정사 (`forall`, `exists`) 추가 (현재 proof-term 층만)
 - 구조 규칙 정책 (약화/축약/교환 선언 → 선형·관련성·초일관 세계)
+- 오류 진단 강화 (순환 의존성, 더 정밀한 위치 추정)
 
 **선택적 확장 (신뢰 코어 밖):**
-- ML/SLM 증명검증 보조 고도화 (`stele_ml/` 확장, 선택적)
-- Lean 브릿지 고도화 (`stele_lean/` 확장, 선택적)
-- 커널 Rust/OCaml 포팅
+- Lean 브릿지 고도화 (`stele_lean/` 확장, 선택적) — 41+
+- Minicheck Rust/OCaml 포팅 (프로세스 수준 격리)
+- 커널 Rust/OCaml 포팅 (sum type + 망라적 패턴매칭)
+- 강한 기계 검증 메타이론 (Lean/Coq/Agda export) — 먼 미래
 
 ## 비목표
 

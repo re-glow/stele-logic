@@ -97,9 +97,9 @@ class TestMarkdownSections:
             )
 
     def test_mentions_test_count(self, text):
-        # Should reference the test suite
+        # Should reference the test suite (accept any known count or "regression")
         assert "test" in text and (
-            "1808" in text or "1804" in text or "regression" in text
+            "1808" in text or "1804" in text or "1836" in text or "regression" in text
         ), "whitepaper should reference test suite"
 
     def test_has_kripke_section(self, text):

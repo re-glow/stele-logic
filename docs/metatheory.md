@@ -497,9 +497,11 @@ Gödel–Gentzen 이중부정 번역으로 고전 명제 공식을 직관 공식
 
 ---
 
-## 9. 증명 인증서 및 독립 소형 검사기 (v1.2 추가)
+## 9. 증명 인증서 및 독립 소형 검사기 (v1.1 추가)
 
-**상태:** 안정 기능. `stele/certificate.py`, `stele/minicheck.py`.
+**상태:** 실험적 (v1.1). `stele/certificate.py`, `stele/minicheck.py`.
+독립 재검증 경로이나, Python 구현으로 주 커널과 같은 프로세스에서 실행된다.
+공식 검증(Lean/Coq/Agda) 없음. minicheck 자체의 정확성은 회귀 테스트로만 지원된다.
 
 ### 9.1 목적
 
@@ -579,9 +581,11 @@ python -m stele.cli minicheck dne.json
 
 ---
 
-## 10. 증명 상태 및 규칙 힌트 레이어 (v1.3 추가)
+## 10. 증명 상태 및 규칙 힌트 레이어 (v1.1 추가)
 
-**상태:** 안정 기능. `stele/proofstate.py`.
+**상태:** UNTRUSTED / 실험적 (v1.1). `stele/proofstate.py`.
+힌트는 구조적 패턴 매칭 기반 제안이며, 커널이 재검사해야만 유효성이 확인된다.
+증명 탐색 없음; ML/LLM 없음; 모든 힌트 `trusted=False`.
 
 **신뢰 경계 위치:** `proofstate.py`는 완전히 UNTRUSTED 레이어다.
 `stele/kernel.py`는 임포트하지 않고, `stele/diagnostics.py`도 임포트하지 않는다.

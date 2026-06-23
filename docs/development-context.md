@@ -32,11 +32,11 @@ Hypothesis 없이 `python -m pytest -q`는 항상 통과한다.
 
 ---
 
-## 2. 이미 구현된 것 (v1.0: 1,298개 테스트 수집됨; 1,294개 통과, 4 skipped without Hypothesis)
+## 2. 이미 구현된 것 (v1.1: 1,836개 테스트 통과; 4 skipped without Hypothesis)
 
 ```
 stele/
-  __version__.py  버전 문자열 ("1.0.0")
+  __version__.py  버전 문자열 ("1.1.0")
   ast.py     uniform Formula: Var, Op(연결사 무지) + pretty()
   proof.py   frozen dataclass: Assume/Have/Suppose/Conclude/Theorem (+line) + MatrixDirective
   parser.py  직접 구현 토크나이저 + 재귀하강 파서(의존성 0) + parse_matrix_file()
@@ -172,18 +172,27 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 
 ---
 
-## 6. 알려진 한계 / TODO
+## 6. 알려진 한계 / v1.2+ TODO
 
-- **명제논리 단편**만. 1차 논리(한정사·치환) 없음.
-- **상대성 = 규칙 가용성 수준**(의미론적 비도출성 자체를 커널이 확립하지 않음). 완전한 비도출성 증명은 matrix/크립키 의미론의 몫.
-- `world.py`의 PROVABLE은 행렬 의미론적 귀결이며 증명 탐색이 아니다. 두 가지를 혼동하지 말 것.
-- CH-스타일 독립성 패턴은 명제 수준의 장난감 시연이며 집합론적 강제법이 아니다.
+**v1.1 에서 여전히 적용되는 한계:**
+- **Stele-Light 표면은 명제논리 단편**만. 1차 논리 한정사(`forall`, `exists`)는 proof-term 층에만 있고 증명 스크립트에서는 아직 미지원.
+- **크립키 반례 탐색은 유한 제한**(bounded ≤4 worlds). 반례 없음 = 직관 타당성 보장 아님.
+- **minicheck 독립성은 코드 수준**. 동일 Python 프로세스에서 실행; Rust/OCaml 독립 포팅은 미래 작업.
+- **힌트는 UNTRUSTED**. 구조적 제안이며 커널 재검사 필요.
+- **상대성 = 규칙 가용성 수준**. 의미론적 비도출성 확립은 matrix/크립키 의미론의 몫.
+- **메타이론은 증명 스케치 + 회귀 테스트**. 기계 검증(Lean/Coq/Agda) 없음.
 - 구조 규칙 정책(약화·축약 제거 → 선형/관련성/초일관 세계) 미구현.
 - 세계 격자 전체(세계들 사이의 포함·비교 관계) 미구현(로드맵).
-- Lean 4 export, LLM 튜터 미구현.
 - pretty-printer 괄호는 근사적(메시지용; 왕복 정규형 아님).
 - 증명 탐색/자동화 없음(설계상 — 검사기≠증명기).
 - 웹 UI는 단일 로컬 사용자(영속성·계정 없음).
+
+**v1.2+ 로드맵:**
+- Stele-Light 표면에 FOL 한정사 추가
+- Lean 브릿지 고도화 (`stele_lean/`, 41+)
+- Minicheck Rust/OCaml 독립 포팅
+- 커널 Rust/OCaml 포팅
+- 강한 기계 검증 메타이론 (먼 미래)
 
 ---
 

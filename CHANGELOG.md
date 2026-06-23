@@ -4,6 +4,87 @@ Development history of Stele Logic System.
 
 ---
 
+## [v1.1.0] — 2026-06-23  `release/v1.1-freeze`
+
+v1.1 freeze: post-v1.0 research arc (Prompts 34–42) consolidated, audited, and stabilized.
+No new major features in this release commit — version update, claim audit, capability matrix
+update, documentation synchronization, and release preparation only.
+
+### Added
+
+- **FOL object-variable de Bruijn** (`stele/core/debruijn.py`, `stele/core/fol.py`):
+  `to_debruijn_formula`, `alpha_equiv_formula`, `DBForallIntro/Elim/ExistsIntro/Elim`
+  for formula-level α-equivalence. Proof-term-layer object-variable de Bruijn (`to_debruijn_fol`)
+  remains future work.
+- **FOL quantifier surface syntax** (`stele/core/fol.py`, `stele/core/term_parser.py`):
+  `forall x. φ` / `exists x. φ` in proof-term formulas and terms; ForallIntro/Elim/ExistsIntro/Elim
+  proof-term constructors; freshness/capture-avoidance enforcement.
+  Stele-Light proof-script surface remains propositional (no FOL at script level).
+- **Finite Kripke semantics and countermodel search** (`stele/kripke.py`):
+  `KripkeModel`, `forces()`, `find_countermodel()` (bounded exhaustive search ≤4 worlds default),
+  `KripkeExplanation`, `kripke_explain()`. Intuitionistic propositional logic only.
+  CLI: `python -m stele.cli kripke "P or not P"`.
+- **Kripke countermodel surfaces** (CLI, Studio API, Pyodide site, diagnostic pass 4).
+- **Experimental classical proof-term bridge** (`stele/core/classical_experimental.py`):
+  Gödel–Gentzen negative translation and `check_negative_translation`.
+  Formula-level only; λμ/callcc/automatic proof translation not implemented.
+- **Proof certificates and minicheck** (`stele/certificate.py`, `stele/minicheck.py`):
+  kernel-gated certificate emission, versioned JSON format, independent Python re-verification
+  path that does not import the main kernel/parser/diagnostics.
+- **Proof-state context and untrusted rule hints** (`stele/proofstate.py`):
+  `ProofState`, `suggest_rule_hints()` (10 structural patterns, no proof search, no ML).
+  All hints carry `trusted=False`; all API responses include `_untrusted: true`.
+- **ML corpus data discipline** (`stele_ml/build_dataset.py`, `docs/benchmark-card.md`):
+  deterministic 3-way split, failure-mode analysis, optional ML workflow.
+- **Technical whitepaper** (`docs/whitepaper.md`, `paper/stele-whitepaper.tex`,
+  `paper/references.bib`): full Markdown and LaTeX source.
+- New test files: `test_kripke.py` (55), `test_kripke_integration.py` (61),
+  `test_classical_experimental.py` (45), `test_certificate.py` + `test_minicheck.py` (48),
+  `test_proofstate.py` (78), `test_fol_object_debruijn.py` + `test_fol_surface.py` (81+),
+  `test_ml_corpus_discipline.py` (29), `test_whitepaper.py` (32), `test_v11_invariants.py` (new).
+- `docs/site-quality.md`: lightweight public site quality and honesty policy.
+
+### Changed
+
+- Test count: 1,298 (v1.0) → 1,836 (v1.1) passed, 4 skipped (Hypothesis optional).
+- README version heading and capability matrix updated to v1.1.
+- Capability matrix corrections:
+  - `Proof certificates & minicheck`: `Stable` → `Experimental` (v1.1 feature, not formally verified).
+  - `Proof state & hints`: `Stable` → `Experimental / Untrusted`.
+- `stele/__version__.py`: `"1.0.0"` → `"1.1.0"`.
+- `docs/metatheory.md` section labels corrected: certificates/proof-state sections labelled
+  "v1.2"/"v1.3" during development; corrected to "v1.1".
+- `docs/development-context.md`: test count, version string, roadmap updated.
+
+### Fixed
+
+- `docs/metatheory.md` section 9/10 version labels corrected from "v1.2"/"v1.3" to "v1.1".
+
+### Documentation
+
+- `CHANGELOG.md` — this v1.1.0 entry.
+- `docs/whitepaper.md` + `paper/stele-whitepaper.tex` — technical whitepaper.
+- `docs/benchmark-card.md` — ML corpus benchmark card.
+- `docs/site-quality.md` — site quality policy.
+- README, GUIDE, CLAUDE.md, development-context.md, metatheory.md, release-checklist.md updated.
+
+### CI / Packaging
+
+- `.github/workflows/ml.yml`: optional manual ML workflow (non-blocking, `workflow_dispatch` only).
+- All existing workflows unchanged; continue using stable action versions.
+
+### Known limitations (v1.1)
+
+- Stele-Light proof-script surface remains propositional — no `forall`/`exists` at script level.
+- Kripke countermodel search is bounded finite (≤4 worlds default); no completeness theorem.
+- Classical proof-term bridge is formula-level only; no λμ/callcc.
+- Minicheck is an independent Python code path, not a separate process or formally verified checker.
+- Proof-state hints are UNTRUSTED structural suggestions; must be kernel-rechecked.
+- ML baseline remains optional/experimental; measured metrics are for the generated sample only.
+- Metatheory claims are proof sketches + regression/property tests, not machine-checked proofs.
+
+---
+
 ## [v1.0.0] — 2026-06-22  `release/v1.0-freeze`
 
 Public v1.0 freeze. No new features — release engineering, documentation

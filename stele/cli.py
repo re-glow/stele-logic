@@ -380,6 +380,73 @@ def cmd_term_normalize(term_str):
         return 1
 
 
+def cmd_cert(path, logic, outfile=None):
+    """Verify a proof and emit a JSON certificate."""
+    import os
+    from .parser import parse_theorem
+    from .certificate import emit_certificate, certificate_to_json
+
+    try:
+        source = open(path, encoding="utf-8").read()
+    except OSError as e:
+        print(f"X cannot read {path}: {e}")
+        return 1
+    try:
+        thm = parse_theorem(source)
+    except (SteleError, ParseError) as e:
+        print(f"X {e}")
+        return 1
+
+    logic_name = logic or thm.logic or "intuitionistic_prop"
+    try:
+        cert = emit_certificate(thm, logic_name)
+    except ProofError as e:
+        print(f"X proof error: {e}")
+        return 1
+    except SteleError as e:
+        print(f"X {e}")
+        return 1
+
+    json_text = certificate_to_json(cert)
+    if outfile:
+        with open(outfile, "w", encoding="utf-8") as f:
+            f.write(json_text)
+        print(f"certificate written to {outfile}")
+    else:
+        print(json_text)
+    return 0
+
+
+def cmd_minicheck(cert_path):
+    """Verify a proof certificate with the small independent checker."""
+    import json
+    from .certificate import certificate_from_json, _validate_cert_structure
+    from .minicheck import minicheck, MiniCheckError
+
+    try:
+        text = open(cert_path, encoding="utf-8").read()
+    except OSError as e:
+        print(f"X cannot read {cert_path}: {e}")
+        return 1
+    try:
+        cert = certificate_from_json(text)
+    except ValueError as e:
+        print(f"X malformed certificate: {e}")
+        return 1
+    try:
+        result = minicheck(cert)
+    except MiniCheckError as e:
+        print(f"X structural error: {e}")
+        return 1
+
+    if result.ok:
+        print(f"OK  {result.message}")
+        return 0
+    else:
+        print(f"FAIL  {result.message}")
+        return 1
+
+
 def cmd_kripke(formula_str, max_worlds):
     """Search for a finite Kripke countermodel for a propositional formula."""
     from .parser import parse_formula
@@ -485,6 +552,22 @@ def main(argv=None):
     tn.add_argument("--term", required=True,
                     help="proof term in surface syntax, e.g. 'fst(pair(x, y))'")
 
+    ct = sub.add_parser(
+        "cert",
+        help="verify a .stele proof and emit a JSON certificate",
+    )
+    ct.add_argument("file")
+    ct.add_argument("--logic", default=None,
+                    help="proof logic (default: theorem's 'using' clause or intuitionistic_prop)")
+    ct.add_argument("--out", default=None,
+                    help="write certificate to this file instead of stdout")
+
+    mc = sub.add_parser(
+        "minicheck",
+        help="verify a proof certificate with the small independent checker",
+    )
+    mc.add_argument("cert", help="path to certificate JSON file")
+
     kr = sub.add_parser(
         "kripke",
         help="search for a finite Kripke countermodel for a propositional formula",
@@ -520,6 +603,10 @@ def main(argv=None):
         return cmd_term_normalize(args.term)
     if args.cmd == "kripke":
         return cmd_kripke(args.formula, args.max_worlds)
+    if args.cmd == "cert":
+        return cmd_cert(args.file, args.logic, args.out)
+    if args.cmd == "minicheck":
+        return cmd_minicheck(args.cert)
     return 2
 
 

@@ -18,8 +18,8 @@
 
 /* Conclusion node pulse — gated on reduced-motion */
 @keyframes conclude-pulse {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(0,255,159,.4)); }
-  50%       { filter: drop-shadow(0 0 14px rgba(0,255,159,.7)); }
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(62,156,143,.4)); }
+  50%       { filter: drop-shadow(0 0 14px rgba(124,92,255,.6)); }
 }
 
 .stele-conclude-pulse {
@@ -59,7 +59,7 @@
 .logic-symbol-field__symbol {
   position: absolute;
   font-family: var(--font-mono, monospace);
-  color: var(--cyan, #00e8ff);
+  color: var(--accent2, #9D7BFF);
   opacity: 0.035;
   font-size: var(--sym-fs, 1rem);
   line-height: 1;
@@ -91,14 +91,14 @@
 
 /* World nodes */
 .kripke-world {
-  fill: var(--surface, #0d1220);
-  stroke: rgba(176,106,255,.5);
+  fill: var(--surface, #100D18);
+  stroke: rgba(124,92,255,.5);
   stroke-width: 1.5;
 }
 
 /* Accessibility relation arrows */
 .kripke-edge {
-  stroke: rgba(176,106,255,.3);
+  stroke: rgba(124,92,255,.3);
   stroke-width: 1.5;
   fill: none;
 }

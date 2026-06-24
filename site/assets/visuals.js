@@ -57,10 +57,10 @@
 
     /* Node positions */
     var nodes = {
-      h1:       { cx: 60,  cy: 80,  r: 24, label: 'h1',  sub: 'P',    stroke: 'rgba(0,232,255,.55)',  lc: '#00e8ff' },
-      h2:       { cx: 60,  cy: 160, r: 24, label: 'h2',  sub: 'P→Q',  stroke: 'rgba(0,232,255,.55)',  lc: '#00e8ff' },
-      mp:       { cx: 225, cy: 120, r: 24, label: 'mp',  sub: 'Q',    stroke: 'rgba(176,106,255,.55)', lc: '#b06aff' },
-      conclude: { cx: 375, cy: 120, r: 27, label: '∴',   sub: 'Q',    stroke: 'rgba(0,255,159,.6)',   lc: '#00ff9f' }
+      h1:       { cx: 60,  cy: 80,  r: 24, label: 'h1',  sub: 'P',    stroke: 'rgba(124,92,255,.55)',  lc: '#9D7BFF' },
+      h2:       { cx: 60,  cy: 160, r: 24, label: 'h2',  sub: 'P→Q',  stroke: 'rgba(124,92,255,.55)',  lc: '#9D7BFF' },
+      mp:       { cx: 225, cy: 120, r: 24, label: 'mp',  sub: 'Q',    stroke: 'rgba(157,123,255,.55)', lc: '#9D7BFF' },
+      conclude: { cx: 375, cy: 120, r: 27, label: '∴',   sub: 'Q',    stroke: 'rgba(62,156,143,.6)',   lc: '#3E9C8F' }
     };
 
     /* Compute arrow start/end points (on circle circumferences) */
@@ -357,7 +357,7 @@
           var gs = n.r + 10 + Math.sin(t * 0.7 + n.phase) * 4;
           var grd = ctx.createRadialGradient(p.x, p.y, n.r * 0.5, p.x, p.y, gs);
           grd.addColorStop(0, col + (a * 0.14) + ')');
-          grd.addColorStop(1, 'rgba(7,9,15,0)');
+          grd.addColorStop(1, 'rgba(11,10,16,0)');
           ctx.beginPath();
           ctx.arc(p.x, p.y, gs, 0, Math.PI * 2);
           ctx.fillStyle = grd;
@@ -369,7 +369,7 @@
           p.x - n.r * 0.22, p.y - n.r * 0.22, 0, p.x, p.y, n.r
         );
         fill.addColorStop(0, col + (a * 0.13) + ')');
-        fill.addColorStop(1, 'rgba(7,9,15,' + (a * 0.35) + ')');
+        fill.addColorStop(1, 'rgba(11,10,16,' + (a * 0.35) + ')');
         ctx.beginPath();
         ctx.arc(p.x, p.y, n.r, 0, Math.PI * 2);
         ctx.fillStyle = fill;
@@ -459,11 +459,11 @@
       return { x: cx + x3, y: cy - y2, z: z2 };
     }
 
-    /* Particle palette: violet / deep plum / ice */
+    /* Particle palette: amethyst / deep violet / light amethyst */
     var PAL = [
-      [176, 106, 255], /* violet  — 58% */
-      [130,  72, 210], /* plum    — 27% */
-      [155, 195, 230]  /* ice     — 15% */
+      [124,  92, 255], /* amethyst     — 58% */
+      [ 59,  42, 107], /* deep violet  — 27% */
+      [157, 123, 255]  /* light ameth. — 15% */
     ];
 
     /* 520 particles: galaxy-disc distribution (flattened sphere) */
@@ -505,16 +505,16 @@
 
       /* Core glow — the heart of the orb */
       var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.62);
-      core.addColorStop(0,    'rgba(176,106,255,.10)');
-      core.addColorStop(0.40, 'rgba(148, 85,218,.04)');
-      core.addColorStop(1,    'rgba(7,9,15,0)');
+      core.addColorStop(0,    'rgba(124,92,255,.12)');
+      core.addColorStop(0.40, 'rgba(157,123,255,.05)');
+      core.addColorStop(1,    'rgba(11,10,16,0)');
       ctx.fillStyle = core;
       ctx.fillRect(0, 0, W, H);
 
       /* Outer nebula haze */
       var haze = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R * 1.18);
-      haze.addColorStop(0, 'rgba(118,62,196,.03)');
-      haze.addColorStop(1, 'rgba(7,9,15,0)');
+      haze.addColorStop(0, 'rgba(59,42,107,.04)');
+      haze.addColorStop(1, 'rgba(11,10,16,0)');
       ctx.fillStyle = haze;
       ctx.fillRect(0, 0, W, H);
 

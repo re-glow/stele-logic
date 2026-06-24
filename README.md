@@ -6,9 +6,30 @@
 **Public site:** https://re-glow.github.io/stele-logic/
 — browser-local Studio, interactive tutorial, verified example gallery (no install, no server, no data transmitted)
 
+## For reviewers and advisors
+
+> **Start here:** [Technical Overview (2-minute summary)](https://re-glow.github.io/stele-logic/overview.html)
+> — what Stele is, what is Stable, what is Experimental, and what is not claimed.
+
+| Quick path | Link |
+|------------|------|
+| **2-minute overview** (status-labeled, no inflation) | [`overview.html`](https://re-glow.github.io/stele-logic/overview.html) |
+| **Live demo** (proof checking in browser, no install) | [`studio.html`](https://re-glow.github.io/stele-logic/studio.html) |
+| **Technical whitepaper** | [`docs/whitepaper.md`](docs/whitepaper.md) |
+| **Architecture & trust boundary** | [`architecture.html`](https://re-glow.github.io/stele-logic/architecture.html) |
+| **Formal spec + metatheory claims** | [`docs/semantics.md`](docs/semantics.md) · [`docs/metatheory.md`](docs/metatheory.md) |
+| **Full source + test suite** | This repository (2,512 tests) |
+
+**What it is:** proof checker for natural-deduction. The user writes explicit steps; the trusted kernel checks each inference.
+**What it is not:** theorem prover, SMT solver, or AI-powered system. No proof search.
+**Metatheory status:** claims are supported by regression tests and proof sketches — not machine-checked by Lean/Coq/Agda.
+
+---
+
 | Page | URL |
 |------|-----|
 | Landing | https://re-glow.github.io/stele-logic/ |
+| Overview | https://re-glow.github.io/stele-logic/overview.html |
 | Studio | https://re-glow.github.io/stele-logic/studio.html |
 | Theory & Semantics | https://re-glow.github.io/stele-logic/theory.html |
 | Architecture & Trust | https://re-glow.github.io/stele-logic/architecture.html |

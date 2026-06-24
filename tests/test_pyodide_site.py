@@ -681,8 +681,8 @@ class TestBuildOutput:
         assert not errors, "Dangling HTML links found:\n" + "\n".join(errors)
 
     def test_seven_html_pages_in_output(self, tmp_path):
-        """Exactly 7 HTML pages (not the template) must be present in the build."""
+        """Exactly 8 HTML pages (not the template) must be present in the build."""
         out = self._run_build(tmp_path)
         pages = sorted(p.name for p in out.glob("*.html"))
-        assert len(pages) == 7, \
-            f"Expected 7 HTML pages in build output, got {len(pages)}: {pages}"
+        assert len(pages) == 8, \
+            f"Expected 8 HTML pages in build output, got {len(pages)}: {pages}"

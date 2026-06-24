@@ -93,6 +93,11 @@
   color: var(--status-untrusted-fg);
   border-color: var(--status-untrusted-border);
 }
+.badge-motivation {
+  background: rgba(0, 200, 200, 0.08);
+  color: #4ec5c5;
+  border-color: rgba(0, 200, 200, 0.25);
+}
 
 /* ══════════════════════════════════════════════════════════════════════════ */
 /* Page Shell                                                                  */

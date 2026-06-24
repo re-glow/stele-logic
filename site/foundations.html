@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele — Foundations &amp; Research Program</title>
+<meta name="description"
+  content="How Stele connects formal verification, logical pluralism, and a broader inquiry into mathematical foundations. Separates implemented software from research motivation and future formalization.">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Overview</a>
+    <a href="studio.html">Studio</a>
+    <a href="theory.html">Theory</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="research.html">Research</a>
+    <a href="foundations.html" aria-current="page">Foundations</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<main class="page-main" id="main-content">
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="foundations-heading">
+  <div class="section-inner">
+
+    <span class="section-label">Research Program</span>
+    <h1 id="foundations-heading" class="section-heading">
+      Foundations &amp; Research Program
+    </h1>
+    <p class="section-sub" style="max-width:620px;margin-bottom:var(--space-6)">
+      How Stele connects formal verification, logical pluralism, and a broader
+      inquiry into mathematical foundations — and where the boundaries lie.
+    </p>
+
+    <div class="callout callout-warning" style="max-width:640px;margin-bottom:var(--space-8)">
+      <span class="callout-label">Scope clarification</span>
+      <p>
+        This page separates <strong>implemented software</strong> from
+        <strong>research motivation</strong> and <strong>future formalization</strong>.
+        Yurihak / 유리학 is presented as research motivation and a future
+        formalization program — not as a system already implemented in Stele.
+        Every claim on this page carries an explicit status label.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §1  Three-column status map ──────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="status-map-heading">
+  <div class="section-inner">
+
+    <h2 id="status-map-heading" class="section-heading" style="margin-bottom:var(--space-8)">
+      What is implemented, what is motivation, what is future
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;max-width:960px">
+
+      <!-- Column 1: Implemented -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--status-stable-fg);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--status-stable-fg);margin-bottom:var(--space-4);text-transform:uppercase;letter-spacing:.08em">
+          Implemented in Stele
+        </div>
+        <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:var(--space-3)">
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-stable">Stable</span>
+            <span style="margin-left:6px">Stele-Light proof language (IPL + Classical)</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-stable">Stable</span>
+            <span style="margin-left:6px">Multiple logic rule sets (5 built-in)</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-demo">Demo</span>
+            <span style="margin-left:6px">K3 / LP / Boolean matrix diagnostics</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-experimental">Experimental</span>
+            <span style="margin-left:6px">Bounded Kripke countermodel search</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-experimental">Experimental</span>
+            <span style="margin-left:6px">Proof-term calculus (Curry–Howard, IPL)</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-experimental">Experimental</span>
+            <span style="margin-left:6px">Certificates + independent minicheck</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-untrusted">Untrusted</span>
+            <span style="margin-left:6px">Structural diagnostics + proof-state hints</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-optional">Optional</span>
+            <span style="margin-left:6px">ML baseline + Lean 4 error bridge</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Column 2: Motivation -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid #4ec5c5;border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:#4ec5c5;margin-bottom:var(--space-4);text-transform:uppercase;letter-spacing:.08em">
+          Research motivation
+        </div>
+        <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:var(--space-3)">
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-motivation">Motivation</span>
+            <span style="margin-left:6px">Logical pluralism — rule choice as genuine variation</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-motivation">Motivation</span>
+            <span style="margin-left:6px">Yurihak / 유리학 research program</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-motivation">Motivation</span>
+            <span style="margin-left:6px">Window-localized / truth-space frameworks</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-motivation">Motivation</span>
+            <span style="margin-left:6px">Closure atlas structures</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-motivation">Motivation</span>
+            <span style="margin-left:6px">Bounded core / tractable-fragment theory</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-motivation">Motivation</span>
+            <span style="margin-left:6px">Separation of syntax, proof rules, and semantics</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Column 3: Future -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--status-future-fg);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--status-future-fg);margin-bottom:var(--space-4);text-transform:uppercase;letter-spacing:.08em">
+          Future formalization
+        </div>
+        <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:var(--space-3)">
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-future">Future</span>
+            <span style="margin-left:6px">Formal Yurihak object language (syntax spec)</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-future">Future</span>
+            <span style="margin-left:6px">Yurihak rule set outside trusted core</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-future">Future</span>
+            <span style="margin-left:6px">Equality / function-symbol FOL semantics</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-future">Future</span>
+            <span style="margin-left:6px">Structural rule policy (contraction, exchange, weakening)</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-future">Future</span>
+            <span style="margin-left:6px">Window / closure interpretations in Stele</span>
+          </li>
+          <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--text)">
+            <span class="badge badge-future">Future</span>
+            <span style="margin-left:6px">Machine-checked metatheory (Lean/Coq export)</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── §2  Implemented layer ─────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="implemented-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">What Stele implements</span>
+      <h2 id="implemented-heading" class="section-heading">
+        Implemented components
+        <span class="badge badge-stable">Stable</span>
+      </h2>
+      <p class="section-sub">
+        These components exist, pass tests, and are available in the current release.
+        Claims about them are claims about running software.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:960px;margin-bottom:var(--space-8)">
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+          <span class="badge badge-stable">Stable</span>
+          <span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text)">Multiple logic rule sets</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          Five built-in propositional logics: intuitionistic, classical, minimal,
+          K3-logic, LP-logic. Rules are data — <code>RuleSchema</code> objects —
+          not kernel logic. Adding a new logic does not require touching the trusted core.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">stele/logic.py · stele/kernel.py</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+          <span class="badge badge-demo">Demo / Diagnostic</span>
+          <span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text)">Matrix diagnostics</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          K3 (strong Kleene), LP (Logic of Paradox), and Boolean matrices compute
+          rule soundness (⊨) as a diagnostic tool. Separate from the kernel (⊢).
+          Shows how the same rule behaves differently in three-valued contexts.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">stele/matrix.py · stele/world.py</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+          <span class="badge badge-experimental">Experimental</span>
+          <span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text)">Kripke countermodels</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          Bounded finite-frame search for intuitionistic propositional logic.
+          Demonstrates that LEM and DNE fail intuitionistically by constructing
+          explicit finite Kripke models. Bounded — no countermodel ≠ valid.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">stele/kripke.py</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+          <span class="badge badge-experimental">Experimental</span>
+          <span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text)">Proof certificates + minicheck</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          After kernel verification, a versioned certificate JSON can be emitted.
+          An independent re-verifier (<code>minicheck.py</code>) checks it without
+          importing the kernel. Code-level isolation; process isolation is future work.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">stele/certificate.py · stele/minicheck.py</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+          <span class="badge badge-untrusted">Untrusted</span>
+          <span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text)">Diagnostics + hints</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          Multi-pass structural analysis and rule-suggestion hints.
+          Advisory only — never imported by the kernel. All hints carry
+          <code>trusted=False</code>. No proof search, no ML in the hint path.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">stele/diagnostics.py · stele/proofstate.py</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-3)">
+          <span class="badge badge-stable">Stable</span>
+          <span style="font-family:var(--font-mono);font-size:.85rem;color:var(--text)">Browser-local Studio</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          The full proof checker runs in your browser via Pyodide/WASM. No backend.
+          No data transmitted. The same kernel that runs locally is the kernel
+          that runs in the browser.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">site/studio.html · stele/browser.py</code>
+      </div>
+
+    </div>
+
+    <div class="callout callout-info" style="max-width:640px">
+      <span class="callout-label">Not implemented</span>
+      <p>
+        Stele does not implement: a full Yurihak logic, a complete mathematical foundation,
+        automatic theorem proving, full mathematical relativism, equality/function-symbol
+        FOL semantics, proof-search, or a machine-checked philosophical system.
+        These are listed as research motivation or future formalization below.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §3  Yurihak as motivation ────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="yurihak-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Research Motivation</span>
+      <h2 id="yurihak-heading" class="section-heading">
+        Yurihak / 유리학 as research program
+        <span class="badge badge-motivation">Motivation</span>
+      </h2>
+      <p class="section-sub">
+        Yurihak is a philosophical and foundational research program —
+        not a logic system currently implemented in Stele.
+        It shapes the questions Stele is built to investigate.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);max-width:860px;align-items:start">
+
+      <div class="prose-body">
+        <p>
+          Stele grew out of an interest in what happens when the rules of reasoning
+          are treated as an explicit, variable parameter rather than a fixed background.
+          Classical logic is one choice; intuitionistic logic is another.
+          Multi-valued matrices like K3 and LP represent further choices.
+          Each choice admits some inferences and blocks others.
+        </p>
+        <p>
+          This variability is not merely aesthetic. If different rule systems can each
+          be coherent, the question of which system to use becomes a substantive one
+          about what kind of reasoning a given domain requires.
+          Yurihak — 유리학 (有理學), a term from Jaehwan Kim's foundational research —
+          investigates this space: the conditions under which rule systems, semantic
+          interpretations, and model-theoretic structures can vary in principled ways.
+        </p>
+        <p>
+          Stele operationalizes one piece of this inquiry: by making rule choice
+          explicit at the proof level (the <code>--logic</code> flag and the
+          <code>RuleSchema</code> data structure), and by separating syntactic
+          derivability (what the kernel checks) from semantic validity (what the
+          matrix layer checks), Stele creates a controlled environment for
+          observing how the same formula behaves under different logical frameworks.
+        </p>
+        <p>
+          This is a motivation, not a proof. Stele does not prove mathematical
+          relativism. It does not implement Yurihak as a formal system.
+          It provides a platform on which formal Yurihak concepts could eventually
+          be specified, tested, and checked — once they are rigorously defined.
+        </p>
+      </div>
+
+      <div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);margin-bottom:var(--space-5)">
+          <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:#4ec5c5;margin-bottom:var(--space-3)">
+            What Stele shows, concretely
+          </div>
+          <ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:var(--space-3)">
+            <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+              The same proof is accepted by <code>classical_prop</code> and rejected by
+              <code>intuitionistic_prop</code> — demonstrating that rule choice determines
+              what counts as valid.
+            </li>
+            <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+              Under K3 semantics, some classically-sound rules are no longer sound —
+              demonstrating that semantic choice interacts with rule choice.
+            </li>
+            <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+              Kripke frames provide explicit countermodels to LEM and DNE — demonstrating
+              that these are not universal truths, but rule-relative ones.
+            </li>
+            <li style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+              The proof-term layer separates the intuitionistic fragment (with Curry–Howard
+              witnesses) from classical rules, making the boundary computationally visible.
+            </li>
+          </ul>
+        </div>
+
+        <div class="callout callout-warning">
+          <span class="callout-label">What this is not</span>
+          <p>
+            These demonstrations are software behaviors, not philosophical proofs.
+            Stele does not prove that mathematical relativism is correct,
+            or that Yurihak is a complete foundation of mathematics.
+            The tool investigates these questions; it does not settle them.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §4  Research-line paper cards ────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="papers-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Source literature</span>
+      <h2 id="papers-heading" class="section-heading">
+        Foundational research lines
+      </h2>
+      <p class="section-sub">
+        These papers form the theoretical background for the Yurihak research program.
+        Each card notes what aspect is implemented in Stele, what is conceptual influence,
+        and what remains future formalization.
+      </p>
+    </div>
+
+    <div class="callout callout-warning" style="max-width:640px;margin-bottom:var(--space-8)">
+      <span class="callout-label">Source content pending</span>
+      <p>
+        These papers were supplied as local drafting references during development.
+        The PDFs are <strong>not bundled in the public repository</strong>.
+        The filenames below are listed for provenance planning only.
+        Paper-specific summaries are marked TODO and will be filled in once
+        excerpts or metadata are intentionally published here.
+        Do not treat the placeholder descriptions as authoritative summaries.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;max-width:960px">
+
+      <!-- Card 1: Yurihak Introduction -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text)">
+            유리학개론 / Introduction to Yurihak
+          </span>
+          <span class="badge badge-motivation">Research background</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">
+          references/incoming/yurihak-introduction.pdf
+        </div>
+        <div class="callout callout-warning" style="padding:var(--space-3) var(--space-4)">
+          <span class="callout-label">TODO</span>
+          <p style="font-size:var(--text-xs);margin-top:var(--space-1)">
+            Paper content not extracted in this run. Summarize the
+            introduction's scope, claims, and key definitions here once
+            PDF tool is available.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Connection to Stele</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.6">
+            Primary theoretical motivation for the plurality of rule systems exposed
+            by Stele's <code>--logic</code> flag and the <code>logic.py</code> rule-data
+            architecture. Not implemented as a formal Stele logic.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Not claimed</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+            Stele does not implement Yurihak as a logic.
+            The paper's claims are not machine-verified in Stele.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2: Window-localized -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text)">
+            Window-Localized
+          </span>
+          <span class="badge badge-motivation">Research background</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">
+          references/incoming/window-localized.pdf
+        </div>
+        <div class="callout callout-warning" style="padding:var(--space-3) var(--space-4)">
+          <span class="callout-label">TODO</span>
+          <p style="font-size:var(--text-xs);margin-top:var(--space-1)">
+            Paper content not extracted in this run. Summarize the
+            window-localization approach, its formal setup, and key results here.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Conceptual connection</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.6">
+            Potentially related to Stele's world-lattice and Kripke frame structures,
+            where truth is frame-relative and formulas are evaluated locally.
+            Requires paper content to establish precise connection.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Not claimed</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+            No window-localization semantics are currently implemented in Stele.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3: Closure Atlases -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text)">
+            Closure Atlases
+          </span>
+          <span class="badge badge-motivation">Research background</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">
+          references/incoming/closure-atlases.pdf
+        </div>
+        <div class="callout callout-warning" style="padding:var(--space-3) var(--space-4)">
+          <span class="callout-label">TODO</span>
+          <p style="font-size:var(--text-xs);margin-top:var(--space-1)">
+            Paper content not extracted in this run. Summarize the atlas
+            construction, closure conditions, and relationship to logical frameworks here.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Conceptual connection</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.6">
+            Closure structures potentially related to how Stele's world-based semantics
+            can compose. Requires paper content to establish precise connection.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Not claimed</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+            Closure atlas structures are not implemented in Stele.
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 4: Bounded Cores -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text)">
+            Bounded Cores
+          </span>
+          <span class="badge badge-motivation">Research background</span>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">
+          references/incoming/bounded-cores.pdf
+        </div>
+        <div class="callout callout-warning" style="padding:var(--space-3) var(--space-4)">
+          <span class="callout-label">TODO</span>
+          <p style="font-size:var(--text-xs);margin-top:var(--space-1)">
+            Paper content not extracted in this run. Summarize the bounded-core
+            construction, its decidability properties, and relationship to tractable
+            fragments here.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Conceptual connection</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.6">
+            Potentially related to Stele's bounded Kripke frame search (which operates
+            within finite bounds for tractability) and the propositional fragment
+            (a bounded-complexity logic subset). Requires paper to verify.
+          </p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-sans);font-size:var(--text-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px">Not claimed</div>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted)">
+            Bounded-core theory is not implemented as a Stele logic or semantic layer.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── §5  Claim/evidence table ──────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="claims-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Claim discipline</span>
+      <h2 id="claims-heading" class="section-heading">
+        Claim / evidence table
+      </h2>
+      <p class="section-sub">
+        Every conceptual claim is matched against what is actually implemented,
+        what evidence exists, and what the limitation is.
+      </p>
+    </div>
+
+    <div class="table-scroll" role="region" aria-labelledby="claims-heading" tabindex="0">
+    <table style="max-width:920px;width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:var(--text-sm)">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Claim / idea</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Status</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Evidence in Stele</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Source / motivation</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Limitation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Multiple rule systems</td>
+          <td style="padding:8px 12px"><span class="badge badge-stable">Stable</span></td>
+          <td style="padding:8px 12px;color:var(--muted);font-family:var(--font-mono);font-size:.77rem">stele/logic.py + tests</td>
+          <td style="padding:8px 12px;color:var(--muted)">Logical pluralism motivation</td>
+          <td style="padding:8px 12px;color:var(--muted)">Propositional fragment only</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">K3/LP matrix semantics</td>
+          <td style="padding:8px 12px"><span class="badge badge-demo">Demo</span></td>
+          <td style="padding:8px 12px;color:var(--muted);font-family:var(--font-mono);font-size:.77rem">stele/matrix.py</td>
+          <td style="padding:8px 12px;color:var(--muted)">Many-valued semantics tradition</td>
+          <td style="padding:8px 12px;color:var(--muted)">Not a full paraconsistent foundation</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Kripke countermodels</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;color:var(--muted);font-family:var(--font-mono);font-size:.77rem">stele/kripke.py</td>
+          <td style="padding:8px 12px;color:var(--muted)">Intuitionistic semantics</td>
+          <td style="padding:8px 12px;color:var(--muted)">Finite bounded search only; no completeness</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Proof-term / Curry–Howard</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;color:var(--muted);font-family:var(--font-mono);font-size:.77rem">stele/core/, elaborate.py</td>
+          <td style="padding:8px 12px;color:var(--muted)">IPL metatheory</td>
+          <td style="padding:8px 12px;color:var(--muted)">IPL only; no classical terms; no machine proof</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Yurihak / 유리학</td>
+          <td style="padding:8px 12px"><span class="badge badge-motivation">Motivation / Future</span></td>
+          <td style="padding:8px 12px;color:var(--muted)">yurihak-introduction.pdf (not yet extracted)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Research program</td>
+          <td style="padding:8px 12px;color:var(--muted)">Not implemented as a Stele logic</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Window-localized semantics</td>
+          <td style="padding:8px 12px"><span class="badge badge-motivation">Motivation / Future</span></td>
+          <td style="padding:8px 12px;color:var(--muted)">window-localized.pdf (not yet extracted)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Research background</td>
+          <td style="padding:8px 12px;color:var(--muted)">Not formalized in Stele</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Closure atlas structures</td>
+          <td style="padding:8px 12px"><span class="badge badge-motivation">Motivation / Future</span></td>
+          <td style="padding:8px 12px;color:var(--muted)">closure-atlases.pdf (not yet extracted)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Research background</td>
+          <td style="padding:8px 12px;color:var(--muted)">Not implemented in Stele</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;color:var(--text)">Bounded core theory</td>
+          <td style="padding:8px 12px"><span class="badge badge-motivation">Motivation / Future</span></td>
+          <td style="padding:8px 12px;color:var(--muted)">bounded-cores.pdf (not yet extracted)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Research background</td>
+          <td style="padding:8px 12px;color:var(--muted)">Not implemented in Stele</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §6  Future formalization roadmap ─────────────────────────────────── -->
+<section class="page-section" aria-labelledby="roadmap-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">What comes next</span>
+      <h2 id="roadmap-heading" class="section-heading">
+        Future formalization roadmap
+        <span class="badge badge-future">Future</span>
+      </h2>
+      <p class="section-sub">
+        A conservative, step-by-step path toward formalizing Yurihak-inspired concepts
+        in Stele. None of these steps are currently implemented.
+      </p>
+    </div>
+
+    <div class="callout callout-warning" style="max-width:640px;margin-bottom:var(--space-8)">
+      <span class="callout-label">This is a plan, not an implementation</span>
+      <p>
+        The items below describe future work. They are aspirations, not current features.
+        Any formal Yurihak logic will be developed outside the trusted kernel
+        until it has a complete specification, formal semantics, and soundness evidence.
+      </p>
+    </div>
+
+    <ol style="max-width:640px;display:flex;flex-direction:column;gap:var(--space-6);padding:0;list-style:none">
+
+      <li style="display:flex;gap:var(--space-4)">
+        <span style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--status-future-fg);min-width:2rem;padding-top:2px">1</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-1)">Define a small Yurihak-inspired object language</h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65">
+            Start with syntax only: formulas, connectives, and structural rules, written
+            as a spec document. No implementation until the syntax is stable.
+          </p>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-4)">
+        <span style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--status-future-fg);min-width:2rem;padding-top:2px">2</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-1)">Specify rule sets separately from semantics</h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65">
+            Following Stele's existing architecture, define Yurihak rules as
+            <code>RuleSchema</code> data before defining any semantic interpretation.
+            This respects the architectural invariant: rules are data, not kernel logic.
+          </p>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-4)">
+        <span style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--status-future-fg);min-width:2rem;padding-top:2px">3</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-1)">Give matrix / Kripke / world interpretations only after syntax</h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65">
+            Semantic models for Yurihak-inspired rule sets should be specified
+            after the proof-level syntax is settled. Use existing matrix and Kripke
+            infrastructure where it applies; extend or isolate where it does not.
+          </p>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-4)">
+        <span style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--status-future-fg);min-width:2rem;padding-top:2px">4</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-1)">Add worked examples and test them</h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65">
+            Each proposed Yurihak rule must have a worked proof example accepted
+            by the kernel, and a failing example that shows where the rule differs
+            from existing logics. Examples must pass pytest.
+          </p>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-4)">
+        <span style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--status-future-fg);min-width:2rem;padding-top:2px">5</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-1)">Test soundness claims before asserting them</h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65">
+            Use <code>rule_soundness()</code> against candidate matrices.
+            Document which rules are sound under which interpretations.
+            Regression-test these claims. Do not assert machine-verified soundness
+            unless Lean/Coq proofs are produced.
+          </p>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-4)">
+        <span style="font-family:var(--font-mono);font-size:1rem;font-weight:700;color:var(--status-future-fg);min-width:2rem;padding-top:2px">6</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-1)">Keep outside the trusted core until mature</h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65">
+            Any Yurihak logic lives in an isolated module outside <code>kernel.py</code>
+            and <code>logic.py</code> during development. Only stable, well-tested
+            rule sets are candidates for inclusion in the built-in logic set.
+          </p>
+        </div>
+      </li>
+
+    </ol>
+
+  </div>
+</section>
+
+<!-- ── §7  Trust boundary relation ──────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="trust-relation-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Where this fits in the trust model</span>
+      <h2 id="trust-relation-heading" class="section-heading">
+        Philosophical motivation is untrusted
+      </h2>
+      <p class="section-sub">
+        The trust boundary in Stele is maintained regardless of the philosophical
+        context that motivates the project.
+      </p>
+    </div>
+
+    <div style="max-width:640px;display:flex;flex-direction:column;gap:var(--space-5)">
+
+      <div class="callout callout-info">
+        <span class="callout-label">The kernel doesn't know about Yurihak</span>
+        <p>
+          <code>kernel.py</code> performs pure syntactic rule matching. It does not
+          know that Stele is motivated by logical pluralism. It does not reason
+          about philosophical positions. It checks whether each proof step matches
+          its cited rule — nothing more.
+          Philosophical narratives belong to the motivation layer, not the trusted core.
+        </p>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-label">Semantic tools provide countermodels, not metaphysical proof</span>
+        <p>
+          The matrix semantics layer and Kripke countermodel search are
+          <span class="badge badge-untrusted">Untrusted</span> /
+          <span class="badge badge-demo">Demo</span> diagnostics.
+          When the Kripke search finds a countermodel for LEM, it demonstrates
+          that LEM is not intuitionistically valid — it does not prove a philosophical
+          claim about the nature of truth. These are technical results
+          about specific formal systems.
+        </p>
+      </div>
+
+      <div class="callout callout-info">
+        <span class="callout-label">ML and hints are untrusted</span>
+        <p>
+          The ML baseline classifier and proof-state hints have no influence on
+          kernel correctness. If ML guidance ever points toward a Yurihak-inspired
+          inference rule, that rule still needs to be formally specified as a
+          <code>RuleSchema</code> and verified by the kernel before it means anything.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── §8  CTA / links ───────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="found-cta-heading">
+  <div class="section-inner">
+    <h2 id="found-cta-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Continue reading
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:860px;margin-bottom:var(--space-8)">
+      <a class="doc-link-card" href="theory.html">
+        <span class="doc-link-icon" aria-hidden="true">⊢</span>
+        <span class="doc-link-title">Theory</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Proof language, ⊢ vs ⊨, Curry–Howard, matrix semantics, Kripke, metatheory status.</span>
+      </a>
+      <a class="doc-link-card" href="architecture.html">
+        <span class="doc-link-icon" aria-hidden="true">🏗</span>
+        <span class="doc-link-title">Architecture</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Trust boundary, invariants, certificate flow, dependency policy.</span>
+      </a>
+      <a class="doc-link-card" href="research.html">
+        <span class="doc-link-icon" aria-hidden="true">📄</span>
+        <span class="doc-link-title">Whitepaper</span>
+        <span class="badge badge-experimental">Draft</span>
+        <span class="doc-link-desc">Extended technical writeup and design rationale.</span>
+      </a>
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/foundations-program.md"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">📋</span>
+        <span class="doc-link-title">Foundations companion doc</span>
+        <span class="badge badge-future">In progress</span>
+        <span class="doc-link-desc">Source-tracking companion: paper summaries, connection map, TODOs.</span>
+      </a>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-4)">
+      <a href="studio.html" class="btn btn-primary">Open Studio →</a>
+      <a href="theory.html" class="btn btn-ghost">Theory &amp; Semantics</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+         class="btn btn-ghost">View on GitHub ↗</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="index.html">Overview</a>
+      <span class="footer-sep">·</span>
+      <a href="theory.html">Theory</a>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Proof checker, not theorem prover. browser-local via Pyodide/WASM. No backend.
+      Yurihak is research motivation, not yet implemented as a Stele logic.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

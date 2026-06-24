@@ -15,13 +15,23 @@ browsers due to CORS restrictions on fetch(); use a local server instead.
 What is built:
   dist/site/
     index.html            — copied from site/index.html
+    studio.html           — copied from site/studio.html
+    theory.html           — copied from site/theory.html
+    architecture.html     — copied from site/architecture.html
+    research.html         — copied from site/research.html
+    foundations.html      — copied from site/foundations.html
+    about.html            — copied from site/about.html
     assets/               — copied from site/assets/
+    examples_gallery.json — copied from site/examples_gallery.json
     stele_source.zip      — Stele Python package + bundled examples (no ML/Lean)
     stele_manifest.json   — manifest of files included in the zip
 
 Excluded from stele_source.zip:
   stele_ml/, stele_lean/, tests/, bench/, packaging/,
   __pycache__/, *.pyc, .venv*/, stele/eval.py (benchmark runner, heavy deps optional)
+
+Note: site/single_file_template.html is intentionally excluded — it is used
+as a template by tools/build_single_html.py, not served directly.
 """
 
 import argparse
@@ -124,18 +134,26 @@ def build_zip(output_zip: Path, stele_files, example_files) -> list[str]:
 
 
 def copy_static_site(out_dir: Path) -> None:
-    """Copy site/ static files to the output directory."""
+    """Copy site/ static files to the output directory.
+
+    Copies all *.html pages (except single_file_template.html which is a build
+    input, not a deployable page), the assets/ directory, and
+    examples_gallery.json.
+    """
     if not SITE_SRC.is_dir():
         raise SystemExit(f"ERROR: site/ directory not found at {SITE_SRC}\n"
                          "Run this script from the repo root or ensure site/ exists.")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy index.html
-    src_html = SITE_SRC / "index.html"
-    if not src_html.exists():
-        raise SystemExit(f"ERROR: {src_html} not found")
-    shutil.copy2(src_html, out_dir / "index.html")
+    # Copy all *.html pages except build-input templates
+    _EXCLUDE_HTML = frozenset({"single_file_template.html"})
+    html_files = sorted(p for p in SITE_SRC.glob("*.html")
+                        if p.name not in _EXCLUDE_HTML)
+    if not any(p.name == "index.html" for p in html_files):
+        raise SystemExit(f"ERROR: site/index.html not found in {SITE_SRC}")
+    for src_html in html_files:
+        shutil.copy2(src_html, out_dir / src_html.name)
 
     # Copy assets/
     src_assets = SITE_SRC / "assets"
@@ -144,6 +162,11 @@ def copy_static_site(out_dir: Path) -> None:
         shutil.rmtree(dst_assets)
     if src_assets.is_dir():
         shutil.copytree(src_assets, dst_assets)
+
+    # Copy examples_gallery.json (needed by Pyodide JS glue for the gallery)
+    gallery_json = SITE_SRC / "examples_gallery.json"
+    if gallery_json.exists():
+        shutil.copy2(gallery_json, out_dir / "examples_gallery.json")
 
 
 def write_manifest(out_dir: Path, arcnames: list[str], zip_name: str) -> None:
@@ -188,7 +211,10 @@ def main() -> None:
     print(f"  stele source files : {len(stele_files)}")
     print(f"  example .stele files: {len(example_files)}")
 
-    # 2. Copy static site files
+    # 2. Copy static site files (all *.html pages + assets + examples_gallery.json)
+    html_pages = sorted(p for p in (REPO_ROOT / "site").glob("*.html")
+                        if p.name != "single_file_template.html")
+    print(f"  HTML pages to copy  : {len(html_pages)}")
     print("  Copying static site files…")
     copy_static_site(out_dir)
 

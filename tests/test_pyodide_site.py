@@ -512,3 +512,95 @@ class TestStudioHtml:
         for eid in required_ids:
             assert f'id="{eid}"' in html or f"id='{eid}'" in html, \
                 f"studio.html is missing required element id='{eid}'"
+
+
+# ── Build output: all pages copied, no dangling links ─────────────────────────
+
+import importlib.util
+import sys
+import tempfile
+
+
+def _load_build_script():
+    """Import build_pyodide_site as a module without executing main()."""
+    spec = importlib.util.spec_from_file_location(
+        "build_pyodide_site", BUILD_SCRIPT
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+class TestBuildOutput:
+    """Run the build into a temp directory and verify all pages are present."""
+
+    @staticmethod
+    def _run_build(tmp_path: Path) -> Path:
+        """Run copy_static_site() (the HTML/assets copy step) into tmp_path."""
+        build = _load_build_script()
+        build.copy_static_site(tmp_path)
+        return tmp_path
+
+    def test_build_produces_index(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "index.html").exists(), "Build must produce index.html"
+
+    def test_build_produces_studio(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "studio.html").exists(), "Build must produce studio.html"
+
+    def test_build_produces_theory(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "theory.html").exists(), "Build must produce theory.html"
+
+    def test_build_produces_architecture(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "architecture.html").exists(), "Build must produce architecture.html"
+
+    def test_build_produces_research(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "research.html").exists(), "Build must produce research.html"
+
+    def test_build_produces_foundations(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "foundations.html").exists(), "Build must produce foundations.html"
+
+    def test_build_produces_about(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "about.html").exists(), "Build must produce about.html"
+
+    def test_build_excludes_template(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert not (out / "single_file_template.html").exists(), \
+            "Build must NOT copy single_file_template.html (it is a build input, not a page)"
+
+    def test_build_produces_assets_dir(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "assets").is_dir(), "Build must copy assets/ directory"
+
+    def test_build_produces_examples_gallery_json(self, tmp_path):
+        out = self._run_build(tmp_path)
+        assert (out / "examples_gallery.json").exists(), \
+            "Build must copy examples_gallery.json"
+
+    def test_no_dangling_html_links(self, tmp_path):
+        """Every relative .html href in any built page must resolve in the output."""
+        out = self._run_build(tmp_path)
+        built_pages = set(p.name for p in out.glob("*.html"))
+        errors = []
+        for page in sorted(out.glob("*.html")):
+            html = page.read_text(encoding="utf-8")
+            for m in re.finditer(r'href="([^"#][^"]*\.html)(?:#[^"]*)?', html):
+                target = m.group(1)
+                # strip query strings (e.g. studio.html?example=foo)
+                target_file = target.split("?")[0]
+                if target_file not in built_pages:
+                    errors.append(f"{page.name} → {target!r} (missing from build output)")
+        assert not errors, "Dangling HTML links found:\n" + "\n".join(errors)
+
+    def test_seven_html_pages_in_output(self, tmp_path):
+        """Exactly 7 HTML pages (not the template) must be present in the build."""
+        out = self._run_build(tmp_path)
+        pages = sorted(p.name for p in out.glob("*.html"))
+        assert len(pages) == 7, \
+            f"Expected 7 HTML pages in build output, got {len(pages)}: {pages}"

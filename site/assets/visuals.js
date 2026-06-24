@@ -406,6 +406,183 @@
   }
 
   /* ══════════════════════════════════════════════════════════════════════ */
+  /* 5. ProofOrb — semantic galaxy / proof-space nebula (Canvas)            */
+  /* ══════════════════════════════════════════════════════════════════════ */
+
+  /**
+   * Renders a dimensional galaxy/nebula visual for the landing hero.
+   * 520 depth-sorted particles in a flattened spherical distribution form
+   * a rotating "proof-space" cosmos. Logic symbols float as dim star-labels.
+   * This is intentionally NOT a proof DAG — it is a semantic space visual.
+   *
+   * Palette: violet / deep plum / ice-blue; no neon.
+   * Motion: very slow rotation (~80 s/rev). prefers-reduced-motion → static.
+   * No external dependencies; fully deterministic seeded layout.
+   *
+   * @param {HTMLCanvasElement} canvas
+   * @param {object} [opts]
+   */
+  function renderProofOrb(canvas, opts) {
+    opts = opts || {};
+    var reduced = prefersReducedMotion();
+
+    var W = 680, H = 620;
+    var cx = W / 2, cy = H / 2;
+    var R = 252; /* galaxy cloud radius */
+
+    var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = '100%';
+    canvas.style.maxWidth = W + 'px';
+    canvas.style.height = 'auto';
+    canvas.setAttribute('aria-hidden', 'true');
+
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    /* Seeded deterministic pseudo-random (no Math.random) */
+    function rand(seed) {
+      var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+      return x - Math.floor(x);
+    }
+
+    /* Orthographic projection with x-axis tilt */
+    var tilt = 0.30;
+    function project(phi, lam, r) {
+      var x3 = r * Math.cos(phi) * Math.cos(lam);
+      var y3 = r * Math.sin(phi);
+      var z3 = r * Math.cos(phi) * Math.sin(lam);
+      var y2 = y3 * Math.cos(tilt) - z3 * Math.sin(tilt);
+      var z2 = y3 * Math.sin(tilt) + z3 * Math.cos(tilt);
+      return { x: cx + x3, y: cy - y2, z: z2 };
+    }
+
+    /* Particle palette: violet / deep plum / ice */
+    var PAL = [
+      [176, 106, 255], /* violet  — 58% */
+      [130,  72, 210], /* plum    — 27% */
+      [155, 195, 230]  /* ice     — 15% */
+    ];
+
+    /* 520 particles: galaxy-disc distribution (flattened sphere) */
+    var particles = [];
+    for (var i = 0; i < 520; i++) {
+      /* Latitude biased toward equator (disc shape) */
+      var flatness = 0.48 + rand(i * 5 + 1) * 0.52;
+      var phi  = (rand(i * 5) * 2 - 1) * Math.PI * 0.5 * flatness;
+      var lam  = rand(i * 5 + 2) * Math.PI * 2;
+      /* Power-law radial distribution: dense core, sparse edges */
+      var rr   = Math.pow(rand(i * 5 + 3), 0.62) * R;
+      var sz   = 0.45 + rand(i + 1000) * 1.85;
+      var ci   = rand(i + 2000) < 0.58 ? 0 : (rand(i + 2001) < 0.68 ? 1 : 2);
+      var ph   = rand(i + 3000) * Math.PI * 2;
+      var da   = rand(i + 4000) * 0.016;
+      particles.push({ phi: phi, lam0: lam, r: rr, sz: sz, ci: ci, ph: ph, da: da });
+    }
+
+    /* 14 floating logic/proof symbol labels — no edges, no circles */
+    var SYM = ['∀', '⊢', '∃', '¬', '→', '⊨', 'Γ', '⊥', '∴', '≡', '⊃', '∈', 'cert', 'kernel'];
+    var symPts = [];
+    for (var j = 0; j < 14; j++) {
+      symPts.push({
+        sym:  SYM[j],
+        phi:  (rand(j + 600) * 2 - 1) * Math.PI * 0.44,
+        lam0: rand(j + 700) * Math.PI * 2,
+        r:    R * (0.35 + rand(j + 800) * 0.55),
+        fs:   rand(j + 900) < 0.25 ? 10 : 8
+      });
+    }
+
+    /* 3 very-low-opacity equatorial rings for structural depth */
+    var RING_PHIS = [0, 0.30, -0.30];
+
+    var theta = 0, t = 0, rafId;
+
+    function drawFrame() {
+      ctx.clearRect(0, 0, W, H);
+
+      /* Core glow — the heart of the orb */
+      var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.62);
+      core.addColorStop(0,    'rgba(176,106,255,.10)');
+      core.addColorStop(0.40, 'rgba(148, 85,218,.04)');
+      core.addColorStop(1,    'rgba(7,9,15,0)');
+      ctx.fillStyle = core;
+      ctx.fillRect(0, 0, W, H);
+
+      /* Outer nebula haze */
+      var haze = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R * 1.18);
+      haze.addColorStop(0, 'rgba(118,62,196,.03)');
+      haze.addColorStop(1, 'rgba(7,9,15,0)');
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, 0, W, H);
+
+      /* Equatorial rings: structural skeleton, very dim */
+      RING_PHIS.forEach(function(phi) {
+        var ringR = R * (1 - Math.abs(phi) * 0.28);
+        ctx.beginPath();
+        var moved = false;
+        for (var k = 0; k <= 80; k++) {
+          var p = project(phi, (k / 80) * Math.PI * 2 - Math.PI + theta, ringR);
+          if (p.z > -0.04 * R) {
+            if (!moved) { ctx.moveTo(p.x, p.y); moved = true; }
+            else ctx.lineTo(p.x, p.y);
+          } else { moved = false; }
+        }
+        ctx.strokeStyle = phi === 0 ? 'rgba(176,106,255,.10)' : 'rgba(176,106,255,.06)';
+        ctx.lineWidth = phi === 0 ? 0.8 : 0.55;
+        ctx.stroke();
+      });
+
+      /* Depth-sort and draw particles */
+      var sorted = particles.map(function(p) {
+        var dx = reduced ? 0 : Math.sin(t * 0.38 + p.ph) * p.da * R;
+        var dy = reduced ? 0 : Math.cos(t * 0.31 + p.ph * 1.25) * p.da * R * 0.7;
+        var pr = project(p.phi, p.lam0 + theta, p.r);
+        return { x: pr.x + dx, y: pr.y + dy, z: pr.z, p: p };
+      });
+      sorted.sort(function(a, b) { return a.z - b.z; });
+
+      sorted.forEach(function(item) {
+        var p   = item.p;
+        var d01 = (item.z + R) / (2 * R);
+        var rF  = p.r / R;
+        var alpha = Math.min(0.80, d01 * 0.58 * (1 - rF * 0.45) + 0.03);
+        var sz    = p.sz * (0.5 + d01 * 0.7);
+        if (sz < 0.18 || alpha < 0.025) return;
+        var rgb = PAL[p.ci];
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, sz, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + alpha.toFixed(3) + ')';
+        ctx.fill();
+      });
+
+      /* Floating logic symbol stars — dim, atmospheric, not structural */
+      symPts.forEach(function(sp) {
+        var pr = project(sp.phi, sp.lam0 + theta * 0.75, sp.r);
+        if (pr.z < -0.28 * R) return;
+        var d01 = (pr.z + R) / (2 * R);
+        var a = d01 * 0.20 + 0.035;
+        ctx.fillStyle = 'rgba(205,178,255,' + a.toFixed(3) + ')';
+        ctx.font = sp.fs + 'px ui-monospace,monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(sp.sym, pr.x, pr.y);
+      });
+
+      if (!reduced) {
+        theta += 0.0015; /* ~80 s per full revolution */
+        t += 0.016;
+        rafId = requestAnimationFrame(drawFrame);
+      }
+    }
+
+    drawFrame();
+    canvas._steleStop = function() { if (rafId) cancelAnimationFrame(rafId); };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════ */
   /* Auto-init on DOMContentLoaded                                           */
   /* ══════════════════════════════════════════════════════════════════════ */
 
@@ -413,7 +590,8 @@
     'proof-graph':         renderProofGraph,
     'symbol-field':        renderLogicSymbolField,
     'kripke-motif':        renderKripkeMotif,
-    'proof-constellation': renderProofConstellation
+    'proof-constellation': renderProofConstellation,
+    'proof-orb':           renderProofOrb
   };
 
   function autoInit() {
@@ -447,6 +625,7 @@
     renderProofGraph:          renderProofGraph,
     renderLogicSymbolField:    renderLogicSymbolField,
     renderKripkeMotif:         renderKripkeMotif,
-    renderProofConstellation:  renderProofConstellation
+    renderProofConstellation:  renderProofConstellation,
+    renderProofOrb:            renderProofOrb
   };
 }(typeof window !== 'undefined' ? window : {}));

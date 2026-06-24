@@ -6,6 +6,8 @@
 <title>Stele — Formal Proof Verification in the Browser</title>
 <meta name="description"
   content="Stele is a formal verification framework for mathematical reasoning. Write structured natural-deduction proofs and verify them step by step — directly in your browser, no install required.">
+<!-- Self-hosted fonts (Spectral · IBM Plex Sans · IBM Plex Mono) -->
+<link rel="stylesheet" href="assets/fonts/fonts.css">
 <!-- Design tokens — load first so base CSS can selectively override -->
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
@@ -61,12 +63,13 @@
       <div class="hero-brand-chip" aria-hidden="true">STELE</div>
       <p class="hero-eyebrow">Formal Verification Framework for Mathematical Reasoning</p>
       <h1 class="hero-headline" id="hero-heading">
-        Write a proof.<br>Check every rule.
+        Write a proof.<br>Verify each step.
       </h1>
       <p class="hero-desc">
-        Structured natural-deduction proof checking — browser-local via Pyodide/WASM.
-        The trusted kernel verifies each inference step against the declared logic.
-        No backend. Nothing transmitted. <em>Not a theorem prover.</em>
+        Stele checks structured natural-deduction proofs against declared inference
+        rules — it verifies the steps you write and locates missing hypotheses,
+        invalid transitions, and undefined symbols. A proof checker, not a theorem
+        prover. Runs browser-local via Pyodide/WASM; no data is transmitted.
       </p>
 
       <!-- Status evidence strip -->

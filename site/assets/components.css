@@ -14,9 +14,9 @@
   top: -100%;
   left: var(--space-4);
   background: var(--surface);
-  color: var(--cyan);
+  color: var(--accent);
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--cyan);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -29,7 +29,7 @@
 
 /* Consistent focus ring — reinforces stele_site.css :focus-visible */
 :focus-visible {
-  outline: 2px solid var(--cyan);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: var(--radius-sm);
 }
@@ -228,9 +228,9 @@
   font-family: var(--font-mono);
   font-size: var(--text-2xl);
   font-weight: 800;
-  color: var(--cyan);
+  color: var(--accent2);
   line-height: var(--lh-tight);
-  text-shadow: 0 0 20px rgba(0,232,255,.2);
+  text-shadow: 0 0 20px rgba(124,92,255,.2);
   margin-bottom: var(--space-2);
 }
 .metric-label {
@@ -269,11 +269,11 @@
 }
 
 .callout-info {
-  background: rgba(0,232,255,.04);
-  border-color: rgba(0,232,255,.3);
+  background: rgba(124,92,255,.04);
+  border-color: rgba(124,92,255,.25);
   color: var(--muted);
 }
-.callout-info .callout-label { color: var(--cyan); }
+.callout-info .callout-label { color: var(--accent2); }
 
 .callout-warning {
   background: rgba(255,179,71,.05);
@@ -283,11 +283,11 @@
 .callout-warning .callout-label { color: var(--amber); }
 
 .callout-success {
-  background: rgba(0,255,159,.04);
-  border-color: rgba(0,255,159,.3);
+  background: rgba(62,156,143,.04);
+  border-color: rgba(62,156,143,.28);
   color: var(--muted);
 }
-.callout-success .callout-label { color: var(--green); }
+.callout-success .callout-label { color: var(--success); }
 
 .callout-untrusted {
   background: rgba(255,53,102,.04);
@@ -312,7 +312,7 @@
   overflow-x: auto;
   white-space: pre;
 }
-.proof-snippet .ps-keyword { color: var(--cyan); }
+.proof-snippet .ps-keyword { color: var(--accent2); }
 .proof-snippet .ps-label   { color: var(--violet); }
 .proof-snippet .ps-rule    { color: var(--amber); }
 .proof-snippet .ps-formula { color: var(--text-secondary); }
@@ -376,7 +376,7 @@
   font-family: var(--font-sans);
   font-size: var(--text-md);
   font-weight: 600;
-  color: #c8ddf0;
+  color: #D0C8E0;
 }
 .doc-link-desc {
   font-family: var(--font-sans);
@@ -412,9 +412,9 @@
 .tab-switch-btn:hover { color: var(--text); border-color: var(--bord2); }
 .tab-switch-btn[aria-selected="true"],
 .tab-switch-btn.active {
-  color: var(--cyan);
-  border-color: rgba(0,232,255,.35);
-  background: rgba(0,232,255,.07);
+  color: var(--accent2);
+  border-color: rgba(124,92,255,.32);
+  background: rgba(124,92,255,.08);
 }
 .tab-switch-panel { display: none; }
 .tab-switch-panel.active { display: block; }
@@ -445,9 +445,10 @@
   color: var(--text);
 }
 .prose-body h1, .prose-body h2, .prose-body h3 {
-  font-family: var(--font-sans);
-  color: #d8eaf8;
+  font-family: var(--font-display);
+  color: #D8D0E8;
   line-height: var(--lh-tight);
+  font-weight: 600;
 }
 .prose-body p { margin-bottom: var(--space-4); }
 .prose-body code {

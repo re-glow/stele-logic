@@ -5,6 +5,8 @@ Stele's implemented features and the broader Yurihak foundational research progr
 
 **Status:** In progress — source PDFs not yet extracted (see §3 below).
 **Public page:** `site/foundations.html`
+**Provenance map:** `docs/provenance-map.md`
+**Annotated references:** `docs/references.md`
 **Last updated:** 2026-06-24
 
 ---

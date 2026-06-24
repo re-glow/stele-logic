@@ -35,7 +35,8 @@
 
 <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 <section class="page-section" aria-labelledby="arch-heading">
-  <div class="section-inner">
+  <span class="page-motif" aria-hidden="true">⊢</span>
+  <div class="section-inner" style="position:relative;z-index:1">
 
     <span class="section-label">Trust &amp; Architecture</span>
     <h1 id="arch-heading" class="section-heading">Architecture &amp; Trust Model</h1>
@@ -83,9 +84,9 @@
         <!-- Background zones -->
         <!-- Trusted zone -->
         <rect x="10" y="40" width="220" height="240" rx="6"
-              fill="rgba(82,201,122,0.04)" stroke="rgba(82,201,122,0.25)" stroke-width="1.5"/>
+              fill="rgba(62,156,143,0.04)" stroke="rgba(62,156,143,0.25)" stroke-width="1.5"/>
         <text x="120" y="32" text-anchor="middle" font-family="monospace" font-size="10"
-              fill="#52c97a" letter-spacing="2">TRUSTED CORE</text>
+              fill="#3E9C8F" letter-spacing="2">TRUSTED CORE</text>
 
         <!-- Experimental zone -->
         <rect x="250" y="40" width="200" height="240" rx="6"
@@ -102,49 +103,49 @@
         <!-- ── Trusted boxes ── -->
         <!-- parser.py -->
         <rect x="30" y="70" width="170" height="50" rx="4"
-              fill="#0d1220" stroke="rgba(82,201,122,0.5)" stroke-width="1.5"/>
+              fill="#100D18" stroke="rgba(62,156,143,0.5)" stroke-width="1.5"/>
         <text x="115" y="91" text-anchor="middle" font-family="monospace"
-              font-size="12" font-weight="bold" fill="#52c97a">parser.py</text>
+              font-size="12" font-weight="bold" fill="#3E9C8F">parser.py</text>
         <text x="115" y="107" text-anchor="middle" font-family="sans-serif"
-              font-size="10" fill="#5e7a8f">tokenise + parse → AST</text>
+              font-size="10" fill="#8B8499">tokenise + parse → AST</text>
 
         <!-- Arrow: parser → kernel -->
-        <line x1="115" y1="120" x2="115" y2="148" stroke="#1c2840" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="115" y1="120" x2="115" y2="148" stroke="#231B35" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- kernel.py -->
         <rect x="30" y="150" width="170" height="50" rx="4"
-              fill="#0d1220" stroke="rgba(82,201,122,0.9)" stroke-width="2"/>
+              fill="#100D18" stroke="rgba(62,156,143,0.9)" stroke-width="2"/>
         <text x="115" y="171" text-anchor="middle" font-family="monospace"
-              font-size="12" font-weight="bold" fill="#52c97a">kernel.py</text>
+              font-size="12" font-weight="bold" fill="#3E9C8F">kernel.py</text>
         <text x="115" y="187" text-anchor="middle" font-family="sans-serif"
-              font-size="10" fill="#5e7a8f">syntactic rule match</text>
+              font-size="10" fill="#8B8499">syntactic rule match</text>
 
         <!-- verdict label -->
         <text x="115" y="218" text-anchor="middle" font-family="monospace"
-              font-size="11" fill="#52c97a">Valid / Invalid</text>
+              font-size="11" fill="#3E9C8F">Valid / Invalid</text>
 
         <!-- ── Cert / minicheck ── -->
         <!-- cert arrow from kernel -->
-        <line x1="200" y1="175" x2="248" y2="175" stroke="#1c2840" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="200" y1="175" x2="248" y2="175" stroke="#231B35" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- certificate.py -->
         <rect x="265" y="60" width="165" height="50" rx="4"
-              fill="#0d1220" stroke="rgba(212,160,80,0.5)" stroke-width="1.5"/>
+              fill="#100D18" stroke="rgba(212,160,80,0.5)" stroke-width="1.5"/>
         <text x="347" y="81" text-anchor="middle" font-family="monospace"
               font-size="11" font-weight="bold" fill="#d4a050">certificate.py</text>
         <text x="347" y="97" text-anchor="middle" font-family="sans-serif"
-              font-size="10" fill="#5e7a8f">emit cert JSON</text>
+              font-size="10" fill="#8B8499">emit cert JSON</text>
 
         <!-- Arrow: cert → minicheck -->
-        <line x1="347" y1="110" x2="347" y2="148" stroke="#1c2840" stroke-width="1.5" marker-end="url(#arrow)"/>
+        <line x1="347" y1="110" x2="347" y2="148" stroke="#231B35" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- minicheck.py -->
         <rect x="265" y="150" width="165" height="50" rx="4"
-              fill="#0d1220" stroke="rgba(212,160,80,0.5)" stroke-width="1.5"/>
+              fill="#100D18" stroke="rgba(212,160,80,0.5)" stroke-width="1.5"/>
         <text x="347" y="171" text-anchor="middle" font-family="monospace"
               font-size="11" font-weight="bold" fill="#d4a050">minicheck.py</text>
         <text x="347" y="187" text-anchor="middle" font-family="sans-serif"
-              font-size="10" fill="#5e7a8f">independent re-verify</text>
+              font-size="10" fill="#8B8499">independent re-verify</text>
 
         <text x="347" y="218" text-anchor="middle" font-family="monospace"
               font-size="10" fill="#d4a050">no kernel import</text>
@@ -152,40 +153,40 @@
         <!-- ── Untrusted boxes ── -->
         <!-- diagnostics -->
         <rect x="490" y="60" width="230" height="42" rx="4"
-              fill="#0d1220" stroke="rgba(255,53,102,0.3)" stroke-width="1"/>
+              fill="#100D18" stroke="rgba(255,53,102,0.3)" stroke-width="1"/>
         <text x="605" y="78" text-anchor="middle" font-family="monospace"
               font-size="11" fill="#ff3566">diagnostics.py</text>
         <text x="605" y="93" text-anchor="middle" font-family="sans-serif"
-              font-size="10" fill="#5e7a8f">structural analysis · advisory</text>
+              font-size="10" fill="#8B8499">structural analysis · advisory</text>
 
         <!-- hints -->
         <rect x="490" y="112" width="230" height="42" rx="4"
-              fill="#0d1220" stroke="rgba(255,53,102,0.3)" stroke-width="1"/>
+              fill="#100D18" stroke="rgba(255,53,102,0.3)" stroke-width="1"/>
         <text x="605" y="130" text-anchor="middle" font-family="monospace"
               font-size="11" fill="#ff3566">proofstate.py (hints)</text>
         <text x="605" y="145" text-anchor="middle" font-family="sans-serif"
-              font-size="10" fill="#5e7a8f">rule suggestions · trusted=False</text>
+              font-size="10" fill="#8B8499">rule suggestions · trusted=False</text>
 
         <!-- Studio browser -->
         <rect x="490" y="164" width="110" height="42" rx="4"
-              fill="#0d1220" stroke="rgba(255,53,102,0.2)" stroke-width="1"/>
+              fill="#100D18" stroke="rgba(255,53,102,0.2)" stroke-width="1"/>
         <text x="545" y="181" text-anchor="middle" font-family="monospace"
-              font-size="10" fill="#5e7a8f">Studio UI</text>
+              font-size="10" fill="#8B8499">Studio UI</text>
         <text x="545" y="195" text-anchor="middle" font-family="sans-serif"
-              font-size="9" fill="#46586d">browser-local</text>
+              font-size="9" fill="#8B8499">browser-local</text>
 
         <!-- ML -->
         <rect x="610" y="164" width="110" height="42" rx="4"
-              fill="#0d1220" stroke="rgba(176,106,255,0.25)" stroke-width="1"/>
+              fill="#100D18" stroke="rgba(124,92,255,0.2)" stroke-width="1"/>
         <text x="665" y="181" text-anchor="middle" font-family="monospace"
-              font-size="10" fill="#b06aff">stele_ml / lean</text>
+              font-size="10" fill="#9D7BFF">stele_ml / lean</text>
         <text x="665" y="195" text-anchor="middle" font-family="sans-serif"
-              font-size="9" fill="#46586d">optional · isolated</text>
+              font-size="9" fill="#8B8499">optional · isolated</text>
 
         <!-- Arrow marker definition -->
         <defs>
           <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6 Z" fill="#1c2840"/>
+            <path d="M0,0 L6,3 L0,6 Z" fill="#231B35"/>
           </marker>
         </defs>
       </svg>
@@ -207,7 +208,7 @@
       Trust layers
     </h2>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:960px">
+    <div class="trust-grid">
 
       <div class="trust-card trust-card-trusted">
         <div class="trust-card-header">
@@ -470,33 +471,33 @@
         <rect width="660" height="130" fill="#07090f" rx="8"/>
 
         <!-- Step 1: source -->
-        <rect x="10" y="40" width="110" height="50" rx="4" fill="#0d1220" stroke="#1c2840" stroke-width="1.5"/>
-        <text x="65" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#b8cce0">.stele</text>
-        <text x="65" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">source proof</text>
+        <rect x="10" y="40" width="110" height="50" rx="4" fill="#100D18" stroke="#231B35" stroke-width="1.5"/>
+        <text x="65" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#C9C4D6">.stele</text>
+        <text x="65" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#8B8499">source proof</text>
 
         <!-- Arrow 1 -->
-        <line x1="120" y1="65" x2="148" y2="65" stroke="#1c2840" stroke-width="1.5" marker-end="url(#ca)"/>
+        <line x1="120" y1="65" x2="148" y2="65" stroke="#231B35" stroke-width="1.5" marker-end="url(#ca)"/>
 
         <!-- Step 2: kernel -->
-        <rect x="150" y="40" width="120" height="50" rx="4" fill="#0d1220" stroke="rgba(82,201,122,0.7)" stroke-width="1.5"/>
-        <text x="210" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#52c97a">kernel.py</text>
-        <text x="210" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">check proof</text>
+        <rect x="150" y="40" width="120" height="50" rx="4" fill="#100D18" stroke="rgba(62,156,143,0.7)" stroke-width="1.5"/>
+        <text x="210" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#3E9C8F">kernel.py</text>
+        <text x="210" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#8B8499">check proof</text>
 
         <!-- Arrow 2 -->
-        <line x1="270" y1="65" x2="298" y2="65" stroke="#1c2840" stroke-width="1.5" marker-end="url(#ca)"/>
+        <line x1="270" y1="65" x2="298" y2="65" stroke="#231B35" stroke-width="1.5" marker-end="url(#ca)"/>
 
         <!-- Step 3: certificate -->
-        <rect x="300" y="40" width="130" height="50" rx="4" fill="#0d1220" stroke="rgba(212,160,80,0.55)" stroke-width="1.5"/>
+        <rect x="300" y="40" width="130" height="50" rx="4" fill="#100D18" stroke="rgba(212,160,80,0.55)" stroke-width="1.5"/>
         <text x="365" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#d4a050">certificate.py</text>
-        <text x="365" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">emit cert JSON</text>
+        <text x="365" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#8B8499">emit cert JSON</text>
 
         <!-- Arrow 3 -->
-        <line x1="430" y1="65" x2="458" y2="65" stroke="#1c2840" stroke-width="1.5" marker-end="url(#ca)"/>
+        <line x1="430" y1="65" x2="458" y2="65" stroke="#231B35" stroke-width="1.5" marker-end="url(#ca)"/>
 
         <!-- Step 4: minicheck -->
-        <rect x="460" y="40" width="130" height="50" rx="4" fill="#0d1220" stroke="rgba(212,160,80,0.55)" stroke-width="1.5"/>
+        <rect x="460" y="40" width="130" height="50" rx="4" fill="#100D18" stroke="rgba(212,160,80,0.55)" stroke-width="1.5"/>
         <text x="525" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#d4a050">minicheck.py</text>
-        <text x="525" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">re-verify cert</text>
+        <text x="525" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#8B8499">re-verify cert</text>
 
         <!-- Result label -->
         <text x="525" y="112" text-anchor="middle" font-family="monospace" font-size="10" fill="#d4a050">✓ / tamper detected</text>
@@ -506,7 +507,7 @@
 
         <defs>
           <marker id="ca" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6 Z" fill="#1c2840"/>
+            <path d="M0,0 L6,3 L0,6 Z" fill="#231B35"/>
           </marker>
         </defs>
       </svg>

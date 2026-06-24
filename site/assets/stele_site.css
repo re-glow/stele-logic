@@ -942,3 +942,42 @@ select:focus-visible { outline: 2px solid var(--accent); }
   .studio-preview-block { grid-template-columns: 1fr; }
   .studio-page-title { font-size: 1.3rem; }
 }
+
+/* ── Page section positioning for motifs ─────────────────────────────────── */
+.page-section { position: relative; overflow: hidden; }
+
+/* ── Page header motif (decorative dim glyph, sub-pages) ─────────────────── */
+.page-motif {
+  position: absolute;
+  right: clamp(1.5rem, 6vw, 5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--mono);
+  font-size: clamp(6rem, 14vw, 11rem);
+  color: rgba(124,92,255,.038);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  font-weight: 300;
+  letter-spacing: -.02em;
+  z-index: 0;
+  white-space: nowrap;
+}
+@media (max-width: 768px) { .page-motif { display: none; } }
+
+/* ── Trust grid (de-crammed card layout) ─────────────────────────────────── */
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--gap-card);   /* 18px */
+  max-width: 960px;
+}
+.trust-grid--wide {
+  max-width: 1100px;
+}
+
+/* ── Academic prose reading column ──────────────────────────────────────────  */
+.prose-reading {
+  max-width: 72ch;
+  line-height: 1.85;
+}

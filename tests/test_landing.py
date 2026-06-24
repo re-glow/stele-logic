@@ -180,7 +180,7 @@ def test_trust_cards_present():
         "index.html must include trusted and untrusted trust cards in §2"
 
 
-# ── 12. Studio panel IDs intact (regression guard) ──────────────────────────
+# ── 12. Studio panel IDs intact (regression guard — checks studio.html) ──────
 
 REQUIRED_STUDIO_IDS = [
     "proof-input", "logic-select", "btn-check", "check-result",
@@ -192,11 +192,21 @@ REQUIRED_STUDIO_IDS = [
 ]
 
 
+def _studio_html() -> str:
+    return (_SITE / "studio.html").read_text(encoding="utf-8")
+
+
 @pytest.mark.parametrize("eid", REQUIRED_STUDIO_IDS)
 def test_studio_id_intact(eid):
-    html = _html()
+    html = _studio_html()
     assert f'id="{eid}"' in html or f"id='{eid}'" in html, \
-        f"Studio panel id='{eid}' must remain intact after landing redesign"
+        f"Studio panel id='{eid}' must be present in studio.html after separation"
+
+
+def test_landing_links_to_studio():
+    html = _html()
+    assert "studio.html" in html, \
+        "index.html must link to studio.html (Studio CTA)"
 
 
 # ── 13. No forbidden copy phrases ────────────────────────────────────────────

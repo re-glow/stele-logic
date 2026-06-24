@@ -336,6 +336,16 @@ async function initStele() {
     showStatus("ready", "Stele loaded — all verification runs locally in this browser.");
 
     await loadExamples();
+
+    /* Auto-run action if page was opened via studio.html?example=… or ?proof=… */
+    if (_urlParamLoaded) {
+      const _tab = (new URLSearchParams(window.location.search)).get("tab") || "verify";
+      setTimeout(() => {
+        if (_tab === "verify")        runCheck();
+        else if (_tab === "diagnose") runDiagnose();
+        else if (_tab === "graph")    runGraph();
+      }, 500);
+    }
   } catch (err) {
     setLoadingStep("Error: " + err.message);
     showStatus("error", "Failed to initialise: " + err.message);
@@ -636,11 +646,50 @@ function loadExampleCard(card) {
   showStatus("info", `Loaded: ${fn}`);
 }
 
+// ── URL parameter support — studio.html?example=ID or ?proof=…&logic=…&tab=… ──
+
+let _urlParamLoaded = false;
+
+function loadFromURLParams() {
+  if (typeof URLSearchParams === "undefined") return false;
+  const params  = new URLSearchParams(window.location.search);
+  const exId    = params.get("example");
+  const proofTx = params.get("proof");
+  const logic   = params.get("logic");
+  const tab     = params.get("tab");
+
+  if (exId) {
+    const entry = GALLERY_ENTRIES.find(e => e.id === exId);
+    if (entry) {
+      setEditorContent(entry.proof, logic || entry.logic);
+      if (tab) activateTab(tab);
+      _urlParamLoaded = true;
+      return true;
+    }
+  }
+  if (proofTx) {
+    setEditorContent(proofTx, logic);
+    if (tab) activateTab(tab);
+    _urlParamLoaded = true;
+    return true;
+  }
+  return false;
+}
+
+function navigateToStudio(proof, logic, tab) {
+  const p = new URLSearchParams();
+  if (proof) p.set("proof", proof);
+  if (logic) p.set("logic", logic);
+  if (tab)   p.set("tab", tab);
+  const qs = p.toString();
+  window.location.href = "studio.html" + (qs ? "?" + qs : "");
+}
+
 // ── Gallery rendering (no Pyodide required) ────────────────────────────────
 
 function renderGallery() {
   const grid = document.getElementById("gallery-grid");
-  if (!grid) return;
+  if (!grid) return; /* studio.html has no #gallery-grid — exits immediately */
 
   const cards = GALLERY_ENTRIES.map(entry => {
     const tagClass = entry.category === "classical" ? "tag-classical"
@@ -667,24 +716,15 @@ function renderGallery() {
       <h3 class="gcard-title">${esc(entry.title)}</h3>
       <p class="gcard-desc">${esc(entry.description)}</p>
       <pre class="gcard-code" aria-hidden="true">${esc(preview)}</pre>
-      <button class="btn btn-ghost gcard-btn gcard-load-btn"
-              data-proof="${esc(entry.proof)}"
-              data-logic="${esc(entry.logic)}"
-              aria-label="Load ${esc(entry.title)} in Studio">
-        Load in Studio ↑
-      </button>
+      <a class="btn btn-ghost gcard-btn"
+         href="studio.html?example=${esc(entry.id)}"
+         aria-label="Open ${esc(entry.title)} in Studio">
+        Open in Studio →
+      </a>
     </article>`;
   }).join("");
 
   grid.innerHTML = cards;
-
-  grid.querySelectorAll(".gcard-load-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const proof = btn.dataset.proof;
-      const logic = btn.dataset.logic;
-      if (proof) loadPreset(proof, logic || "intuitionistic_prop");
-    });
-  });
 }
 
 // ── Gallery preset loader (global) ─────────────────────────────────────────
@@ -701,14 +741,18 @@ function setEditorContent(proof, logic) {
 }
 
 /**
- * loadPreset — called from gallery "Load in Studio" buttons.
- * Loads proof, scrolls to Studio, auto-runs check if ready.
+ * loadPreset — loads a proof into the editor.
+ * On studio.html: loads directly and auto-runs.
+ * On other pages: navigates to studio.html with the proof as a URL parameter.
  */
 function loadPreset(proof, logic) {
+  if (!document.getElementById("proof-input")) {
+    navigateToStudio(proof, logic || "intuitionistic_prop", "verify");
+    return;
+  }
   setEditorContent(proof, logic);
   activateTab("verify");
-  const studio = document.getElementById("studio");
-  if (studio) studio.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("proof-input").scrollIntoView({ behavior: "smooth", block: "nearest" });
   if (steleReady) {
     setTimeout(runCheck, 600);
   } else {
@@ -717,14 +761,12 @@ function loadPreset(proof, logic) {
 }
 
 /**
- * loadTutorialPreset — called from tutorial "Try in Studio" buttons.
- * Loads proof, sets logic, activates the specified panel tab, scrolls to Studio,
- * and auto-runs the appropriate action if Stele is already ready.
+ * loadTutorialPreset — from tutorial step buttons; loads proof, activates panel,
+ * and auto-runs the appropriate action if Stele is ready.
+ * Only called when already on the Studio page.
  */
 function loadTutorialPreset(proof, logic, tab) {
   if (proof) setEditorContent(proof, logic);
-  const studio = document.getElementById("studio");
-  if (studio) studio.scrollIntoView({ behavior: "smooth", block: "start" });
   if (tab) setTimeout(() => activateTab(tab), 300);
 
   if (steleReady && proof) {
@@ -733,7 +775,7 @@ function loadTutorialPreset(proof, logic, tab) {
     else if (tab === "diagnose") setTimeout(runDiagnose, delay);
     else if (tab === "graph") setTimeout(runGraph, delay);
   } else if (proof) {
-    showStatus("info", "Proof loaded — click the button in the Studio once Stele finishes loading.");
+    showStatus("info", "Proof loaded — click the button in the panel once Stele finishes loading.");
   }
 }
 
@@ -769,87 +811,85 @@ function showTutorialStep(n) {
 // ── Init ───────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Tab buttons
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => activateTab(btn.dataset.tab));
-  });
+  /* Detect whether we're on the Studio workbench page or the landing page */
+  const onStudioPage = !!document.getElementById("proof-input");
 
-  // Studio action buttons
-  const bind = (id, fn) => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("click", fn);
-  };
-  bind("btn-check",     runCheck);
-  bind("btn-diagnose",  runDiagnose);
-  bind("btn-graph",     runGraph);
-  bind("btn-soundness", runSoundness);
-  bind("btn-lattice",   runLattice);
-  bind("btn-kripke",    runKripke);
+  if (onStudioPage) {
+    /* ── Studio page: wire tabs, action buttons, Ctrl+Enter, then init Pyodide ── */
 
-  // Legacy gallery "Load & Try" buttons (hardcoded in HTML, if any)
-  document.querySelectorAll(".gcard-btn").forEach(btn => {
-    if (!btn.classList.contains("gcard-load-btn")) {
-      btn.addEventListener("click", () => {
-        const proof = btn.dataset.proof;
-        const logic = btn.dataset.logic;
-        if (proof) loadPreset(proof, logic || "intuitionistic_prop");
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+    });
+
+    const bind = (id, fn) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("click", fn);
+    };
+    bind("btn-check",     runCheck);
+    bind("btn-diagnose",  runDiagnose);
+    bind("btn-graph",     runGraph);
+    bind("btn-soundness", runSoundness);
+    bind("btn-lattice",   runLattice);
+    bind("btn-kripke",    runKripke);
+
+    const editor = document.getElementById("proof-input");
+    if (editor) {
+      editor.addEventListener("keydown", e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault(); runCheck();
+        }
       });
     }
-  });
 
-  // Tutorial dot buttons
+    /* Pre-populate editor from ?example= or ?proof= URL params before Pyodide loads */
+    loadFromURLParams();
+
+    /* Disable action buttons until Pyodide is ready, then initialise */
+    setButtonsEnabled(false);
+    initStele();
+  }
+
+  /* ── Both pages: gallery (landing only due to #gallery-grid guard) + tutorial nav ── */
+
+  renderGallery();
+
+  showTutorialStep(1);
+
   document.querySelectorAll(".tut-dot").forEach(dot => {
     dot.addEventListener("click", () => showTutorialStep(parseInt(dot.dataset.step, 10)));
   });
 
-  // Tutorial prev/next
   const prevBtn = document.getElementById("tut-prev");
   const nextBtn = document.getElementById("tut-next");
   if (prevBtn) prevBtn.addEventListener("click", () => showTutorialStep(currentTutorialStep - 1));
   if (nextBtn) nextBtn.addEventListener("click", () => showTutorialStep(currentTutorialStep + 1));
 
-  // Tutorial "Load & run" buttons
+  /* Tutorial "Load & run in Studio" buttons — navigate to studio.html from landing */
   document.querySelectorAll(".tut-load-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const proof = btn.dataset.proof || null;
       const logic = btn.dataset.logic || "intuitionistic_prop";
       const tab   = btn.dataset.tab   || "verify";
-      loadTutorialPreset(proof, logic, tab);
+      if (onStudioPage) {
+        loadTutorialPreset(proof, logic, tab);
+      } else {
+        navigateToStudio(proof, logic, tab);
+      }
     });
   });
 
-  // Tutorial "open tab" buttons (no proof loading, just navigate)
+  /* Tutorial "open tab" buttons — navigate to studio.html?tab=… from landing */
   document.querySelectorAll(".tut-open-tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
-      const studio = document.getElementById("studio");
-      if (studio) studio.scrollIntoView({ behavior: "smooth", block: "start" });
-      if (tab) setTimeout(() => activateTab(tab), 300);
-    });
-  });
-
-  // Ctrl+Enter in proof editor
-  const editor = document.getElementById("proof-input");
-  if (editor) {
-    editor.addEventListener("keydown", e => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault(); runCheck();
+      if (onStudioPage) {
+        if (tab) activateTab(tab);
+      } else {
+        window.location.href = "studio.html" + (tab ? "?tab=" + encodeURIComponent(tab) : "");
       }
     });
-  }
-
-  // Disable Studio buttons until Pyodide is ready
-  setButtonsEnabled(false);
-
-  // Render gallery immediately (uses GALLERY_ENTRIES, no Pyodide needed)
-  renderGallery();
-
-  // Initialise tutorial nav state
-  showTutorialStep(1);
-
-  // Start Pyodide initialisation in the background
-  initStele();
+  });
 });
 
 // Expose globally for gallery/tutorial onclick handlers and external scripts
-window.stele = { loadPreset, loadTutorialPreset, runCheck, activateTab };
+window.stele = { loadPreset, loadTutorialPreset, runCheck, activateTab, navigateToStudio };

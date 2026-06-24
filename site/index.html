@@ -21,7 +21,7 @@
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="#hero">STELE</a>
   <div class="nav-links">
-    <a href="#studio">Studio</a>
+    <a href="studio.html">Studio</a>
     <a href="#tutorial">Tutorial</a>
     <a href="theory.html">Theory</a>
     <a href="research.html">Research</a>
@@ -476,7 +476,7 @@
             Write and verify proofs directly in the browser.
             Use the Examples tab to load any of the bundled example proofs.
           </p>
-          <a href="#studio" class="btn btn-primary tstep-nc-btn">Open Studio ↑</a>
+          <a href="studio.html" class="btn btn-primary tstep-nc-btn">Open Studio →</a>
         </div>
         <div class="tstep-next-card">
           <div class="tstep-nc-icon" aria-hidden="true">⬡</div>
@@ -524,243 +524,46 @@
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 4  BROWSER STUDIO                                                     -->
+<!-- § 4  STUDIO ENTRY POINT                                                 -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<section id="studio" aria-labelledby="studio-heading">
-  <div class="section-inner section-inner--wide">
-    <div class="section-label">Browser Studio</div>
-    <h2 id="studio-heading" class="section-heading">Try Stele now</h2>
+<section id="studio" aria-labelledby="studio-cta-heading">
+  <div class="section-inner">
+    <div class="section-label">Proof Workbench</div>
+    <h2 id="studio-cta-heading" class="section-heading">Write and verify proofs</h2>
     <p class="section-sub">
-      Full proof checking runs locally in this browser via Pyodide/WASM.
-      No proof text is sent to any server.
+      The full workbench runs entirely in your browser via Pyodide/WASM.
+      No installation, no backend, no data transmitted.
     </p>
 
-    <!-- Studio loading banner (shown until Pyodide ready) -->
-    <div id="studio-loading" class="studio-loading-banner" role="status" aria-live="polite">
-      <div class="studio-loading-inner">
-        <span id="loading-step" class="studio-loading-msg">
-          Initialising Pyodide runtime (~8 MB on first visit)…
-        </span>
-        <div class="loading-bar-wrap">
-          <div class="loading-bar" id="loading-bar"></div>
+    <div class="studio-preview-block">
+      <pre class="studio-preview-code" aria-label="Example proof: P implies P">theorem imp_self:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P -&gt; P by imp_intro h1 h2
+  conclude P -&gt; P by h3</pre>
+      <div class="studio-preview-meta">
+        <div class="studio-preview-verdict" aria-hidden="true">✓ Valid — intuitionistic_prop</div>
+        <div class="studio-preview-actions">
+          <a href="studio.html" class="btn btn-primary">Open Studio →</a>
+          <a href="studio.html?example=imp_self" class="btn btn-ghost">Load this example</a>
         </div>
-        <span class="studio-loading-note">
-          All verification runs locally · no data sent to any server
-        </span>
+        <ul class="studio-feature-list" aria-label="Studio features">
+          <li>Verify · Diagnose · Graph</li>
+          <li>Matrix Semantics · Kripke Countermodels</li>
+          <li>5 built-in logics · Example gallery</li>
+        </ul>
       </div>
     </div>
 
-    <!-- Studio chrome -->
-    <div class="studio-chrome" id="studio-chrome">
+    <div class="studio-trust-note" role="note" aria-label="Execution trust model">
+      <span class="trust-pill trust-pill--kernel">kernel.py — trusted</span>
+      <span class="trust-pill trust-pill--untrusted">diagnostics / hints — untrusted</span>
+      <span class="trust-pill trust-pill--local">browser-local · no backend</span>
+    </div>
 
-      <!-- Privacy notice -->
-      <div class="privacy-bar" role="note">
-        <strong>100% local</strong>
-        — All proof checking runs in this browser via Pyodide/WASM.
-        No proof text is transmitted to any server. No backend.
-        <span class="privacy-badge">WASM · LOCAL</span>
-      </div>
-
-      <!-- Status bar -->
-      <div id="status-bar" class="studio-status-bar" style="display:none"
-           role="status" aria-live="polite"></div>
-
-      <!-- Tab bar -->
-      <nav class="tab-bar" role="tablist" aria-label="Studio panels">
-        <button class="tab-btn active" role="tab" aria-selected="true"
-                data-tab="verify" aria-controls="panel-verify">VERIFY</button>
-        <button class="tab-btn" role="tab" aria-selected="false"
-                data-tab="diagnose" aria-controls="panel-diagnose">DIAGNOSE</button>
-        <button class="tab-btn" role="tab" aria-selected="false"
-                data-tab="graph" aria-controls="panel-graph">GRAPH</button>
-        <button class="tab-btn" role="tab" aria-selected="false"
-                data-tab="semantics" aria-controls="panel-semantics">SEMANTICS</button>
-        <button class="tab-btn" role="tab" aria-selected="false"
-                data-tab="examples" aria-controls="panel-examples">EXAMPLES</button>
-      </nav>
-
-      <!-- ── Panel: Verify ──────────────────────────────────────────────────── -->
-      <div class="main">
-        <section id="panel-verify" class="panel active" role="tabpanel"
-                 aria-labelledby="tab-verify-label">
-          <div class="toolbar">
-            <label for="logic-select">Logic:</label>
-            <select id="logic-select" aria-label="Select proof logic">
-              <option value="intuitionistic_prop">Intuitionistic</option>
-              <option value="classical_prop">Classical</option>
-            </select>
-            <button class="btn btn-primary" id="btn-check" data-stele
-                    aria-label="Run proof check (Ctrl+Enter)">
-              ▶ Run Check
-            </button>
-            <span class="kbd-hint" aria-hidden="true">Ctrl+Enter</span>
-          </div>
-
-          <textarea id="proof-input" class="proof-editor"
-                    spellcheck="false" autocomplete="off" autocorrect="off"
-                    aria-label="Proof editor — write your natural-deduction proof here"
-                    placeholder="theorem identity:
-  suppose h: P
-    have h2: P by copy h
-  have r: P -> P by imp_intro h h2
-  conclude P -> P by r"></textarea>
-
-          <div id="check-result" class="result-box" role="status" aria-live="polite"></div>
-
-          <details class="lang-ref">
-            <summary>Language quick reference</summary>
-            <div class="lang-ref-body">
-              <code>theorem NAME [using LOGIC]:</code> theorem header<br>
-              <code>assume LABEL: FORMULA</code> introduce assumption<br>
-              <code>suppose LABEL: FORMULA</code> subproof assumption<br>
-              <code>have LABEL: FORMULA by RULE REFS…</code> derive step<br>
-              <code>conclude FORMULA by LABEL</code> final conclusion<br><br>
-              Rules:
-              <code class="r-i">mp</code>
-              <code class="r-i">copy</code>
-              <code class="r-i">imp_intro</code>
-              <code class="r-i">and_intro</code>
-              <code class="r-i">and_elim_left</code>
-              <code class="r-i">and_elim_right</code>
-              <code class="r-i">or_intro_left</code>
-              <code class="r-i">or_intro_right</code>
-              <code class="r-i">or_elim</code>
-              <code class="r-i">neg_intro</code>
-              <code class="r-i">neg_elim</code>
-              <code class="r-i">ex_falso</code><br>
-              Classical only:
-              <code class="r-c">dne</code>
-              <code class="r-c">lem</code>
-              <code class="r-c">pbc</code>
-            </div>
-          </details>
-        </section>
-
-        <!-- ── Panel: Diagnostics ─────────────────────────────────────────── -->
-        <section id="panel-diagnose" class="panel" role="tabpanel"
-                 aria-labelledby="tab-diagnose-label">
-          <div class="toolbar">
-            <p class="panel-intro">
-              Multi-pass structural analysis of the proof in the Verify panel.
-            </p>
-            <button class="btn btn-primary" id="btn-diagnose" data-stele>
-              ▶ Run Diagnostics
-            </button>
-          </div>
-          <div id="diag-result" aria-live="polite" aria-atomic="false"></div>
-        </section>
-
-        <!-- ── Panel: Graph ───────────────────────────────────────────────── -->
-        <section id="panel-graph" class="panel" role="tabpanel"
-                 aria-labelledby="tab-graph-label">
-          <div class="toolbar">
-            <p class="panel-intro">
-              Builds the proof dependency graph and outputs DOT notation.
-              Paste into
-              <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank"
-                 rel="noopener">Graphviz Online ↗</a>
-              to visualise.
-            </p>
-            <button class="btn btn-primary" id="btn-graph" data-stele>
-              ▶ Build Graph
-            </button>
-          </div>
-          <pre id="graph-dot" class="dot-output" style="display:none"
-               aria-live="polite"></pre>
-          <div id="graph-nodes" class="graph-nodes"></div>
-        </section>
-
-        <!-- ── Panel: Semantics ───────────────────────────────────────────── -->
-        <section id="panel-semantics" class="panel" role="tabpanel"
-                 aria-labelledby="tab-semantics-label">
-
-          <div class="sem-section">
-            <div class="sem-title">Rule Soundness</div>
-            <p class="panel-intro">
-              Check whether each inference rule is sound under a semantic matrix.
-              <strong>⊨</strong> (semantic) is separate from <strong>⊢</strong> (syntactic).
-            </p>
-            <div class="toolbar">
-              <label for="sem-logic-select">Logic:</label>
-              <select id="sem-logic-select">
-                <option value="classical_prop">Classical</option>
-                <option value="intuitionistic_prop">Intuitionistic</option>
-              </select>
-              <label for="sem-matrix-select">Matrix:</label>
-              <select id="sem-matrix-select">
-                <option value="K3">K3 (strong Kleene)</option>
-                <option value="LP">LP (Logic of Paradox)</option>
-                <option value="boolean">Boolean (classical)</option>
-              </select>
-              <button class="btn btn-secondary" id="btn-soundness" data-stele>
-                ▶ Check Soundness
-              </button>
-            </div>
-            <div id="soundness-result" aria-live="polite" aria-atomic="false"></div>
-          </div>
-
-          <div class="sem-section">
-            <div class="sem-title">World Lattice</div>
-            <p class="panel-intro">
-              Checks a formula's semantic status across Γ, Γ+φ, and Γ+¬φ worlds.
-              A proposition-level independence demonstration — not set-theoretic forcing.
-            </p>
-            <div class="toolbar">
-              <label for="lattice-input">Formula:</label>
-              <input id="lattice-input" type="text" value="P or not P"
-                     class="lattice-input-field"
-                     placeholder="e.g. P or not P"
-                     aria-label="Formula for world lattice check">
-              <button class="btn btn-secondary" id="btn-lattice" data-stele>
-                ▶ Run Lattice
-              </button>
-            </div>
-            <div id="lattice-result" aria-live="polite" aria-atomic="false"></div>
-          </div>
-
-          <div class="sem-section">
-            <div class="sem-title">Kripke Countermodel</div>
-            <p class="panel-intro">
-              Bounded finite Kripke countermodel search for intuitionistic propositional logic.
-              Finds a world where a formula fails to be forced. Propositional formulas only.
-              Bounded search — <em>absence of a countermodel is not a proof of validity</em>.
-            </p>
-            <div class="toolbar">
-              <label for="kripke-input">Formula:</label>
-              <input id="kripke-input" type="text" value="P or not P"
-                     class="lattice-input-field"
-                     placeholder="e.g. P or not P"
-                     aria-label="Formula for Kripke countermodel search">
-              <label for="kripke-worlds-select">Max worlds:</label>
-              <select id="kripke-worlds-select" style="width:auto">
-                <option value="3" selected>3</option>
-                <option value="4">4</option>
-              </select>
-              <button class="btn btn-secondary" id="btn-kripke" data-stele>
-                ▶ Find Countermodel
-              </button>
-            </div>
-            <div id="kripke-result" aria-live="polite" aria-atomic="false"></div>
-          </div>
-        </section>
-
-        <!-- ── Panel: Examples ────────────────────────────────────────────── -->
-        <section id="panel-examples" class="panel" role="tabpanel"
-                 aria-labelledby="tab-examples-label">
-          <p class="panel-intro">
-            Click an example to load it into the Verify editor.
-            Try switching between <em>Intuitionistic</em> and <em>Classical</em>
-            to see the same proof accepted or rejected.
-          </p>
-          <div id="examples-grid" class="example-grid">
-            <p class="dim-text">Loading…</p>
-          </div>
-        </section>
-
-      </div><!-- /.main -->
-    </div><!-- /.studio-chrome -->
   </div><!-- /.section-inner -->
 </section>
+
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <!-- § 5  VERIFIED EXAMPLES GALLERY                                          -->
@@ -773,7 +576,7 @@
     </h2>
     <p class="section-sub">
       Each example is verified against the Stele kernel.
-      Click <em>Load in Studio</em> to load any proof into the editor above.
+      Click <em>Open in Studio</em> to load any proof into the workbench.
       Switch the logic selector to observe how acceptance changes.
     </p>
 
@@ -802,7 +605,7 @@
           No installation. Open the site and start writing proofs immediately.
           Pyodide/WASM runs the full kernel locally — nothing is sent to a server.
         </p>
-        <a href="#studio" class="btn btn-primary qs-btn">Open Studio ↑</a>
+        <a href="studio.html" class="btn btn-primary qs-btn">Open Studio →</a>
         <p class="qs-note">~8 MB first-load (Pyodide runtime), then cached.</p>
       </div>
 

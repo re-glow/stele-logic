@@ -14,6 +14,7 @@ Stele is an independent research software project. It provides a rule-checked pr
 Language guide: `GUIDE.md` · Decisions/rationale: `DECISIONS.md` · Results: `RESULTS.md`
 Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`docs/semantics.md`](docs/semantics.md) · Metatheory: [`docs/metatheory.md`](docs/metatheory.md) · Maintainer context: `CLAUDE.md`
 **Technical whitepaper:** [`docs/whitepaper.md`](docs/whitepaper.md) (Markdown) · [`paper/stele-whitepaper.tex`](paper/stele-whitepaper.tex) (LaTeX source) · [`paper/README.md`](paper/README.md) (build instructions)
+**Research notes (paper-drafting source packet):** [`docs/research-notes/`](docs/research-notes/) — modules, claims, evidence, examples, limitations, figure plan, and GPT writing instructions for a stronger paper
 **Site design system:** [`docs/design-system.md`](docs/design-system.md) — IA plan, design tokens, component library, accessibility policy for Prompts 43–49
 
 ## v1.1 Capability Matrix

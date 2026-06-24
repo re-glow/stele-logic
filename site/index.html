@@ -56,15 +56,15 @@
 
     <!-- Left: text content -->
     <div class="hero-text">
+      <div class="hero-brand-chip" aria-hidden="true">STELE</div>
       <p class="hero-eyebrow">Formal Verification Framework for Mathematical Reasoning</p>
-      <h1 class="hero-brand" id="hero-heading">STELE</h1>
-      <p class="hero-tagline">Write a proof. Check every rule.</p>
+      <h1 class="hero-headline" id="hero-heading">
+        Write a proof.<br>Check every rule.
+      </h1>
       <p class="hero-desc">
-        Structured natural-deduction proof checking in the browser.
-        The trusted kernel verifies each inference step against the declared logic —
-        intuitionistic, classical, or a custom rule set.
-        Runs entirely via Pyodide/WASM. No backend. Nothing transmitted.
-        <em>Not a theorem prover.</em>
+        Structured natural-deduction proof checking — browser-local via Pyodide/WASM.
+        The trusted kernel verifies each inference step against the declared logic.
+        No backend. Nothing transmitted. <em>Not a theorem prover.</em>
       </p>
 
       <!-- Status evidence strip -->
@@ -78,9 +78,9 @@
 
       <!-- Primary actions -->
       <div class="hero-actions">
-        <a href="#studio"   class="btn btn-primary  hero-cta">Open Studio</a>
+        <a href="#studio"       class="btn btn-primary  hero-cta">Open Studio</a>
+        <a href="#tutorial"     class="btn btn-ghost    hero-cta">Try Tutorial</a>
         <a href="research.html" class="btn btn-secondary hero-cta">Read Whitepaper</a>
-        <a href="#tutorial" class="btn btn-ghost    hero-cta">5-min Tutorial</a>
         <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
            class="btn btn-ghost hero-cta">GitHub ↗</a>
       </div>
@@ -91,68 +91,10 @@
       </p>
     </div>
 
-    <!-- Right: proof dependency graph visual — decorative -->
+    <!-- Right: proof-space constellation (canvas, decorative) -->
     <div class="hero-graph-wrap" aria-hidden="true">
-      <svg viewBox="0 0 440 230" width="100%">
-        <defs>
-          <marker id="hg-arrow" markerWidth="7" markerHeight="7"
-                  refX="6" refY="3.5" orient="auto">
-            <path d="M0,0 L7,3.5 L0,7 z" fill="rgba(176,106,255,.6)"/>
-          </marker>
-          <marker id="hg-arrow-g" markerWidth="7" markerHeight="7"
-                  refX="6" refY="3.5" orient="auto">
-            <path d="M0,0 L7,3.5 L0,7 z" fill="rgba(0,255,159,.65)"/>
-          </marker>
-        </defs>
-        <!-- Edges: assumptions → mp rule -->
-        <line x1="92"  y1="86"  x2="211" y2="121"
-              stroke="rgba(176,106,255,.4)" stroke-width="1.5"
-              marker-end="url(#hg-arrow)"/>
-        <line x1="92"  y1="169" x2="211" y2="135"
-              stroke="rgba(176,106,255,.4)" stroke-width="1.5"
-              marker-end="url(#hg-arrow)"/>
-        <!-- Edge: mp → conclusion -->
-        <line x1="260" y1="128" x2="357" y2="128"
-              stroke="rgba(0,255,159,.45)" stroke-width="1.5"
-              marker-end="url(#hg-arrow-g)"/>
-        <!-- h1: assume P→Q -->
-        <circle cx="70" cy="80" r="23"
-                fill="rgba(0,232,255,.04)" stroke="rgba(0,232,255,.55)" stroke-width="1.5"/>
-        <text x="70" y="75" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="9"
-              fill="rgba(127,160,190,.7)">h1</text>
-        <text x="70" y="87" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="10"
-              fill="#00e8ff">P→Q</text>
-        <!-- h2: assume P -->
-        <circle cx="70" cy="175" r="23"
-                fill="rgba(0,232,255,.04)" stroke="rgba(0,232,255,.55)" stroke-width="1.5"/>
-        <text x="70" y="170" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="9"
-              fill="rgba(127,160,190,.7)">h2</text>
-        <text x="70" y="182" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="10"
-              fill="#00e8ff">P</text>
-        <!-- mp: modus ponens derivation -->
-        <circle cx="235" cy="128" r="25"
-                fill="rgba(176,106,255,.05)" stroke="rgba(176,106,255,.55)" stroke-width="1.5"/>
-        <text x="235" y="123" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="9"
-              fill="rgba(127,160,190,.7)">mp</text>
-        <text x="235" y="135" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="10"
-              fill="#b06aff">Q</text>
-        <!-- ∴ conclusion -->
-        <circle cx="385" cy="128" r="28"
-                fill="rgba(0,255,159,.06)" stroke="rgba(0,255,159,.65)" stroke-width="1.5"
-                class="stele-conclude-pulse"/>
-        <text x="385" y="121" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="14"
-              fill="#00ff9f">∴</text>
-        <text x="385" y="136" text-anchor="middle"
-              font-family="ui-monospace,monospace" font-size="10"
-              fill="#00ff9f">Q</text>
-      </svg>
+      <canvas class="proof-constellation"
+              data-stele-visual="proof-constellation"></canvas>
     </div>
 
   </div>

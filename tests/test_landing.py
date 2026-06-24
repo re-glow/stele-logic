@@ -1,8 +1,8 @@
-"""Static tests for the redesigned landing page (Prompt 43).
+"""Static tests for the redesigned landing page (Prompts 43, 44).
 
 Checks identity, CTAs, proof graph, audience cards, Kripke mention,
 whitepaper link, multi-page nav, trust boundary, Studio panel IDs,
-forbidden phrases, and asset-loading constraints.
+forbidden phrases, CSS structural guards, and asset-loading constraints.
 """
 from __future__ import annotations
 
@@ -255,3 +255,82 @@ def test_no_external_css_links():
             for href in hrefs:
                 assert not href.startswith("http"), \
                     f"index.html must not load external CSS: {href}"
+
+
+# ── 17. Additional banned SaaS/AI-copy phrases (Part G) ─────────────────────
+
+FORBIDDEN_PHRASES_SAAS = [
+    "aether flow",
+    "elevate your creative workflow",
+    "connect the world",
+    "global network",
+    "start free trial",
+    "welcome developer",
+    "distributed network infrastructure",
+]
+
+
+@pytest.mark.parametrize("phrase", FORBIDDEN_PHRASES_SAAS)
+def test_no_saas_phrase_in_landing(phrase):
+    assert phrase not in _html().lower(), \
+        f"Forbidden SaaS/AI-copy phrase '{phrase}' found in index.html"
+
+
+# ── 18. CSS structural guards: clamp(), focus, no giant fixed sizes ──────────
+
+def test_hero_headline_uses_clamp():
+    css = _CSS.read_text(encoding="utf-8")
+    assert "hero-headline" in css, \
+        "stele_site.css must define .hero-headline"
+    idx = css.find("hero-headline")
+    snippet = css[idx:idx + 250]
+    assert "clamp(" in snippet, \
+        ".hero-headline must use clamp() for font-size"
+
+
+def test_hero_padding_uses_clamp():
+    css = _CSS.read_text(encoding="utf-8")
+    idx = css.rfind("#hero")
+    assert idx != -1, "stele_site.css must define #hero"
+    snippet = css[idx:idx + 350]
+    assert "clamp(" in snippet, \
+        "#hero override must use clamp() for responsive padding"
+
+
+def test_focus_styles_in_css():
+    css = _CSS.read_text(encoding="utf-8")
+    assert ":focus" in css or "focus-visible" in css, \
+        "stele_site.css must define focus styles for keyboard navigation"
+
+
+def test_no_large_fixed_hero_fontsize():
+    css = _CSS.read_text(encoding="utf-8")
+    assert "font-size: 96px" not in css and "font-size:96px" not in css, \
+        "Hero must not use a 96px fixed font-size — use clamp() instead"
+
+
+# ── 19. Canvas constellation ─────────────────────────────────────────────────
+
+def test_proof_constellation_canvas_present():
+    html = _html()
+    assert ("proof-constellation" in html or
+            'data-stele-visual="proof-constellation"' in html), \
+        "Hero must include the proof-space constellation canvas"
+
+
+def test_visuals_js_has_constellation_renderer():
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    assert "renderProofConstellation" in vjs, \
+        "visuals.js must define renderProofConstellation"
+
+
+def test_visuals_js_constellation_uses_canvas():
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    assert "getContext" in vjs or "canvas.width" in vjs, \
+        "renderProofConstellation must use Canvas API"
+
+
+def test_visuals_js_constellation_respects_reduced_motion():
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    assert "prefersReducedMotion" in vjs, \
+        "visuals.js must call prefersReducedMotion() for constellation"

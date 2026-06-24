@@ -3,7 +3,7 @@
 Use this checklist before creating and pushing a release tag.
 **Do not create the tag until all "Before tag" items are complete.**
 
-This checklist applies to v1.2.0 and future releases.
+This checklist applies to v1.3.0 and future releases.
 
 ---
 
@@ -76,16 +76,16 @@ cd ..
 
 ### 7. Documentation consistency
 
-- [ ] `stele/__version__.py` is set to `"1.2.0"`.
-- [ ] `CHANGELOG.md` has a `[v1.2.0]` entry at the top.
-- [ ] README.md version heading says `# Stele — v1.2.0`.
-- [ ] README.md capability matrix heading says `## v1.2 Capability Matrix`.
+- [ ] `stele/__version__.py` is set to `"1.3.0"`.
+- [ ] `CHANGELOG.md` has a `[v1.3.0]` entry at the top.
+- [ ] README.md version heading says `# Stele — v1.3.0`.
+- [ ] README.md capability matrix heading says `## v1.3 Capability Matrix`.
 - [ ] No generated files tracked in git:
   ```bash
   git status  # dist/, _site/, build/, __pycache__/, paper/*.pdf must not appear
   ```
 
-### 8. Claim audit — v1.2 specific
+### 8. Claim audit — v1.3 specific
 
 - [ ] No "complete theorem prover" — Stele is a proof checker.
 - [ ] No "machine-checked metatheory" or "formally verified metatheory".

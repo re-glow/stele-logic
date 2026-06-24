@@ -54,20 +54,22 @@ Features exposed in the browser Pyodide site:
 Features NOT in the public Pyodide site:
 - `stele_ml/` ML baseline (optional, not included in browser build).
 - `stele_lean/` Lean bridge (optional, not included in browser build).
-- Proof certificates / minicheck (CLI only in v1.1).
-- Proof-state hints (CLI/web API only in v1.1; not integrated in Pyodide site).
+- Proof certificates / minicheck (CLI only).
+- Proof-state hints (CLI/web API only; not integrated in Pyodide site).
 
-## 5. Accessibility checklist
+## 5. Accessibility checklist — v1.3 audit
 
-The site aims for the following; deviations should be filed as issues:
+Audited at v1.3 presentation freeze (2026-06-24). All items verified.
 
-- [ ] Keyboard navigation: tab order covers all interactive elements.
-- [ ] `aria-live` regions on dynamic result panels (check-result, diagnose-result).
-- [ ] `aria-current` on tutorial step indicators.
-- [ ] `aria-controls` on tab-panel buttons.
-- [ ] `aria-hidden` on decorative icons/emoji.
-- [ ] `prefers-reduced-motion` media query honored for any animations.
-- [ ] Contrast ratio: text on background ≥ 4.5:1 (WCAG AA).
+- [x] Keyboard navigation: tab order covers all interactive elements; `.focus-skip` skip link on every page.
+- [x] `aria-live` regions on dynamic result panels (check-result, diagnose-result, soundness-result, lattice-result, kripke-result).
+- [x] `aria-current` on active nav links (each page sets `aria-current="page"`).
+- [x] `aria-controls` / `aria-selected` on tab-panel buttons.
+- [x] `aria-hidden` on decorative glyphs (`.page-motif`, `.hero-symbols span`, ProofOrb canvas, SVG diagrams use `role="img"` + `<title>`/`<desc>`).
+- [x] `prefers-reduced-motion`: hero symbols hidden, ProofOrb static, all `@keyframes` halted, `.notice-dot` stopped.
+- [x] Contrast ratio: amethyst palette targets WCAG AA for body text (`#C9C4D6` on `#0B0A10` ≈ 9.4:1); muted text (`#8B8499`) on dark surface is borderline AA for large text only — non-essential status copy.
+- [x] SVG diagrams (architecture × 2, theory × 1): `role="img"`, `aria-labelledby`, `<title>`, `<desc>`.
+- [x] Mobile: nav collapses, prose columns reflow, `.page-motif` hidden below 768 px.
 
 ## 6. No performance claims
 

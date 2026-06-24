@@ -1,4 +1,4 @@
-"""Static release-readiness tests for Stele v1.2.0 (Prompt 50).
+"""Static release-readiness tests for Stele (originally v1.2.0, maintained at v1.3.0+).
 
 Checks: version, CHANGELOG, README links, site pages, overclaim phrases,
 Yurihak scope, no backend API calls, no heavy frameworks, accessibility,
@@ -25,11 +25,11 @@ def _site_html(name: str) -> str:
 
 # ── 1. Version ────────────────────────────────────────────────────────────────
 
-def test_version_is_1_2_0():
+def test_version_is_1_3_0():
     version_file = _ROOT / "stele" / "__version__.py"
     assert version_file.exists(), "stele/__version__.py must exist"
     content = version_file.read_text(encoding="utf-8")
-    assert '"1.2.0"' in content, f"Version must be 1.2.0; got: {content.strip()!r}"
+    assert '"1.3.0"' in content, f"Version must be 1.3.0; got: {content.strip()!r}"
 
 
 # ── 2. CHANGELOG ─────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ def test_changelog_v1_2_entry_before_v1_1():
 
 def test_readme_version_heading():
     readme = _read(_ROOT / "README.md")
-    assert "v1.2.0" in readme, "README.md must reference v1.2.0"
+    assert "v1.3.0" in readme, "README.md must reference v1.3.0"
 
 
 def test_readme_links_to_public_site():

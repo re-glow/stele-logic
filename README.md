@@ -1,4 +1,4 @@
-# Stele — v1.2.0
+# Stele — v1.3.0
 
 **Formal Verification Framework for Mathematical Reasoning**
 (수학적 추론의 형식 검증 프레임워크)
@@ -29,7 +29,7 @@ Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`
 **Provenance map:** [`docs/provenance-map.md`](docs/provenance-map.md) — claim → module → test → source → limitation (4 structured tables)
 **Site design system:** [`docs/design-system.md`](docs/design-system.md) — IA plan, design tokens, component library, accessibility policy
 
-## v1.2 Capability Matrix
+## v1.3 Capability Matrix
 
 | Capability | v1.0 Status | How to use | Limitations |
 |---|---|---|---|

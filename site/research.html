@@ -34,8 +34,9 @@
 <main class="page-main" id="main-content">
 
   <section class="page-section" aria-labelledby="research-heading"
-    style="background:radial-gradient(ellipse at 50% 0%,rgba(0,232,255,.03) 0%,transparent 60%)">
-    <div class="section-inner">
+    style="background:radial-gradient(ellipse at 50% 0%,rgba(124,92,255,.04) 0%,transparent 60%)">
+    <span class="page-motif" aria-hidden="true">∴</span>
+    <div class="section-inner" style="position:relative;z-index:1">
       <span class="section-label">Research</span>
       <h1 id="research-heading" class="section-heading">Research &amp; Whitepaper</h1>
       <p class="section-sub" style="font-family:var(--font-sans)">
@@ -43,15 +44,6 @@
         supporting multiple logical frameworks in a single proof-checking infrastructure.
         This page connects the implementation to its theoretical context.
       </p>
-
-      <div class="callout callout-info" style="max-width:640px;margin-bottom:2rem">
-        <span class="callout-label">Page status — Prompts 46–47</span>
-        <p>
-          This page is a skeleton. Full content — Yurihak / logical pluralism framing,
-          proof-assistant comparison, references map, and whitepaper integration —
-          will be written in Prompts 46–47.
-        </p>
-      </div>
     </div>
   </section>
 
@@ -87,32 +79,101 @@
     </div>
   </section>
 
-  <!-- Research motivation placeholder -->
+  <!-- Research motivation -->
   <section class="page-section" aria-labelledby="motivation-heading">
     <div class="section-inner">
       <h2 id="motivation-heading" class="section-heading" style="margin-bottom:1.5rem">
         Research Motivation
       </h2>
-      <div class="skeleton-notice" style="max-width:680px">
-        <strong>Planned content — Prompt 46</strong>
-        Logical pluralism and the Yurihak (유리학) project as inspiration.
-        Why supporting multiple logical frameworks in one infrastructure matters.
-        Framing: motivation and design inspiration, not a completed formalization.
+      <div class="prose-body prose-reading" style="max-width:680px">
+        <p>
+          Mathematical logicians have long known that no single logic captures all
+          valid reasoning. Intuitionistic logic rejects the law of excluded middle;
+          paraconsistent logics tolerate contradictions without explosion; relevance
+          logics require genuine connection between premises and conclusion.
+          The question of which logic to use is not settled — it is a live research
+          problem in the philosophy and foundations of mathematics.
+        </p>
+        <p>
+          Stele's design responds to this situation concretely: rather than hard-coding
+          classical propositional logic, it lets you declare which logic applies to a
+          given proof via a <code>--logic</code> flag. The same proof script that passes
+          under classical logic can be rejected under intuitionistic logic, exactly as the
+          theory predicts. Rules are data (<code>RuleSchema</code> objects in
+          <code>logic.py</code>), not hard-wired kernel branches.
+        </p>
+        <p>
+          The background inspiration is <em>유리학 (Yurihak)</em> — a research programme
+          exploring the boundaries of logical pluralism. Stele is not a formalization of
+          Yurihak, and makes no claims on its behalf. It is a proof-checking infrastructure
+          that the pluralist stance motivated: an engine whose logic can vary without
+          changing the trusted core.
+        </p>
+      </div>
+      <div class="callout callout-info" style="max-width:640px;margin-top:2rem">
+        <span class="callout-label">Scope note</span>
+        <p>
+          Stele operates at the propositional level. Quantifier support (∀, ∃) exists
+          in the proof-term layer (<code>stele/core/fol.py</code>) but is not yet exposed
+          in the surface proof language. Logical pluralism at the first-order level is
+          future work.
+        </p>
       </div>
     </div>
   </section>
 
-  <!-- Proof assistant comparison placeholder -->
+  <!-- Proof assistant comparison -->
   <section class="page-section page-section--alt" aria-labelledby="comparison-heading">
     <div class="section-inner">
       <h2 id="comparison-heading" class="section-heading" style="margin-bottom:1.5rem">
         Relation to Proof Assistants
       </h2>
-      <div class="skeleton-notice" style="max-width:680px">
-        <strong>Planned content — Prompt 47</strong>
-        How Stele differs from Lean 4, Coq, Agda, and Isabelle/HOL.
-        Proof checker vs. theorem prover distinction.
-        What Stele is not: no proof search, no tactics, no metaprogramming.
+      <p style="font-family:var(--font-sans);font-size:var(--text-base);color:var(--text-secondary);max-width:640px;margin-bottom:2rem;line-height:var(--lh-loose)">
+        Stele is a proof <em>checker</em>, not a proof <em>assistant</em> or theorem
+        prover. The distinction matters.
+      </p>
+      <div class="trust-grid" style="max-width:920px;margin-bottom:2rem">
+        <div class="trust-card">
+          <div class="trust-card-title">Lean 4 / Coq / Agda</div>
+          <div class="trust-card-body">
+            Full proof assistants with dependent type theories, tactic languages,
+            metaprogramming, and libraries spanning thousands of theorems. The user
+            supplies high-level proof scripts; the system fills in details, searches
+            for unifiers, and generates proof terms automatically.
+          </div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-title">Isabelle/HOL</div>
+          <div class="trust-card-body">
+            Higher-order logic framework with Isar structured proofs and a large
+            industrial-strength library (Archive of Formal Proofs). Supports
+            automated reasoning via Sledgehammer. Full foundational commitment to HOL.
+          </div>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-title">Stele</div>
+          <div class="trust-card-body">
+            Proof <em>checker</em> for natural-deduction, propositional scope, and
+            explicitly user-supplied rule sets. No proof search. No tactics. No
+            metaprogramming. Every inference step must be written out and named.
+            The kernel judges; the user constructs.
+          </div>
+        </div>
+      </div>
+      <div class="prose-body prose-reading" style="max-width:640px">
+        <p>
+          The de Bruijn criterion — the standard that a proof can be independently
+          re-checked by a small, auditable kernel — is central to Stele's design.
+          <code>stele/kernel.py</code> is the only trusted component. Everything else
+          (diagnostics, hints, graph, Kripke) is explicitly labelled "untrusted" and
+          does not affect the validity verdict.
+        </p>
+        <p>
+          What Stele deliberately is not: it does not search for proofs, does not fill
+          in gaps, and does not export to Lean or Coq (that is listed as future work
+          with appropriate caveats). It is a pedagogical and research tool for making
+          the structure of natural-deduction arguments explicit and machine-checkable.
+        </p>
       </div>
     </div>
   </section>
@@ -123,18 +184,57 @@
       <h2 id="references-heading" class="section-heading" style="margin-bottom:1.5rem">
         References &amp; Provenance
       </h2>
-      <div class="skeleton-notice" style="max-width:680px">
-        <strong>Planned content — Prompt 47</strong>
-        Kleene (K3), Priest (LP), Troelstra &amp; van Dalen (IQL),
-        Curry–Howard correspondence, de Bruijn criterion.
-        Provenance map from design decisions to source citations.
+      <p style="font-family:var(--font-sans);font-size:var(--text-base);color:var(--text-secondary);max-width:640px;margin-bottom:2rem;line-height:var(--lh-loose)">
+        Key sources that informed Stele's design decisions. The full BibTeX file
+        is in the repository.
+      </p>
+      <div class="prose-body" style="max-width:680px;margin-bottom:2rem">
+        <table style="width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:var(--text-sm)">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:.5rem .75rem .5rem 0;color:var(--text-secondary);font-weight:500">Topic</th>
+              <th style="text-align:left;padding:.5rem .75rem .5rem 0;color:var(--text-secondary);font-weight:500">Source</th>
+              <th style="text-align:left;padding:.5rem 0 .5rem 0;color:var(--text-secondary);font-weight:500">Stele use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(35,27,53,.6)">
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--muted)">K3 matrix</td>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--text)">Kleene (1952), <em>Introduction to Metamathematics</em></td>
+              <td style="padding:.55rem 0 .55rem 0;color:var(--muted)"><code>matrix.py</code> K3 table</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(35,27,53,.6)">
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--muted)">LP matrix</td>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--text)">Priest (1979), "The Logic of Paradox", <em>JPL</em> 8</td>
+              <td style="padding:.55rem 0 .55rem 0;color:var(--muted)"><code>matrix.py</code> LP table</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(35,27,53,.6)">
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--muted)">Intuitionistic logic</td>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--text)">Troelstra &amp; van Dalen (1988), <em>Constructivism in Mathematics</em></td>
+              <td style="padding:.55rem 0 .55rem 0;color:var(--muted)"><code>logic.py</code> intuitionistic rules</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(35,27,53,.6)">
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--muted)">Curry–Howard</td>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--text)">Howard (1980), "The Formulae-as-Types Notion of Construction"</td>
+              <td style="padding:.55rem 0 .55rem 0;color:var(--muted)"><code>stele/core/</code> proof-term layer</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(35,27,53,.6)">
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--muted)">de Bruijn indices</td>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--text)">de Bruijn (1972), "Lambda Calculus Notation…"</td>
+              <td style="padding:.55rem 0 .55rem 0;color:var(--muted)"><code>core/debruijn.py</code></td>
+            </tr>
+            <tr>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--muted)">de Bruijn criterion</td>
+              <td style="padding:.55rem .75rem .55rem 0;color:var(--text)">de Bruijn (1980), "A survey of the Automath project"</td>
+              <td style="padding:.55rem 0 .55rem 0;color:var(--muted)">kernel isolation principle</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div style="margin-top:1.5rem">
-        <a href="https://github.com/re-glow/stele-logic/blob/main/paper/references.bib"
-           target="_blank" rel="noopener" class="btn btn-ghost">
-          View references.bib ↗
-        </a>
-      </div>
+      <a href="https://github.com/re-glow/stele-logic/blob/main/paper/references.bib"
+         target="_blank" rel="noopener" class="btn btn-ghost">
+        View references.bib ↗
+      </a>
     </div>
   </section>
 

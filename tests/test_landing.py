@@ -370,3 +370,41 @@ def test_hero_browser_local_stated():
     html = _html().lower()
     assert "browser-local" in html or "no backend" in html or "runs locally" in html, \
         "Hero must state that Stele runs locally (browser-local / no backend)"
+
+
+# ── 22. Galaxy/orb hero: not a proof DAG (Part G §7) ────────────────────────
+
+def test_hero_orb_is_galaxy_not_dag():
+    """renderProofOrb must be a particle galaxy, not a labeled-node proof DAG."""
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    start = vjs.find("function renderProofOrb(")
+    end   = vjs.find("  /* Auto-init", start)
+    orb_body = vjs[start:end] if end > start > -1 else vjs[start:start + 6000]
+    assert "var edges" not in orb_body, \
+        "renderProofOrb must not define proof-DAG edges — the hero is a particle galaxy"
+    assert "proofNodes" not in orb_body, \
+        "renderProofOrb must not use a named proofNodes array — the hero is a particle galaxy"
+
+
+def test_hero_orb_has_particle_field():
+    """renderProofOrb must generate a substantial particle field (not just a few nodes)."""
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    start = vjs.find("function renderProofOrb(")
+    end   = vjs.find("  /* Auto-init", start)
+    orb_body = vjs[start:end] if end > start > -1 else vjs[start:start + 6000]
+    assert "particles" in orb_body, \
+        "renderProofOrb must build a particles array for galaxy density"
+    # Ensure a loop that generates many particles (e.g. 400+)
+    large_counts = ["400", "420", "480", "500", "520", "560"]
+    assert any(n in orb_body for n in large_counts), \
+        "renderProofOrb galaxy must generate 400+ particles (dense nebula, not sparse graph)"
+
+
+def test_hero_orb_has_no_neon_green_color():
+    """Main hero canvas must not use neon green — palette is violet/plum/ice."""
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    start = vjs.find("function renderProofOrb(")
+    end   = vjs.find("  /* Auto-init", start)
+    orb_body = vjs[start:end] if end > start > -1 else vjs[start:start + 6000]
+    assert "00ff9f" not in orb_body and "00FF9F" not in orb_body, \
+        "renderProofOrb galaxy must not use neon green (#00ff9f) — use violet/plum/ice"

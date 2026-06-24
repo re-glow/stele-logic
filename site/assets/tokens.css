@@ -31,14 +31,14 @@
   --amber:  #ffb347;
 
   /* ── Color: Status badges ─────────────────────────────────────────────── */
-  /* Stable */
-  --status-stable-bg:     rgba(0,255,159,.08);
-  --status-stable-fg:     #00ff9f;
-  --status-stable-border: rgba(0,255,159,.22);
-  /* Experimental */
-  --status-experimental-bg:     rgba(255,179,71,.08);
-  --status-experimental-fg:     #ffb347;
-  --status-experimental-border: rgba(255,179,71,.22);
+  /* Stable — subdued sage green (not neon) */
+  --status-stable-bg:     rgba(82,201,122,.07);
+  --status-stable-fg:     #52c97a;
+  --status-stable-border: rgba(82,201,122,.20);
+  /* Experimental — muted amber (not neon) */
+  --status-experimental-bg:     rgba(212,160,80,.07);
+  --status-experimental-fg:     #d4a050;
+  --status-experimental-border: rgba(212,160,80,.20);
   /* Optional */
   --status-optional-bg:     rgba(176,106,255,.08);
   --status-optional-fg:     #b06aff;

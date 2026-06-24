@@ -731,13 +731,13 @@ select:focus-visible { outline: 2px solid var(--cyan); }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 380px;
+  min-height: 460px;
 }
 
-/* Canvas orb */
+/* Canvas orb — matches the 680px galaxy canvas width */
 #proof-orb {
   width: 100%;
-  max-width: 600px;
+  max-width: 700px;
   height: auto;
   display: block;
 }

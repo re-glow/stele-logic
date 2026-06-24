@@ -243,9 +243,13 @@ def test_companion_doc_has_implemented_vs_future():
         "foundations-program.md must have an implemented vs future mapping"
 
 
-# ── 8. Source PDFs listed ────────────────────────────────────────────────────
+# ── 8. Source PDF filenames listed for provenance ────────────────────────────
+# The PDFs are local drafting references and are NOT committed to the public
+# repo.  The tests below only verify that the filenames appear in the page and
+# companion doc for provenance tracking; they do not assert the files exist on
+# the CI runner.
 
-SOURCE_PDFS = [
+SOURCE_PDF_NAMES = [
     "yurihak-introduction.pdf",
     "window-localized.pdf",
     "closure-atlases.pdf",
@@ -253,17 +257,16 @@ SOURCE_PDFS = [
 ]
 
 
-@pytest.mark.parametrize("pdf", SOURCE_PDFS)
-def test_source_pdf_present_on_disk(pdf):
-    pdf_path = _ROOT / "references" / "incoming" / pdf
-    assert pdf_path.exists(), \
-        f"Source PDF must be present at references/incoming/{pdf}"
-
-
-@pytest.mark.parametrize("pdf", SOURCE_PDFS)
+@pytest.mark.parametrize("pdf", SOURCE_PDF_NAMES)
 def test_foundations_mentions_pdf_filename(pdf):
     assert pdf in _found(), \
-        f"foundations.html must reference source file: {pdf}"
+        f"foundations.html must reference source filename for provenance: {pdf}"
+
+
+@pytest.mark.parametrize("pdf", SOURCE_PDF_NAMES)
+def test_companion_mentions_pdf_filename(pdf):
+    assert pdf in _companion(), \
+        f"foundations-program.md must list source filename: {pdf}"
 
 
 # ── 9. Page structure ────────────────────────────────────────────────────────

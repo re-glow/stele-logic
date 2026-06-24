@@ -55,6 +55,9 @@ paper/*.fls
 paper/*.fdb_latexmk
 paper/*.synctex.gz
 
+# Local reference PDFs used during drafting; not committed by default.
+references/
+
 # Editor / OS
 .DS_Store
 Thumbs.db

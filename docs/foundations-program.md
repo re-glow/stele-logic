@@ -11,16 +11,17 @@ Stele's implemented features and the broader Yurihak foundational research progr
 
 ## §1. Source file inventory
 
-| Filename | Located at | Content status |
-|----------|-----------|----------------|
-| `yurihak-introduction.pdf` | `references/incoming/` | Present; not yet extracted (PDF tool unavailable) |
-| `window-localized.pdf` | `references/incoming/` | Present; not yet extracted |
-| `closure-atlases.pdf` | `references/incoming/` | Present; not yet extracted |
-| `bounded-cores.pdf` | `references/incoming/` | Present; not yet extracted |
+| Filename | Repo status | Content status |
+|----------|-------------|----------------|
+| `yurihak-introduction.pdf` | Not committed (local drafting reference) | Pending extraction / publication |
+| `window-localized.pdf` | Not committed (local drafting reference) | Pending extraction / publication |
+| `closure-atlases.pdf` | Not committed (local drafting reference) | Pending extraction / publication |
+| `bounded-cores.pdf` | Not committed (local drafting reference) | Pending extraction / publication |
 
-**Note:** These files are in `references/incoming/`. They are not committed to the
-public repository. When PDF extraction becomes available, update §2 with actual paper
-summaries and revise the claim/evidence table accordingly.
+**Note:** These PDFs are local drafting references and are **not bundled in the public
+repository** (`references/` is gitignored by default).
+The filenames are recorded here for provenance planning only.
+When excerpts or metadata are ready to publish, update §2 and the public page accordingly.
 
 ---
 

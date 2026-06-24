@@ -275,10 +275,17 @@ class TestTutorial:
 # ══════════════════════════════════════════════════════════════════════════
 
 class TestSiteAccessibility:
-    """Static checks for ARIA and accessibility markers in site assets."""
+    """Static checks for ARIA and accessibility markers in site assets.
+
+    Studio-specific panel IDs (proof-input, logic-select, tab panels, etc.)
+    now live in studio.html — tests for those check studio.html directly.
+    """
 
     def _html(self):
         return SITE_HTML.read_text(encoding="utf-8")
+
+    def _studio_html(self):
+        return (SITE / "studio.html").read_text(encoding="utf-8")
 
     def _css(self):
         return SITE_CSS.read_text(encoding="utf-8")
@@ -287,44 +294,46 @@ class TestSiteAccessibility:
         return SITE_JS.read_text(encoding="utf-8")
 
     def test_check_result_has_aria_live(self):
-        html = self._html()
+        html = self._studio_html()
         assert re.search(r'id="check-result"[^>]*aria-live=', html), \
-            "check-result must have aria-live"
+            "check-result must have aria-live (in studio.html)"
 
     def test_check_result_has_role_status(self):
-        assert 'id="check-result"' in self._html()
-        assert 'role="status"' in self._html()
+        html = self._studio_html()
+        assert 'id="check-result"' in html
+        assert 'role="status"' in html
 
     def test_diag_result_has_aria_live(self):
-        html = self._html()
+        html = self._studio_html()
         assert re.search(r'id="diag-result"[^>]*aria-live=', html), \
-            "diag-result must have aria-live"
+            "diag-result must have aria-live (in studio.html)"
 
     def test_soundness_result_has_aria_live(self):
-        html = self._html()
+        html = self._studio_html()
         assert re.search(r'id="soundness-result"[^>]*aria-live=', html), \
-            "soundness-result must have aria-live"
+            "soundness-result must have aria-live (in studio.html)"
 
     def test_lattice_result_has_aria_live(self):
-        html = self._html()
+        html = self._studio_html()
         assert re.search(r'id="lattice-result"[^>]*aria-live=', html), \
-            "lattice-result must have aria-live"
+            "lattice-result must have aria-live (in studio.html)"
 
     def test_studio_loading_banner_has_aria_live(self):
-        html = self._html()
+        html = self._studio_html()
         assert re.search(r'id="studio-loading"[^>]*aria-live=', html), \
-            "studio-loading must have aria-live"
+            "studio-loading must have aria-live (in studio.html)"
 
     def test_proof_editor_has_aria_label(self):
-        assert 'id="proof-input"' in self._html()
+        html = self._studio_html()
+        assert 'id="proof-input"' in html
         assert re.search(r'id="proof-input"[^>]*aria-label=|aria-label=[^>]*id="proof-input"',
-                         self._html()), "proof-input must have aria-label"
+                         html), "proof-input must have aria-label (in studio.html)"
 
     def test_logic_select_has_label(self):
-        html = self._html()
+        html = self._studio_html()
         assert 'for="logic-select"' in html or \
                re.search(r'id="logic-select"[^>]*aria-label=', html), \
-            "logic-select must have a label or aria-label"
+            "logic-select must have a label or aria-label (in studio.html)"
 
     def test_gallery_section_has_aria_labelledby(self):
         html = self._html()
@@ -344,19 +353,19 @@ class TestSiteAccessibility:
             "CSS must include prefers-reduced-motion media query"
 
     def test_tab_buttons_have_role_tab(self):
-        html = self._html()
-        assert 'role="tab"' in html, "tab buttons must have role='tab'"
+        html = self._studio_html()
+        assert 'role="tab"' in html, "tab buttons must have role='tab' (in studio.html)"
 
     def test_tab_buttons_have_aria_selected(self):
-        html = self._html()
+        html = self._studio_html()
         assert 'aria-selected="true"' in html
         assert 'aria-selected="false"' in html
 
     def test_panels_have_role_tabpanel(self):
-        assert 'role="tabpanel"' in self._html()
+        assert 'role="tabpanel"' in self._studio_html()
 
     def test_tablist_has_aria_label(self):
-        assert 'aria-label="Studio panels"' in self._html()
+        assert 'aria-label="Studio panels"' in self._studio_html()
 
     def test_nav_has_aria_label(self):
         assert 'aria-label="Site navigation"' in self._html()

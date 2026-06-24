@@ -40,6 +40,9 @@ class TestSiteFilesExist:
     def test_browser_py_exists(self):
         assert BROWSER_PY.exists(), "stele/browser.py missing"
 
+    def test_studio_html_exists(self):
+        assert (SITE_SRC / "studio.html").exists(), "site/studio.html missing"
+
     def test_build_script_exists(self):
         assert BUILD_SCRIPT.exists(), "tools/build_pyodide_site.py missing"
 
@@ -61,16 +64,9 @@ class TestIndexHtml:
     def test_references_js_glue(self):
         assert "stele-pyodide.js" in self._html()
 
-    def test_has_proof_editor(self):
-        assert "proof-input" in self._html()
-
-    def test_has_logic_selector(self):
-        assert "logic-select" in self._html()
-
-    def test_has_tab_panels(self):
-        html = self._html()
-        for panel in ("verify", "diagnose", "graph", "semantics", "examples"):
-            assert panel in html.lower(), f"tab panel '{panel}' not found in index.html"
+    def test_links_to_studio(self):
+        assert "studio.html" in self._html(), \
+            "index.html must link to studio.html (Studio is now a separate page)"
 
     def test_has_privacy_notice(self):
         """Must clearly state that no data is sent to a server."""
@@ -412,25 +408,10 @@ class TestPublicSiteLanding:
         assert "prefers-reduced-motion" in css
         assert "hero-symbols" in css or "symbol" in css
 
-    def test_studio_section_has_loading_state(self):
+    def test_studio_cta_links_to_studio_html(self):
         html = self._html()
-        assert "studio-loading" in html or "loading-step" in html, \
-            "Studio section should have a loading state element"
-
-    def test_all_studio_panel_ids_present(self):
-        """All IDs referenced by the JS glue must exist in the HTML."""
-        html = self._html()
-        required_ids = [
-            "proof-input", "logic-select", "btn-check", "check-result",
-            "btn-diagnose", "diag-result",
-            "btn-graph", "graph-dot",
-            "btn-soundness", "soundness-result",
-            "btn-lattice", "lattice-result", "lattice-input",
-            "examples-grid",
-        ]
-        for eid in required_ids:
-            assert f'id="{eid}"' in html or f"id='{eid}'" in html, \
-                f"index.html is missing required element id='{eid}'"
+        assert "studio.html" in html, \
+            "index.html must contain a CTA link to studio.html"
 
     def test_gallery_cards_have_load_try_buttons(self):
         html = self._html()
@@ -467,3 +448,67 @@ class TestPublicSiteLanding:
         for banned in ("node_modules", "import React", "import Vue", "@angular"):
             assert banned not in html, \
                 f"index.html must not reference '{banned}'"
+
+
+# ── Studio.html (proof workbench page) ───────────────────────────────────────
+
+class TestStudioHtml:
+    def _html(self):
+        return (SITE_SRC / "studio.html").read_text(encoding="utf-8")
+
+    def test_studio_html_has_proof_editor(self):
+        assert 'id="proof-input"' in self._html(), \
+            "studio.html must contain the proof editor (id=proof-input)"
+
+    def test_studio_html_has_logic_select(self):
+        assert 'id="logic-select"' in self._html(), \
+            "studio.html must contain the logic selector (id=logic-select)"
+
+    def test_studio_html_has_all_tab_panels(self):
+        html = self._html()
+        for panel in ("verify", "diagnose", "graph", "semantics", "examples"):
+            assert f'id="panel-{panel}"' in html or panel in html.lower(), \
+                f"studio.html must include panel id for '{panel}'"
+
+    def test_studio_html_has_loading_state(self):
+        html = self._html()
+        assert "studio-loading" in html or "loading-step" in html, \
+            "studio.html must have a Pyodide loading state element"
+
+    def test_studio_html_loads_pyodide_js(self):
+        assert "stele-pyodide.js" in self._html(), \
+            "studio.html must load stele-pyodide.js"
+
+    def test_studio_html_no_api_calls(self):
+        assert "/api/" not in self._html(), \
+            "studio.html must not contain /api/ backend calls"
+
+    def test_studio_html_has_trust_pills(self):
+        html = self._html()
+        assert "trust-pill" in html, \
+            "studio.html must include trust pills (kernel trusted, diagnostics untrusted)"
+
+    def test_studio_html_links_back_to_index(self):
+        assert "index.html" in self._html(), \
+            "studio.html must link back to index.html"
+
+    def test_studio_html_no_external_scripts(self):
+        html = self._html()
+        script_srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html, re.IGNORECASE)
+        for src in script_srcs:
+            assert not src.startswith("http"), \
+                f"studio.html must not load external scripts: {src}"
+
+    def test_studio_html_all_required_ids(self):
+        html = self._html()
+        required_ids = [
+            "proof-input", "logic-select", "btn-check", "check-result",
+            "btn-diagnose", "diag-result",
+            "btn-graph", "graph-dot",
+            "btn-soundness", "soundness-result",
+            "btn-lattice", "lattice-result", "lattice-input",
+            "examples-grid",
+        ]
+        for eid in required_ids:
+            assert f'id="{eid}"' in html or f"id='{eid}'" in html, \
+                f"studio.html is missing required element id='{eid}'"

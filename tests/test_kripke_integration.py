@@ -383,7 +383,7 @@ class TestSiteHtmlKripke:
     def _read_site(self):
         import os
         here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        path = os.path.join(here, "site", "index.html")
+        path = os.path.join(here, "site", "studio.html")
         with open(path, encoding="utf-8") as f:
             return f.read()
 

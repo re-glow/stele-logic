@@ -1,134 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stele Studio — Proof Workbench</title>
-<meta name="description"
-  content="Stele Studio: write natural-deduction proofs and verify them in the browser. Powered by Pyodide/WASM — no backend, no data sent to any server.">
-<!-- Design tokens first, then base styles, then component extensions -->
-<link rel="stylesheet" href="assets/tokens.css">
-<link rel="stylesheet" href="assets/stele_site.css">
-<link rel="stylesheet" href="assets/components.css">
-<link rel="stylesheet" href="assets/visuals.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stele Studio — Proof Workbench</title>
+  <meta name="description" content="Stele Studio: write natural-deduction proofs and verify them in the browser. Powered by Pyodide/WASM — no backend, no data sent to any server.">
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/stele_site.css">
+  <link rel="stylesheet" href="assets/components.css">
+  <link rel="stylesheet" href="assets/visuals.css">
 </head>
 <body>
 
-<!-- Skip link -->
 <a href="#main-content" class="focus-skip">Skip to main content</a>
 
-<!-- Navigation — full multi-page nav (to be expanded in Prompt 43–44) -->
+<!-- Nav: back to landing + links -->
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
-    <a href="index.html">Home</a>
+    <a href="index.html">Overview</a>
+    <a href="index.html#tutorial">Tutorial</a>
+    <a href="index.html#gallery">Examples</a>
     <a href="theory.html">Theory</a>
     <a href="research.html">Research</a>
     <a href="about.html">About</a>
-    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
-       class="nav-link-gh">GitHub ↗</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener" class="nav-link-gh">GitHub ↗</a>
   </div>
 </nav>
 
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- Studio shell (placeholder — full Studio migration in Prompt 44)         -->
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<main class="page-main" id="main-content">
+<main id="main-content">
 
-  <section class="page-section" aria-labelledby="studio-heading">
-    <div class="section-inner">
-
-      <div class="section-header">
-        <span class="section-label">Proof Workbench</span>
-        <h1 id="studio-heading" class="section-heading">
-          Stele Studio
-          <span class="badge badge-stable">Stable</span>
-        </h1>
-        <p class="section-sub" style="font-family:var(--font-sans)">
-          Write structured natural-deduction proofs. The trusted kernel checks each
-          inference step for logical validity. Runs entirely in the browser via
-          Pyodide/WASM — no backend, no data transmitted.
-        </p>
-      </div>
-
-      <!-- Studio migration notice -->
-      <div class="callout callout-info" style="margin-bottom:2rem;max-width:680px">
-        <span class="callout-label">In progress — Prompt 44</span>
-        <p>
-          The full Studio workbench is currently available on the
-          <a href="index.html#studio">main page</a> (§ Studio section).
-          This dedicated page will host the workbench after it is separated from
-          the landing in Prompt 44.
-        </p>
-      </div>
-
-      <!-- Feature status table -->
-      <div style="max-width:680px">
-        <table style="width:100%;border-collapse:collapse;font-size:.82rem;font-family:var(--font-sans)">
-          <thead>
-            <tr style="border-bottom:1px solid var(--border)">
-              <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:500">Feature</th>
-              <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:500">Status</th>
-              <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:500">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom:1px solid var(--surf2)">
-              <td style="padding:8px 10px;color:var(--text)">Verify</td>
-              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
-              <td style="padding:8px 10px;color:var(--muted)">Kernel-checked; 5 built-in logics</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--surf2)">
-              <td style="padding:8px 10px;color:var(--text)">Diagnose</td>
-              <td style="padding:8px 10px"><span class="badge badge-untrusted">Untrusted</span></td>
-              <td style="padding:8px 10px;color:var(--muted)">Structural advisory; no kernel trust</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--surf2)">
-              <td style="padding:8px 10px;color:var(--text)">Dependency Graph</td>
-              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
-              <td style="padding:8px 10px;color:var(--muted)">DOT output of proof structure</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--surf2)">
-              <td style="padding:8px 10px;color:var(--text)">Matrix Semantics</td>
-              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
-              <td style="padding:8px 10px;color:var(--muted)">K3, LP, Boolean soundness checks</td>
-            </tr>
-            <tr style="border-bottom:1px solid var(--surf2)">
-              <td style="padding:8px 10px;color:var(--text)">World Lattice</td>
-              <td style="padding:8px 10px"><span class="badge badge-stable">Stable</span></td>
-              <td style="padding:8px 10px;color:var(--muted)">Proposition-level independence demo</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 10px;color:var(--text)">Kripke Countermodels</td>
-              <td style="padding:8px 10px"><span class="badge badge-experimental">Experimental</span></td>
-              <td style="padding:8px 10px;color:var(--muted)">Bounded ≤4 worlds; absence ≠ validity</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- CTA to current studio -->
-      <div style="margin-top:2rem">
-        <a href="index.html#studio" class="btn btn-primary">
-          Open Studio on main page ↑
-        </a>
-        <span style="margin-left:1rem;font-size:.78rem;color:var(--muted);font-family:var(--font-sans)">
-          Full workbench migration coming in Prompt 44.
-        </span>
-      </div>
-
+<!-- Studio header — compact, no marketing hero -->
+<div class="studio-page-header">
+  <div class="section-inner">
+    <h1 id="studio-heading" class="studio-page-title">
+      Stele Studio
+      <span class="badge badge-stable">Stable</span>
+    </h1>
+    <p class="studio-page-subtitle">
+      Write structured natural-deduction proofs. The trusted kernel checks each
+      inference step for logical validity — entirely in your browser via Pyodide/WASM.
+    </p>
+    <div class="studio-trust-bar" role="note" aria-label="Execution trust model">
+      <span class="trust-pill trust-pill--kernel">kernel.py — trusted</span>
+      <span class="trust-pill trust-pill--untrusted">diagnostics / hints — untrusted</span>
+      <span class="trust-pill trust-pill--local">browser-local · no backend · proof text not transmitted</span>
     </div>
-  </section>
+  </div>
+</div>
+
+<div class="section-inner section-inner--wide">
+
+  <!-- Pyodide loading banner -->
+  <div id="studio-loading" class="studio-loading-banner" role="status" aria-live="polite">
+    <div class="studio-loading-inner">
+      <span id="loading-step" class="studio-loading-msg">
+        Initialising Pyodide runtime (~8 MB on first visit)…
+      </span>
+      <div class="loading-bar-wrap">
+        <div class="loading-bar" id="loading-bar"></div>
+      </div>
+      <span class="studio-loading-note">
+        All verification runs locally · no data sent to any server
+      </span>
+    </div>
+  </div>
+
+  <!-- Studio chrome (same as what was in index.html §4) -->
+  <div class="studio-chrome" id="studio-chrome">
+
+    <!-- Privacy notice -->
+    <div class="privacy-bar" role="note">
+      <strong>100% local</strong>
+      — All proof checking runs in this browser via Pyodide/WASM.
+      No proof text is transmitted to any server. No backend.
+      <span class="privacy-badge">WASM · LOCAL</span>
+    </div>
+
+    <!-- Status bar -->
+    <div id="status-bar" class="studio-status-bar" style="display:none"
+         role="status" aria-live="polite"></div>
+
+    <!-- Tab bar -->
+    <nav class="tab-bar" role="tablist" aria-label="Studio panels">
+      <button class="tab-btn active" role="tab" aria-selected="true"
+              id="tab-verify-label" data-tab="verify" aria-controls="panel-verify">VERIFY</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              id="tab-diagnose-label" data-tab="diagnose" aria-controls="panel-diagnose">DIAGNOSE</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              id="tab-graph-label" data-tab="graph" aria-controls="panel-graph">GRAPH</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              id="tab-semantics-label" data-tab="semantics" aria-controls="panel-semantics">SEMANTICS</button>
+      <button class="tab-btn" role="tab" aria-selected="false"
+              id="tab-examples-label" data-tab="examples" aria-controls="panel-examples">EXAMPLES</button>
+    </nav>
+
+    <div class="main">
+
+      <!-- VERIFY panel -->
+      <section id="panel-verify" class="panel active" role="tabpanel" aria-labelledby="tab-verify-label">
+        <div class="toolbar">
+          <label for="logic-select">Logic:</label>
+          <select id="logic-select" aria-label="Select proof logic">
+            <option value="intuitionistic_prop">Intuitionistic</option>
+            <option value="classical_prop">Classical</option>
+          </select>
+          <button class="btn btn-primary" id="btn-check" data-stele
+                  aria-label="Run proof check (Ctrl+Enter)">
+            ▶ Run Check
+          </button>
+          <span class="kbd-hint" aria-hidden="true">Ctrl+Enter</span>
+        </div>
+
+        <textarea id="proof-input" class="proof-editor"
+                  spellcheck="false" autocomplete="off" autocorrect="off"
+                  aria-label="Proof editor — write your natural-deduction proof here"
+                  placeholder="theorem identity:
+  suppose h: P
+    have h2: P by copy h
+  have r: P -> P by imp_intro h h2
+  conclude P -> P by r"></textarea>
+
+        <div id="check-result" class="result-box" role="status" aria-live="polite"></div>
+
+        <details class="lang-ref">
+          <summary>Language quick reference</summary>
+          <div class="lang-ref-body">
+            <code>theorem NAME [using LOGIC]:</code> theorem header<br>
+            <code>assume LABEL: FORMULA</code> introduce assumption<br>
+            <code>suppose LABEL: FORMULA</code> subproof assumption<br>
+            <code>have LABEL: FORMULA by RULE REFS…</code> derive step<br>
+            <code>conclude FORMULA by LABEL</code> final conclusion<br><br>
+            Rules:
+            <code class="r-i">mp</code>
+            <code class="r-i">copy</code>
+            <code class="r-i">imp_intro</code>
+            <code class="r-i">and_intro</code>
+            <code class="r-i">and_elim_left</code>
+            <code class="r-i">and_elim_right</code>
+            <code class="r-i">or_intro_left</code>
+            <code class="r-i">or_intro_right</code>
+            <code class="r-i">or_elim</code>
+            <code class="r-i">neg_intro</code>
+            <code class="r-i">neg_elim</code>
+            <code class="r-i">ex_falso</code><br>
+            Classical only:
+            <code class="r-c">dne</code>
+            <code class="r-c">lem</code>
+            <code class="r-c">pbc</code>
+          </div>
+        </details>
+      </section>
+
+      <!-- DIAGNOSE panel -->
+      <section id="panel-diagnose" class="panel" role="tabpanel" aria-labelledby="tab-diagnose-label">
+        <div class="toolbar">
+          <p class="panel-intro">
+            Multi-pass structural analysis of the proof in the Verify panel.
+          </p>
+          <button class="btn btn-primary" id="btn-diagnose" data-stele>
+            ▶ Run Diagnostics
+          </button>
+        </div>
+        <div id="diag-result" aria-live="polite" aria-atomic="false"></div>
+      </section>
+
+      <!-- GRAPH panel -->
+      <section id="panel-graph" class="panel" role="tabpanel" aria-labelledby="tab-graph-label">
+        <div class="toolbar">
+          <p class="panel-intro">
+            Builds the proof dependency graph and outputs DOT notation.
+            Paste into
+            <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank"
+               rel="noopener">Graphviz Online ↗</a>
+            to visualise.
+          </p>
+          <button class="btn btn-primary" id="btn-graph" data-stele>
+            ▶ Build Graph
+          </button>
+        </div>
+        <pre id="graph-dot" class="dot-output" style="display:none"
+             aria-live="polite"></pre>
+        <div id="graph-nodes" class="graph-nodes"></div>
+      </section>
+
+      <!-- SEMANTICS panel -->
+      <section id="panel-semantics" class="panel" role="tabpanel" aria-labelledby="tab-semantics-label">
+
+        <div class="sem-section">
+          <div class="sem-title">Rule Soundness</div>
+          <p class="panel-intro">
+            Check whether each inference rule is sound under a semantic matrix.
+            <strong>⊨</strong> (semantic) is separate from <strong>⊢</strong> (syntactic).
+          </p>
+          <div class="toolbar">
+            <label for="sem-logic-select">Logic:</label>
+            <select id="sem-logic-select">
+              <option value="classical_prop">Classical</option>
+              <option value="intuitionistic_prop">Intuitionistic</option>
+            </select>
+            <label for="sem-matrix-select">Matrix:</label>
+            <select id="sem-matrix-select">
+              <option value="K3">K3 (strong Kleene)</option>
+              <option value="LP">LP (Logic of Paradox)</option>
+              <option value="boolean">Boolean (classical)</option>
+            </select>
+            <button class="btn btn-secondary" id="btn-soundness" data-stele>
+              ▶ Check Soundness
+            </button>
+          </div>
+          <div id="soundness-result" aria-live="polite" aria-atomic="false"></div>
+        </div>
+
+        <div class="sem-section">
+          <div class="sem-title">World Lattice</div>
+          <p class="panel-intro">
+            Checks a formula's semantic status across Γ, Γ+φ, and Γ+¬φ worlds.
+            A proposition-level independence demonstration — not set-theoretic forcing.
+          </p>
+          <div class="toolbar">
+            <label for="lattice-input">Formula:</label>
+            <input id="lattice-input" type="text" value="P or not P"
+                   class="lattice-input-field"
+                   placeholder="e.g. P or not P"
+                   aria-label="Formula for world lattice check">
+            <button class="btn btn-secondary" id="btn-lattice" data-stele>
+              ▶ Run Lattice
+            </button>
+          </div>
+          <div id="lattice-result" aria-live="polite" aria-atomic="false"></div>
+        </div>
+
+        <div class="sem-section">
+          <div class="sem-title">Kripke Countermodel <span class="badge badge-experimental" style="font-size:.65rem">Experimental</span></div>
+          <p class="panel-intro">
+            Bounded finite Kripke countermodel search for intuitionistic propositional logic.
+            Finds a world where a formula fails to be forced. Propositional formulas only.
+            Bounded search — <em>absence of a countermodel is not a proof of validity</em>.
+          </p>
+          <div class="toolbar">
+            <label for="kripke-input">Formula:</label>
+            <input id="kripke-input" type="text" value="P or not P"
+                   class="lattice-input-field"
+                   placeholder="e.g. P or not P"
+                   aria-label="Formula for Kripke countermodel search">
+            <label for="kripke-worlds-select">Max worlds:</label>
+            <select id="kripke-worlds-select" style="width:auto">
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+            </select>
+            <button class="btn btn-secondary" id="btn-kripke" data-stele>
+              ▶ Find Countermodel
+            </button>
+          </div>
+          <div id="kripke-result" aria-live="polite" aria-atomic="false"></div>
+        </div>
+      </section>
+
+      <!-- EXAMPLES panel -->
+      <section id="panel-examples" class="panel" role="tabpanel" aria-labelledby="tab-examples-label">
+        <p class="panel-intro">
+          Click an example to load it into the Verify editor.
+          Try switching between <em>Intuitionistic</em> and <em>Classical</em>
+          to see the same proof accepted or rejected.
+        </p>
+        <div id="examples-grid" class="example-grid">
+          <p class="dim-text">Loading…</p>
+        </div>
+      </section>
+
+    </div><!-- /.main -->
+  </div><!-- /.studio-chrome -->
+
+</div><!-- /.section-inner -->
 
 </main>
 
-<!-- Footer -->
 <footer class="site-footer" aria-label="Site footer">
   <div class="section-inner">
     <div class="footer-inner">
       <span class="footer-brand">STELE</span>
       <span class="footer-sep">·</span>
       <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="index.html">Overview</a>
       <span class="footer-sep">·</span>
       <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
     </div>
@@ -138,6 +293,8 @@
     </div>
   </div>
 </footer>
+
+<script src="assets/stele-pyodide.js"></script>
 
 </body>
 </html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stele — Technical Overview</title>
+<meta name="description"
+  content="Stele v1.3 technical overview: what it is, what is stable, what is experimental, what is not claimed. Two-minute summary for reviewers and advisors.">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/stele_site.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/visuals.css">
+</head>
+<body>
+
+<a href="#main-content" class="focus-skip">Skip to main content</a>
+
+<nav class="site-nav" aria-label="Site navigation">
+  <a class="nav-brand" href="index.html">STELE</a>
+  <div class="nav-links">
+    <a href="index.html">Overview</a>
+    <a href="studio.html">Studio</a>
+    <a href="theory.html">Theory</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="research.html">Research</a>
+    <a href="foundations.html">Foundations</a>
+    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+       class="nav-link-gh">GitHub ↗</a>
+  </div>
+</nav>
+
+<main class="page-main" id="main-content">
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="overview-heading"
+  style="background:radial-gradient(ellipse at 50% 0%,rgba(124,92,255,.05) 0%,transparent 55%)">
+  <span class="page-motif" aria-hidden="true">⊢</span>
+  <div class="section-inner" style="position:relative;z-index:1">
+    <span class="section-label">For Reviewers &amp; Advisors</span>
+    <h1 id="overview-heading" class="section-heading">Technical Overview</h1>
+    <p class="section-sub" style="font-family:var(--font-sans);max-width:640px">
+      What Stele is, what it can do today, and what remains experimental —
+      in two minutes. All capabilities carry explicit status labels.
+      No invented metrics.
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:1.5rem">
+      <a href="studio.html" class="btn btn-primary">Open Live Demo ↗</a>
+      <a href="https://github.com/re-glow/stele-logic/blob/main/docs/whitepaper.md"
+         target="_blank" rel="noopener" class="btn btn-secondary">Read Whitepaper ↗</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+         class="btn btn-ghost">GitHub Repository ↗</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── §1  What Stele is ─────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="what-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Identity</span>
+      <h2 id="what-heading" class="section-heading">What Stele Is</h2>
+    </div>
+    <div class="prose-body" style="max-width:680px">
+      <p>
+        Stele is a <strong>proof checker and formal verification framework</strong>
+        for natural-deduction proofs. The user writes explicit proof steps in a
+        declarative surface language; the trusted kernel (<code>stele/kernel.py</code>)
+        checks whether each inference step is valid under the declared logic.
+        Stele verifies proofs — it does not search for them.
+      </p>
+      <p>
+        Rules are data (named <code>RuleSchema</code> objects), not hard-wired kernel
+        branches. This means new logics can be added by supplying a rule set, without
+        touching the trusted core. The same proof that passes under classical logic
+        is rejected under intuitionistic logic, exactly as the theory predicts.
+      </p>
+      <p>
+        The trusted core follows the <strong>de Bruijn criterion</strong>: only
+        <code>kernel.py</code> is in the trust boundary. Diagnostics, semantic tools,
+        and proof-state hints are labelled "untrusted" and cannot affect the
+        kernel's validity verdict.
+      </p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:1.5rem">
+      <a href="architecture.html" class="btn btn-ghost">Architecture &amp; Trust Model →</a>
+      <a href="theory.html" class="btn btn-ghost">Theory &amp; Semantics →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── §2  Capability status table ──────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="capabilities-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">v1.3.0</span>
+      <h2 id="capabilities-heading" class="section-heading">Capability Status</h2>
+    </div>
+    <p class="prose-body" style="max-width:640px;margin-bottom:1.5rem;font-family:var(--font-sans)">
+      Every feature carries a status label. Nothing here is inflated.
+    </p>
+
+    <!-- Stable capabilities -->
+    <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:600;
+               color:var(--success);margin:0 0 .75rem">
+      Stable — core checked on every CI run
+    </h3>
+    <div style="overflow-x:auto;margin-bottom:2rem">
+      <table style="width:100%;max-width:880px;border-collapse:collapse;
+                    font-family:var(--font-sans);font-size:var(--text-sm)">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:.45rem .75rem .45rem 0;color:var(--text-secondary);font-weight:500;white-space:nowrap">Capability</th>
+            <th style="text-align:left;padding:.45rem .75rem .45rem 0;color:var(--text-secondary);font-weight:500">How to use</th>
+            <th style="text-align:left;padding:.45rem 0 .45rem 0;color:var(--text-secondary);font-weight:500">Key limitation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Proof script checker</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)"><code>stele check FILE --logic L</code> · Studio Verify</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Propositional fragment only</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">2 built-in logics</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Intuitionistic prop · Classical prop</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Propositional scope; FOL at script level: future</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Structural diagnostics</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Studio Diagnose · <code>stele diagnose</code></td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Untrusted advisory; kernel-recheck required</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Dependency graph</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Studio Graph · <code>stele graph</code></td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">DOT format; render via Graphviz</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Matrix semantics (K3/LP)</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Studio Semantics · <code>stele soundness</code></td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">K3, LP, boolean only</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Proof-term core</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)"><code>stele.core</code> API · <code>stele elaborate</code></td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Intuitionistic prop only; no classical terms</td>
+          </tr>
+          <tr>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Browser Studio (Pyodide)</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Hosted via GitHub Pages · no install</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Requires internet for Pyodide CDN (~8 MB, cached)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Experimental capabilities -->
+    <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:600;
+               color:var(--accent2);margin:0 0 .75rem">
+      Experimental — behavior may change; documented limitations
+    </h3>
+    <div style="overflow-x:auto;margin-bottom:2rem">
+      <table style="width:100%;max-width:880px;border-collapse:collapse;
+                    font-family:var(--font-sans);font-size:var(--text-sm)">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:.45rem .75rem .45rem 0;color:var(--text-secondary);font-weight:500;white-space:nowrap">Capability</th>
+            <th style="text-align:left;padding:.45rem .75rem .45rem 0;color:var(--text-secondary);font-weight:500">Status note</th>
+            <th style="text-align:left;padding:.45rem 0 .45rem 0;color:var(--text-secondary);font-weight:500">Key limitation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Kripke countermodel search</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Bounded finite search</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Absence of countermodel ≠ proof of validity; ≤4 worlds</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Proof certificates &amp; minicheck</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Independent re-verification path</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Same process; not formally verified; JSON format v1</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">FOL proof-term fragment</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">ForallIntro/Elim/ExistsIntro/Elim</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">No surface syntax; object-var de Bruijn incomplete</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(35,27,53,.55)">
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">Proof-state hints</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)"><strong style="color:var(--amber)">Untrusted</strong> — structural context only</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">No proof search; all suggestions require kernel-recheck</td>
+          </tr>
+          <tr>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--text);white-space:nowrap">ML baseline · Lean bridge</td>
+            <td style="padding:.5rem .75rem .5rem 0;color:var(--muted)">Optional — outside trusted path</td>
+            <td style="padding:.5rem 0 .5rem 0;color:var(--muted)">Not included in browser build; isolated from kernel</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── §3  Honesty / not claimed ─────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="honesty-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Scope</span>
+      <h2 id="honesty-heading" class="section-heading">What Is Not Claimed</h2>
+    </div>
+    <p class="prose-body" style="max-width:640px;margin-bottom:1.5rem;font-family:var(--font-sans)">
+      These are deliberate scope limitations, not future bugs. Stele is designed
+      to be a small, auditable proof checker — not a production theorem prover.
+    </p>
+    <div class="trust-grid" style="max-width:880px">
+      <div class="trust-card">
+        <div class="trust-card-title">No proof search</div>
+        <div class="trust-card-body">
+          Stele verifies proofs the user writes. It does not search for proofs,
+          generate proof strategies, or fill in missing steps. Every step must be
+          explicitly stated and named.
+        </div>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-title">No machine-checked metatheory</div>
+        <div class="trust-card-body">
+          Metatheory claims (subject reduction, normalization, consistency) are
+          supported by regression tests and proof sketches.
+          Tests are evidence, not machine-verified proof.
+        </div>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-title">Propositional scope only</div>
+        <div class="trust-card-body">
+          The proof-script language handles propositional logic only.
+          First-order quantifiers (∀, ∃) exist in the proof-term layer
+          (<code>stele.core</code>) but are not yet exposed at the surface level.
+        </div>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-title">No "fully offline" mode</div>
+        <div class="trust-card-body">
+          The browser Studio requires an internet connection to load Pyodide from
+          CDN (~8 MB, cached after first visit). Fully offline mode is listed
+          as future work.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── §4  Metatheory status ─────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="metatheory-heading">
+  <div class="section-inner">
+    <h2 id="metatheory-heading" class="section-heading" style="margin-bottom:1.25rem">
+      Metatheory Status
+    </h2>
+    <div class="callout callout-warning" style="max-width:680px;margin-bottom:1.5rem">
+      <span class="callout-label">Important — status of theoretical claims</span>
+      <p>
+        Stele's proof-term core makes seven metatheory claims documented in
+        <a href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md"
+           target="_blank" rel="noopener"><code>docs/metatheory.md</code> ↗</a>.
+        These include subject reduction, normalization, and consistency.
+        All claims are supported by regression and property-based tests, plus
+        written proof sketches. <strong>None is machine-checked by a proof
+        assistant (Lean, Coq, Agda).</strong> The tests catch implementation bugs;
+        they do not constitute mathematical proofs.
+      </p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <a href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md"
+         target="_blank" rel="noopener" class="btn btn-ghost">
+        Formal Spec (semantics.md) ↗
+      </a>
+      <a href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md"
+         target="_blank" rel="noopener" class="btn btn-ghost">
+        Metatheory Claims ↗
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── §5  Quick links ────────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="links-heading">
+  <div class="section-inner">
+    <h2 id="links-heading" class="section-heading" style="margin-bottom:1.25rem">
+      Quick Links
+    </h2>
+    <div class="trust-grid" style="max-width:880px">
+      <div class="trust-card">
+        <div class="trust-card-title">Live Demo</div>
+        <div class="trust-card-body" style="margin-bottom:.75rem">
+          Write and verify proofs in your browser — no install.
+          Full trusted kernel via Pyodide/WASM.
+        </div>
+        <a href="studio.html" class="btn btn-primary" style="font-size:.82rem">Open Studio →</a>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-title">Technical Whitepaper</div>
+        <div class="trust-card-body" style="margin-bottom:.75rem">
+          Architecture, formal semantics, metatheory claims, experimental features,
+          and known limitations. All claims carry status labels.
+        </div>
+        <a href="https://github.com/re-glow/stele-logic/blob/main/docs/whitepaper.md"
+           target="_blank" rel="noopener" class="btn btn-secondary" style="font-size:.82rem">
+          Read Whitepaper ↗
+        </a>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-title">Source Repository</div>
+        <div class="trust-card-body" style="margin-bottom:.75rem">
+          Full source code, test suite (2,512 tests), formal spec, metatheory notes,
+          and BibTeX references on GitHub.
+        </div>
+        <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+           class="btn btn-ghost" style="font-size:.82rem">GitHub ↗</a>
+      </div>
+      <div class="trust-card">
+        <div class="trust-card-title">Architecture &amp; Theory</div>
+        <div class="trust-card-body" style="margin-bottom:.75rem">
+          Trust boundary diagram, Curry–Howard proof-term layer, matrix
+          semantics, Kripke models, and formal grammar.
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <a href="architecture.html" class="btn btn-ghost" style="font-size:.82rem">Architecture →</a>
+          <a href="theory.html" class="btn btn-ghost" style="font-size:.82rem">Theory →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer" aria-label="Site footer">
+  <div class="section-inner">
+    <div class="footer-inner">
+      <span class="footer-brand">STELE</span>
+      <span class="footer-sep">·</span>
+      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="footer-note">
+      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

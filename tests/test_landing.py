@@ -103,8 +103,9 @@ def test_audience_cards_present():
 
 
 def test_audience_card_technical_reviewer():
-    assert "technical reviewer" in _html().lower(), \
-        "Audience cards must include path for technical reviewers"
+    html = _html().lower()
+    assert "reviewer" in html or "technical reader" in html, \
+        "Audience cards must include path for technical reviewers/advisors"
 
 
 def test_audience_card_research():

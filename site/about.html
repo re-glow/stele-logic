@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stele — About</title>
+<title>Stele — About the Project</title>
 <meta name="description"
-  content="About the Stele project: a formal verification framework for mathematical reasoning built by Jaehwan Kim.">
+  content="About Stele: a formal verification framework for mathematical reasoning, built as an independent research project by Jaehwan Kim.">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
 <link rel="stylesheet" href="assets/components.css">
@@ -18,10 +18,12 @@
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
-    <a href="index.html">Home</a>
     <a href="studio.html">Studio</a>
     <a href="theory.html">Theory</a>
+    <a href="architecture.html">Architecture</a>
     <a href="research.html">Research</a>
+    <a href="foundations.html">Foundations</a>
+    <a href="about.html" aria-current="page">About</a>
     <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
        class="nav-link-gh">GitHub ↗</a>
   </div>
@@ -29,138 +31,597 @@
 
 <main class="page-main" id="main-content">
 
-  <section class="page-section" aria-labelledby="about-heading">
-    <div class="section-inner">
-      <span class="section-label">About</span>
-      <h1 id="about-heading" class="section-heading">About the Project</h1>
-      <p class="section-sub" style="font-family:var(--font-sans)">
-        Stele is a formal verification framework for mathematical reasoning,
-        built as an independent research project.
+<!-- ── §1  Hero ──────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="about-heading">
+  <div class="section-inner">
+    <span class="section-label">About the Project</span>
+    <h1 id="about-heading" class="section-heading">
+      Author &amp; Project Story
+    </h1>
+    <p class="section-sub" style="font-family:var(--font-sans);max-width:640px">
+      Stele is an independent research software project by
+      <strong>Jaehwan Kim</strong>, built around proof checking, semantic
+      diagnostics, and the trust boundary of mathematical reasoning.
+    </p>
+    <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);max-width:600px;margin-top:.5rem">
+      This page describes what was built, why, and what the evidence is.
+      The artifact, tests, documentation, and whitepaper are the primary record;
+      this page provides context.
+    </p>
+  </div>
+</section>
+
+<!-- ── §2  Project Story ──────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="story-heading">
+  <div class="section-inner">
+    <h2 id="story-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Project Story
+    </h2>
+
+    <div style="max-width:720px;font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.8;color:var(--text)">
+      <p style="margin-bottom:1.2rem">
+        My interest in mathematical reasoning starts with a question that sounds
+        philosophical but has a precise technical answer: when we say a proof is
+        valid, valid under what rules? Classical logic and intuitionistic logic
+        agree on most inference steps but diverge on a few — double-negation
+        elimination, the law of excluded middle, proof by contradiction. The
+        same formula can be provable in one system and unprovable in another,
+        and that isn't ambiguity: it's a fact about rule sets.
       </p>
-
-      <div class="callout callout-info" style="max-width:640px;margin-bottom:2rem">
-        <span class="callout-label">Page status — Prompt 49</span>
-        <p>
-          This page is a skeleton. Creator profile, project timeline, and
-          audience-specific narrative will be written in Prompt 49.
-        </p>
-      </div>
+      <p style="margin-bottom:1.2rem">
+        I wanted to explore this concretely, with running code rather than
+        abstract descriptions. The question became: can I build a small,
+        auditable checker where switching the logic is a runtime parameter,
+        not a reimplementation? Where the checker is simple enough to read and
+        trust, but expressive enough to show the classical/intuitionistic
+        difference working?
+      </p>
+      <p style="margin-bottom:1.2rem">
+        That question led to Stele's core design: a trusted kernel
+        (<code>stele/kernel.py</code>) that performs only syntactic
+        rule-schema matching, with rule sets as pure data objects
+        (<code>stele/logic.py</code>). Adding a logic means adding data,
+        not modifying the verifier. The kernel stays small and auditable;
+        the rule sets are independently inspectable.
+      </p>
+      <p style="margin-bottom:1.2rem">
+        From there the project grew in layers: structural diagnostics that
+        locate proof errors without being trusted with correctness; a Kripke
+        countermodel search that demonstrates why intuitionistic logic rejects
+        certain formulas; a proof-term core connecting the proof language to
+        the Curry–Howard correspondence; matrix semantics (K3, LP, Boolean) for
+        comparing rules across many-valued interpretations; and finally a
+        browser-local Studio that runs the entire checker in Pyodide/WebAssembly
+        with no backend.
+      </p>
+      <p>
+        The deeper theoretical motivation — a personal research program called
+        Yurihak (유리학) — investigates logical rule-relativity as a
+        foundational question. That program isn't implemented as a Stele logic
+        yet; it's the research horizon that shaped the multi-logic architecture.
+        See the <a href="foundations.html" style="color:var(--accent)">Foundations page</a>
+        for the full picture of what is implemented, what is motivated, and what
+        is planned.
+      </p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Project overview -->
-  <section class="page-section page-section--alt" aria-labelledby="project-heading">
-    <div class="section-inner">
-      <h2 id="project-heading" class="section-heading" style="margin-bottom:1.5rem">
-        The Project
-      </h2>
-      <div class="skeleton-notice" style="max-width:680px">
-        <strong>Planned content — Prompt 49</strong>
-        What Stele is, why it was built, what problem it solves.
-        Relationship to Yurihak / logical pluralism research.
-        First-person narrative connecting the intellectual motivation to the implementation.
+<!-- ── §3  What I Built ───────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="built-heading">
+  <div class="section-inner">
+    <h2 id="built-heading" class="section-heading" style="margin-bottom:var(--space-2)">
+      What Was Built
+    </h2>
+    <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);max-width:600px;margin-bottom:var(--space-6)">
+      Each item below is in the public repository with tests and documentation.
+      Status labels match the rest of the site.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:1020px">
+
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Proof checker (kernel)</span>
+          <span class="badge badge-stable">Stable</span>
+        </div>
+        <div class="trust-card-body">
+          A small (~400 line) trusted kernel that checks natural-deduction
+          proof scripts by syntactic pattern matching. Zero runtime dependencies.
+          12 intuitionistic rules + 3 classical rules. Rule sets are data, not
+          code — the kernel never changes to add a new logic.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/kernel.py · stele/logic.py
+        </div>
+        <a href="theory.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Theory →</a>
       </div>
-    </div>
-  </section>
 
-  <!-- Timeline -->
-  <section class="page-section" aria-labelledby="timeline-heading">
-    <div class="section-inner">
-      <h2 id="timeline-heading" class="section-heading" style="margin-bottom:1.5rem">
-        Timeline
-      </h2>
-      <div class="skeleton-notice" style="max-width:680px">
-        <strong>Planned content — Prompt 49</strong>
-        Project history from initial proof-checker concept through v1.0 and v1.1.
-        Key milestones: kernel, matrix semantics, proof terms, Kripke, whitepaper.
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Browser Studio</span>
+          <span class="badge badge-stable">Stable</span>
+        </div>
+        <div class="trust-card-body">
+          A browser-local Studio running the full checker via Pyodide/WebAssembly.
+          No backend server. No data transmitted. Supports verify, diagnose,
+          dependency graph, Kripke, and semantic queries. 15 curated gallery examples.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/browser.py · site/studio.html
+        </div>
+        <a href="studio.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Open Studio →</a>
       </div>
-    </div>
-  </section>
 
-  <!-- Audiences -->
-  <section class="page-section page-section--alt" aria-labelledby="audiences-heading">
-    <div class="section-inner">
-      <h2 id="audiences-heading" class="section-heading" style="margin-bottom:1.5rem">
-        Who Is Stele For?
-      </h2>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:900px">
-
-        <div class="trust-card" style="border-left:3px solid rgba(0,232,255,.35)">
-          <div class="trust-card-header">
-            <span class="trust-card-name">Technical reviewer</span>
-          </div>
-          <div class="trust-card-body">
-            Inspect the trust boundary: 142-line kernel, rule-data separation,
-            zero runtime dependencies, 1852 regression tests.
-            Read the formal semantics and metatheory documentation.
-          </div>
-          <a href="architecture.html" class="btn btn-ghost" style="align-self:flex-start;margin-top:.5rem">
-            Architecture →
-          </a>
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Structural diagnostics</span>
+          <span class="badge badge-untrusted">Untrusted</span>
         </div>
-
-        <div class="trust-card" style="border-left:3px solid rgba(176,106,255,.35)">
-          <div class="trust-card-header">
-            <span class="trust-card-name">Teacher / student</span>
-          </div>
-          <div class="trust-card-body">
-            Use the browser Studio to demonstrate classical vs. intuitionistic logic
-            live. 15 curated examples with expected outcomes. No installation needed.
-          </div>
-          <a href="studio.html" class="btn btn-ghost" style="align-self:flex-start;margin-top:.5rem">
-            Open Studio →
-          </a>
+        <div class="trust-card-body">
+          Four-pass structural analysis that classifies proof errors: missing
+          hypotheses, invalid transitions, undefined symbols, unused assumptions,
+          circular dependencies. Nine stable error codes. Explicitly outside the
+          trusted kernel path.
         </div>
-
-        <div class="trust-card" style="border-left:3px solid rgba(0,255,159,.35)">
-          <div class="trust-card-header">
-            <span class="trust-card-name">Researcher</span>
-          </div>
-          <div class="trust-card-body">
-            Read the whitepaper. Explore the proof-term calculus (Curry–Howard),
-            matrix semantics (K3/LP), and Kripke countermodel search.
-            All claims carry explicit status labels and test evidence.
-          </div>
-          <a href="research.html" class="btn btn-ghost" style="align-self:flex-start;margin-top:.5rem">
-            Research →
-          </a>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/diagnostics.py
         </div>
-
+        <a href="architecture.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Architecture →</a>
       </div>
-    </div>
-  </section>
 
-  <!-- Metrics snapshot -->
-  <section class="page-section" aria-labelledby="metrics-heading">
-    <div class="section-inner">
-      <h2 id="metrics-heading" class="section-heading" style="margin-bottom:1.5rem">
-        By the Numbers
-      </h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;max-width:700px">
-        <div class="metric-card">
-          <div class="metric-value">1852</div>
-          <div class="metric-label">Regression tests</div>
-          <div class="metric-note">4 skipped (Hypothesis optional)</div>
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Proof dependency graph</span>
+          <span class="badge badge-stable">Stable</span>
         </div>
-        <div class="metric-card">
-          <div class="metric-value">142</div>
-          <div class="metric-label">Kernel lines</div>
-          <div class="metric-note">Trusted core (stdlib only)</div>
+        <div class="trust-card-body">
+          Records which proof steps depend on which prior steps and produces
+          Graphviz DOT output for visualization. Available in the Studio and
+          via CLI.
         </div>
-        <div class="metric-card">
-          <div class="metric-value">5</div>
-          <div class="metric-label">Built-in logics</div>
-          <div class="metric-note">IPL, classical, K3, LP, minimal</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">0</div>
-          <div class="metric-label">Runtime deps</div>
-          <div class="metric-note">stdlib only; pytest for tests</div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/proofgraph.py
         </div>
       </div>
+
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Kripke countermodel search</span>
+          <span class="badge badge-experimental">Experimental</span>
+        </div>
+        <div class="trust-card-body">
+          Searches Kripke frames (up to a configurable bound) for countermodels
+          to intuitionistic propositional logic formulas. Shows why LEM and
+          double-negation elimination are not IPL-provable. Bounded search — no
+          countermodel found does not imply the formula is valid.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/kripke.py
+        </div>
+        <a href="theory.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Theory →</a>
+      </div>
+
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">K3 / LP / Boolean matrix semantics</span>
+          <span class="badge badge-demo">Demo</span>
+        </div>
+        <div class="trust-card-body">
+          Many-valued matrix evaluators (strong Kleene, Logic of Paradox,
+          classical Boolean) with a rule-soundness checker. Demonstrates the
+          separation between syntactic derivability (⊢) and semantic validity
+          (⊨). LEM is classically provable but not a K3 tautology.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/matrix.py · stele/world.py
+        </div>
+        <a href="theory.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Theory →</a>
+      </div>
+
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Proof-term core / Curry–Howard</span>
+          <span class="badge badge-experimental">Experimental</span>
+        </div>
+        <div class="trust-card-body">
+          An experimental proof-term calculus for intuitionistic propositional
+          logic: bidirectional type checking, β-reduction, de Bruijn indices,
+          and script-to-term elaboration. Connects verified proof scripts to
+          typed proof witnesses.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/core/ · stele/elaborate.py
+        </div>
+        <a href="theory.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Theory →</a>
+      </div>
+
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Proof certificates &amp; minicheck</span>
+          <span class="badge badge-experimental">Experimental</span>
+        </div>
+        <div class="trust-card-body">
+          After kernel verification, a versioned JSON certificate is emitted.
+          A small independent re-checker (<code>minicheck.py</code>) verifies the
+          certificate without importing the kernel or parser — code-level isolation
+          within the same Python process.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          stele/certificate.py · stele/minicheck.py
+        </div>
+        <a href="architecture.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Architecture →</a>
+      </div>
+
+      <div class="trust-card">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Whitepaper &amp; research notes</span>
+          <span class="badge badge-experimental">Draft</span>
+        </div>
+        <div class="trust-card-body">
+          A technical whitepaper (LaTeX source in the repository) covering the
+          system design, semantics, proof-term calculus, and evaluation.
+          A structured research-notes packet documents all claims with evidence
+          paths, limitations, and a GPT-oriented paper-drafting guide.
+        </div>
+        <div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">
+          paper/ · docs/research-notes/
+        </div>
+        <a href="research.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Research →</a>
+      </div>
+
     </div>
-  </section>
+  </div>
+</section>
+
+<!-- ── §4  My Role ────────────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="role-heading">
+  <div class="section-inner">
+    <h2 id="role-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      My Role
+    </h2>
+
+    <div style="max-width:700px;font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.8;color:var(--text)">
+      <p style="margin-bottom:1.2rem">
+        I designed the project direction, architecture, and claim boundaries.
+        The core decisions — what the trusted kernel may and may not do, how
+        rule sets are separated from the verifier, what status labels to attach
+        to each feature, what counts as evidence — are mine.
+      </p>
+      <p style="margin-bottom:1.2rem">
+        I used AI coding tools as implementation assistants throughout
+        development. The scope of each feature, the testing requirements,
+        the honesty constraints (no invented metrics, no overclaimed
+        metatheory), and the public-release review workflow were my
+        responsibility. Every accepted output was checked through the test
+        suite and manually reviewed against the stated design invariants.
+      </p>
+      <p style="margin-bottom:1.2rem">
+        Concretely: I wrote the formal specification in
+        <code>docs/semantics.md</code>, the metatheory claims and their
+        status in <code>docs/metatheory.md</code>, the design decisions in
+        <code>DECISIONS.md</code>, the claim-evidence matrix in
+        <code>docs/research-notes/claim-evidence-matrix.md</code>, and the
+        provenance map in <code>docs/provenance-map.md</code>. I audited
+        every public claim on the site and in the whitepaper for
+        accuracy and appropriate hedging.
+      </p>
+      <p>
+        The project is independent — no institutional affiliation, no team,
+        no funding. It grew from a personal interest in the formal structure
+        of logical reasoning and a desire to build something precise and
+        auditable rather than large and impressive-looking.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── §5  Research Motivation ───────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="motivation-heading">
+  <div class="section-inner">
+    <h2 id="motivation-heading" class="section-heading" style="margin-bottom:var(--space-4)">
+      Research Motivation
+    </h2>
+
+    <div style="max-width:700px;font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.8;color:var(--text);margin-bottom:var(--space-6)">
+      <p style="margin-bottom:1.2rem">
+        Stele's multi-logic architecture is motivated by a personal
+        foundational research program — Yurihak (유리학) — which investigates
+        the conditions under which logical rule systems, semantic frameworks,
+        and proof obligations are themselves relative to a choice of foundations.
+        The question isn't "which logic is correct" but "what is it to choose a
+        logic, and what follows from that choice."
+      </p>
+      <p>
+        Stele demonstrates one concrete aspect of this: that logical validity is
+        relative to the chosen rule set. The same formula is provable under
+        classical rules and not provable under intuitionistic rules. That's
+        implemented, testable, and runs in a browser.
+        The deeper formalization of Yurihak as a Stele logic is future work.
+      </p>
+    </div>
+
+    <div class="callout callout-info" style="max-width:560px">
+      <span class="callout-label">Scope note</span>
+      <p>
+        Yurihak is research motivation, not a feature of the current software.
+        Stele does not implement Yurihak as a formal logic and does not claim
+        to prove philosophical theses about logical relativism.
+        See the <a href="foundations.html">Foundations page</a> for the full
+        implemented / motivation / future separation.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── §6  Evidence of Seriousness ──────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="evidence-heading">
+  <div class="section-inner">
+    <h2 id="evidence-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Evidence
+    </h2>
+    <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);max-width:540px;margin-bottom:var(--space-6)">
+      The items below are in the public repository or accessible at the links provided.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;max-width:900px">
+
+      <div class="trust-card" style="border-left:3px solid rgba(0,232,255,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Public GitHub repository</span>
+        </div>
+        <div class="trust-card-body">
+          Complete source, history, issues, releases, and GitHub Actions CI.
+          All code is publicly readable.
+        </div>
+        <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+           class="btn btn-ghost" style="align-self:flex-start;margin-top:var(--space-3)">
+          View on GitHub ↗
+        </a>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(0,232,255,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Regression tests in CI</span>
+        </div>
+        <div class="trust-card-body">
+          Over 2,000 regression tests covering the kernel, parser, logic rules,
+          matrix semantics, proof terms, elaboration, diagnostics, gallery
+          examples, and static site checks. Tests run on Python 3.10, 3.11,
+          and 3.12 in GitHub Actions.
+        </div>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(176,106,255,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Formal semantics &amp; metatheory docs</span>
+        </div>
+        <div class="trust-card-body">
+          <code>docs/semantics.md</code> gives the formal grammar, type rules,
+          and reduction rules. <code>docs/metatheory.md</code> documents seven
+          metatheory claims with explicit status (proof sketch / regression
+          test / architecture invariant). Honest about what is and is not
+          machine-checked.
+        </div>
+        <a href="theory.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Theory →</a>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(176,106,255,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Technical whitepaper</span>
+        </div>
+        <div class="trust-card-body">
+          A LaTeX whitepaper (<code>paper/stele-whitepaper.tex</code>) covering
+          architecture, semantics, proof-term calculus, evaluation, and related
+          work. Available in the repository. Companion BibTeX bibliography
+          (<code>paper/references.bib</code>).
+        </div>
+        <a href="research.html" class="btn btn-ghost"
+           style="align-self:flex-start;margin-top:var(--space-3)">Research →</a>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(0,255,159,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Provenance &amp; claim discipline</span>
+        </div>
+        <div class="trust-card-body">
+          Every major claim is mapped to a module path, test path, and
+          explicit status label in
+          <code>docs/provenance-map.md</code> and
+          <code>docs/research-notes/claim-evidence-matrix.md</code>.
+          Unsafe wording to avoid is documented alongside the safe wording
+          for each claim.
+        </div>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(0,255,159,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Research notes packet</span>
+        </div>
+        <div class="trust-card-body">
+          <code>docs/research-notes/</code> contains 12 structured notes
+          covering architecture, semantics, proof terms, matrix/Kripke,
+          ML corpus, foundations, related work, limitations, and a paper
+          outline with figure plan — structured for academic review.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── §7  For Different Readers ─────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="readers-heading">
+  <div class="section-inner">
+    <h2 id="readers-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Where to Start
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;max-width:960px">
+
+      <div class="trust-card" style="border-left:3px solid var(--accent)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Technical readers</span>
+        </div>
+        <div class="trust-card-body">
+          Start with Architecture &amp; Trust (trust boundary, import invariants,
+          dependency policy) and Theory (⊢ vs ⊨, proof terms, Kripke). Then read
+          <code>docs/semantics.md</code> and <code>stele/kernel.py</code> directly.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-3)">
+          <a href="architecture.html" class="btn btn-ghost">Architecture →</a>
+          <a href="theory.html" class="btn btn-ghost">Theory →</a>
+        </div>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(176,106,255,.55)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Teachers &amp; recommenders</span>
+        </div>
+        <div class="trust-card-body">
+          Read the Project Story above, then the Research page (whitepaper
+          summary and scope). The Foundations page explains the theoretical
+          motivation and what is/isn't implemented. The browser Studio can
+          be used to demonstrate the checker live.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-3)">
+          <a href="research.html" class="btn btn-ghost">Research →</a>
+          <a href="foundations.html" class="btn btn-ghost">Foundations →</a>
+        </div>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(0,255,159,.45)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Admissions readers</span>
+        </div>
+        <div class="trust-card-body">
+          The "What Was Built" section above and the Evidence section are the
+          quickest technical summary. The Project Story explains the
+          intellectual path. The Foundations page connects to the broader
+          research direction.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-3)">
+          <a href="foundations.html" class="btn btn-ghost">Foundations →</a>
+        </div>
+      </div>
+
+      <div class="trust-card" style="border-left:3px solid rgba(255,200,0,.35)">
+        <div class="trust-card-header">
+          <span class="trust-card-name">Developers</span>
+        </div>
+        <div class="trust-card-body">
+          Start with the GitHub repository and <code>GUIDE.md</code> for the
+          proof language. <code>CLAUDE.md</code> and
+          <code>docs/development-context.md</code> explain the design
+          invariants, trust boundary, and build system. The CLI covers all
+          features.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:var(--space-3)">
+          <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+             class="btn btn-ghost">GitHub ↗</a>
+          <a href="studio.html" class="btn btn-ghost">Studio →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── §8  Limitations ────────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="limits-heading">
+  <div class="section-inner">
+    <h2 id="limits-heading" class="section-heading" style="margin-bottom:var(--space-4)">
+      Limitations
+    </h2>
+
+    <div class="callout callout-warning" style="max-width:680px;margin-bottom:var(--space-6)">
+      <span class="callout-label">What Stele is not</span>
+      <ul style="font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.8;margin:0;padding-left:1.2rem;color:var(--text)">
+        <li><strong>Not a theorem prover.</strong> Stele checks proofs you write; it does not search for proofs.</li>
+        <li><strong>Not a Lean, Rocq/Coq, or Isabelle replacement.</strong> Those systems have dependent types, tactic languages, large theorem libraries, and machine-checked metatheory. Stele is propositional.</li>
+        <li><strong>Not a full first-order logic system.</strong> The proof-script surface is propositional. FOL is available at the proof-term level only (experimental).</li>
+        <li><strong>Metatheory is not machine-checked.</strong> Claims about subject reduction, normalization, and consistency are supported by regression tests and proof sketches — not by Lean/Coq/Agda verification.</li>
+        <li><strong>Classical bridge is formula-level only.</strong> λμ-calculus / continuation typing for classical proof terms is not implemented.</li>
+        <li><strong>Kripke search is bounded.</strong> Finding no countermodel does not prove the formula is IPL-valid.</li>
+        <li><strong>ML baseline is optional and untrusted.</strong> A small synthetic corpus, Naive Bayes, not representative of real proof corpora.</li>
+        <li><strong>Browser deployment needs Pyodide CDN (~8 MB).</strong> Not fully offline.</li>
+      </ul>
+    </div>
+
+    <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);max-width:540px">
+      For a full limitations list with future-work mapping, see
+      <a href="https://github.com/re-glow/stele-logic/blob/main/docs/research-notes/11-limitations-and-future-work.md"
+         target="_blank" rel="noopener" style="color:var(--accent)">
+        docs/research-notes/11-limitations-and-future-work.md ↗
+      </a>.
+    </p>
+  </div>
+</section>
+
+<!-- ── §9  CTA ────────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="cta-heading">
+  <div class="section-inner">
+    <h2 id="cta-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Continue
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:860px;margin-bottom:var(--space-8)">
+      <a class="doc-link-card" href="studio.html">
+        <span class="doc-link-icon" aria-hidden="true">▶</span>
+        <span class="doc-link-title">Studio</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Write and verify proofs in the browser.</span>
+      </a>
+      <a class="doc-link-card" href="theory.html">
+        <span class="doc-link-icon" aria-hidden="true">⊢</span>
+        <span class="doc-link-title">Theory</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Proof language, ⊢ vs ⊨, Curry–Howard, Kripke, matrix semantics.</span>
+      </a>
+      <a class="doc-link-card" href="architecture.html">
+        <span class="doc-link-icon" aria-hidden="true">△</span>
+        <span class="doc-link-title">Architecture &amp; Trust</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Trust boundary, dependency policy, certificate flow.</span>
+      </a>
+      <a class="doc-link-card" href="foundations.html">
+        <span class="doc-link-icon" aria-hidden="true">◇</span>
+        <span class="doc-link-title">Foundations</span>
+        <span class="badge badge-motivation">Motivation</span>
+        <span class="doc-link-desc">Yurihak research program: implemented vs motivation vs future.</span>
+      </a>
+      <a class="doc-link-card" href="research.html">
+        <span class="doc-link-icon" aria-hidden="true">∂</span>
+        <span class="doc-link-title">Whitepaper</span>
+        <span class="badge badge-experimental">Draft</span>
+        <span class="doc-link-desc">LaTeX technical report and references.</span>
+      </a>
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">⌨</span>
+        <span class="doc-link-title">GitHub</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Source code, CI, releases, and full history.</span>
+      </a>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-4)">
+      <a href="studio.html" class="btn btn-primary">Open Studio →</a>
+      <a href="architecture.html" class="btn btn-ghost">Architecture &amp; Trust</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+         class="btn btn-ghost">View on GitHub ↗</a>
+    </div>
+  </div>
+</section>
 
 </main>
 
@@ -171,10 +632,19 @@
       <span class="footer-sep">·</span>
       <span>Formal Verification Framework for Mathematical Reasoning</span>
       <span class="footer-sep">·</span>
+      <a href="index.html">Overview</a>
+      <span class="footer-sep">·</span>
+      <a href="theory.html">Theory</a>
+      <span class="footer-sep">·</span>
+      <a href="architecture.html">Architecture</a>
+      <span class="footer-sep">·</span>
+      <a href="foundations.html">Foundations</a>
+      <span class="footer-sep">·</span>
       <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
     </div>
     <div class="footer-note">
-      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
+      Proof checker, not theorem prover. browser-local via Pyodide/WASM. No backend.
+      Independent research project by Jaehwan Kim.
     </div>
   </div>
 </footer>

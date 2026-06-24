@@ -104,11 +104,17 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════ */
-/* Proof Constellation Canvas                                                   */
+/* Proof Orb / Proof Constellation Canvas                                       */
 /* ══════════════════════════════════════════════════════════════════════════ */
 
+.hero-orb-wrap {
+  position: relative;
+  width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  /* Canvas JS already freezes; CSS guard ensures no transition on wrapper. */
+  /* Canvas JS already freezes animation; CSS ensures no wrapper transition. */
+  #proof-orb,
   .proof-constellation {
     animation: none !important;
     transition: none !important;

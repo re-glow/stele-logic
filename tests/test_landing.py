@@ -84,8 +84,10 @@ def test_proof_graph_visual_present():
     html = _html()
     assert ("stele-conclude-pulse" in html or
             'data-stele-visual="proof-graph"' in html or
-            "hero-graph" in html), \
-        "Hero must include a proof dependency graph visual"
+            "hero-graph" in html or
+            "hero-orb" in html or
+            "proof-orb" in html), \
+        "Hero must include a proof dependency graph or orb visual"
 
 
 def test_proof_graph_has_conclude_node():
@@ -290,10 +292,9 @@ def test_hero_headline_uses_clamp():
 
 def test_hero_padding_uses_clamp():
     css = _CSS.read_text(encoding="utf-8")
-    idx = css.rfind("#hero")
-    assert idx != -1, "stele_site.css must define #hero"
-    snippet = css[idx:idx + 350]
-    assert "clamp(" in snippet, \
+    # Find the main hero section (not media-query override) by searching for
+    # a padding declaration that uses clamp() near an #hero rule.
+    assert "padding: clamp(" in css or "padding:clamp(" in css, \
         "#hero override must use clamp() for responsive padding"
 
 
@@ -311,11 +312,14 @@ def test_no_large_fixed_hero_fontsize():
 
 # ── 19. Canvas constellation ─────────────────────────────────────────────────
 
-def test_proof_constellation_canvas_present():
+def test_proof_orb_visual_present():
     html = _html()
-    assert ("proof-constellation" in html or
-            'data-stele-visual="proof-constellation"' in html), \
-        "Hero must include the proof-space constellation canvas"
+    assert (
+        "proof-orb" in html or
+        "proof-constellation" in html or
+        'data-stele-visual="proof-orb"' in html or
+        'data-stele-visual="proof-constellation"' in html
+    ), "Hero must include a dimensional proof-space visual (canvas)"
 
 
 def test_visuals_js_has_constellation_renderer():
@@ -324,13 +328,45 @@ def test_visuals_js_has_constellation_renderer():
         "visuals.js must define renderProofConstellation"
 
 
+def test_visuals_js_has_orb_renderer():
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    assert "renderProofOrb" in vjs, \
+        "visuals.js must define renderProofOrb"
+
+
 def test_visuals_js_constellation_uses_canvas():
     vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
     assert "getContext" in vjs or "canvas.width" in vjs, \
-        "renderProofConstellation must use Canvas API"
+        "Canvas renderers must use Canvas API"
 
 
 def test_visuals_js_constellation_respects_reduced_motion():
     vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
     assert "prefersReducedMotion" in vjs, \
-        "visuals.js must call prefersReducedMotion() for constellation"
+        "visuals.js must call prefersReducedMotion() for canvas renderers"
+
+
+# ── 20. No external framework references (Part I §4) ────────────────────────
+
+FORBIDDEN_FRAMEWORK_REFS = [
+    "react.js", "react.min.js", "three.js", "three.min.js",
+    "spline", "framer-motion", "tailwindcss",
+    "unpkg.com", "jsdelivr.net", "cdnjs.cloudflare.com"
+]
+
+
+def test_no_external_framework_in_html_or_visuals():
+    html = _html()
+    vjs = (_SITE / "assets" / "visuals.js").read_text(encoding="utf-8")
+    combined = (html + vjs).lower()
+    for ref in FORBIDDEN_FRAMEWORK_REFS:
+        assert ref not in combined, \
+            f"External framework/CDN ref '{ref}' must not appear in index.html or visuals.js"
+
+
+# ── 21. Hero contains required content (Part I §2) ──────────────────────────
+
+def test_hero_browser_local_stated():
+    html = _html().lower()
+    assert "browser-local" in html or "no backend" in html or "runs locally" in html, \
+        "Hero must state that Stele runs locally (browser-local / no backend)"

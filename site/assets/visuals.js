@@ -406,6 +406,222 @@
   }
 
   /* ══════════════════════════════════════════════════════════════════════ */
+  /* 5. ProofOrb — rotating wireframe sphere with proof nodes (Canvas)      */
+  /* ══════════════════════════════════════════════════════════════════════ */
+
+  /**
+   * Renders a slowly-rotating wireframe sphere with embedded proof nodes.
+   * Creates a dimensional, academic-spatial visual for the landing hero.
+   * Nodes: Γ, ⊢, mp, cert, Kripke, kernel, Q, DAG
+   * Palette: violet/graphite dominant, ice-blue accents.
+   * Respects prefers-reduced-motion (static when set).
+   * No external dependencies; deterministic layout.
+   *
+   * @param {HTMLCanvasElement} canvas
+   * @param {object} [opts]
+   */
+  function renderProofOrb(canvas, opts) {
+    opts = opts || {};
+    var reduced = prefersReducedMotion();
+
+    var W = 600, H = 540;
+    var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = '100%';
+    canvas.style.maxWidth = W + 'px';
+    canvas.style.height = 'auto';
+    canvas.setAttribute('aria-hidden', 'true');
+
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    var cx = 310, cy = 272, R = 215;
+    var tilt = 0.32; /* sphere tilt angle (rad) — gives slight oblique perspective */
+
+    /* Seeded deterministic random (no Math.random) */
+    function rand(seed) {
+      var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+      return x - Math.floor(x);
+    }
+
+    /* Orthographic + x-axis tilt projection */
+    function project(phi, lam) {
+      var x3 = Math.cos(phi) * Math.cos(lam);
+      var y3 = Math.sin(phi);
+      var z3 = Math.cos(phi) * Math.sin(lam);
+      var y2 = y3 * Math.cos(tilt) - z3 * Math.sin(tilt);
+      var z2 = y3 * Math.sin(tilt) + z3 * Math.cos(tilt);
+      return { x: cx + R * x3, y: cy - R * y2, z: z2 };
+    }
+
+    /* 80 particles uniformly distributed on sphere surface */
+    var particles = [];
+    for (var i = 0; i < 80; i++) {
+      particles.push({
+        phi:  Math.asin(2 * rand(i * 2) - 1),
+        lam0: (rand(i * 2 + 1) * 2 - 1) * Math.PI,
+        size: 0.9 + rand(i + 500) * 1.9,
+        ice:  rand(i + 1000) > 0.68
+      });
+    }
+
+    /* Named proof nodes at fixed spherical positions */
+    var proofNodes = [
+      { label:'Γ',      sub:'ctx',    phi: 0.42, lam0:-0.82, r:14, rgb:[176,106,255] },
+      { label:'⊢',      sub:'kernel', phi:-0.28, lam0: 0.52, r:13, rgb:[200,220,245] },
+      { label:'mp',     sub:'Q',      phi: 0.18, lam0: 0.08, r:13, rgb:[176,106,255] },
+      { label:'cert',   sub:'proof',  phi:-0.48, lam0:-0.32, r:12, rgb:[210,170, 85] },
+      { label:'Kripke', sub:'model',  phi: 0.62, lam0: 0.88, r:11, rgb:[155,195,230] },
+      { label:'kernel', sub:'trust',  phi:-0.12, lam0:-0.52, r:12, rgb:[200,220,245] },
+      { label:'Q',      sub:'',       phi: 0.28, lam0: 0.42, r:11, rgb:[176,106,255] },
+      { label:'DAG',    sub:'',       phi:-0.35, lam0: 0.72, r:11, rgb:[155,195,230] }
+    ];
+
+    /* Proof dependency edges [from-index, to-index] */
+    var edges = [[0,2],[2,6],[2,1],[2,3],[5,1],[4,7]];
+
+    var theta = 0, rafId;
+
+    function drawFrame() {
+      ctx.clearRect(0, 0, W, H);
+
+      /* Soft orb glow in background */
+      var bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.3);
+      bg.addColorStop(0,    'rgba(176,106,255,.06)');
+      bg.addColorStop(0.45, 'rgba(176,106,255,.025)');
+      bg.addColorStop(1,    'rgba(7,9,15,0)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      /* Wireframe: latitude rings (7 latitudes) */
+      [-1.05,-0.7,-0.35,0,0.35,0.7,1.05].forEach(function(phi) {
+        ctx.beginPath();
+        var moved = false;
+        for (var i = 0; i <= 72; i++) {
+          var p = project(phi, (i/72)*Math.PI*2 - Math.PI + theta);
+          if (p.z > -0.02) {
+            if (!moved) { ctx.moveTo(p.x, p.y); moved = true; }
+            else ctx.lineTo(p.x, p.y);
+          } else { moved = false; }
+        }
+        ctx.strokeStyle = 'rgba(176,106,255,' + (Math.abs(Math.cos(phi))*0.09+0.025).toFixed(3) + ')';
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      });
+
+      /* Wireframe: longitude lines (10 meridians) */
+      for (var li = 0; li < 10; li++) {
+        var lam0m = (li/10)*Math.PI*2;
+        ctx.beginPath();
+        var moved2 = false;
+        for (var j = 0; j <= 64; j++) {
+          var p2 = project((j/64)*Math.PI - Math.PI/2, lam0m + theta);
+          if (p2.z > -0.02) {
+            if (!moved2) { ctx.moveTo(p2.x, p2.y); moved2 = true; }
+            else ctx.lineTo(p2.x, p2.y);
+          } else { moved2 = false; }
+        }
+        ctx.strokeStyle = 'rgba(176,106,255,.04)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+
+      /* Depth-sorted particles */
+      var renderedParts = particles.map(function(p) {
+        var pr = project(p.phi, p.lam0 + theta);
+        return { pr: pr, p: p };
+      });
+      renderedParts.sort(function(a, b) { return a.pr.z - b.pr.z; });
+      renderedParts.forEach(function(item) {
+        var pr = item.pr, p = item.p;
+        var d01 = (pr.z + 1) / 2;
+        var alpha = d01 * 0.48 + 0.04;
+        var sz = p.size * (0.5 + d01 * 0.8);
+        if (sz < 0.3) return;
+        var rgb = p.ice ? [155,195,230] : [176,106,255];
+        ctx.beginPath();
+        ctx.arc(pr.x, pr.y, sz, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+alpha.toFixed(3)+')';
+        ctx.fill();
+      });
+
+      /* Project proof nodes (with rotation) */
+      var pn = proofNodes.map(function(n) {
+        var pr = project(n.phi, n.lam0 + theta);
+        return { label:n.label, sub:n.sub, r:n.r, rgb:n.rgb, x:pr.x, y:pr.y, d:pr.z };
+      });
+
+      /* Proof edges */
+      edges.forEach(function(e) {
+        var a = pn[e[0]], b = pn[e[1]];
+        if (a.d < -0.35 || b.d < -0.35) return;
+        var alpha = Math.max(0.04, (a.d + b.d)*0.12 + 0.08);
+        ctx.beginPath();
+        ctx.setLineDash([3,6]);
+        ctx.strokeStyle = 'rgba(176,106,255,'+alpha.toFixed(3)+')';
+        ctx.lineWidth = 1.0;
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      /* Proof node circles + labels (depth-sorted, front-facing only) */
+      var frontNodes = pn.filter(function(n) { return n.d > -0.4; });
+      frontNodes.sort(function(a, b) { return a.d - b.d; });
+      frontNodes.forEach(function(n) {
+        var a = Math.max(0.25, (n.d + 1) * 0.48);
+        var r = n.rgb;
+
+        /* Glow halo */
+        var grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r+12);
+        grd.addColorStop(0, 'rgba('+r[0]+','+r[1]+','+r[2]+','+(a*0.14)+')');
+        grd.addColorStop(1, 'rgba(7,9,15,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r+12, 0, Math.PI*2);
+        ctx.fill();
+
+        /* Node fill */
+        var fill = ctx.createRadialGradient(n.x-n.r*0.2, n.y-n.r*0.2, 0, n.x, n.y, n.r);
+        fill.addColorStop(0, 'rgba('+r[0]+','+r[1]+','+r[2]+','+(a*0.14)+')');
+        fill.addColorStop(1, 'rgba(7,9,15,'+(a*0.6)+')');
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+        ctx.fillStyle = fill;
+        ctx.fill();
+
+        /* Node stroke */
+        ctx.strokeStyle = 'rgba('+r[0]+','+r[1]+','+r[2]+','+(a*0.8)+')';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        /* Label */
+        ctx.fillStyle = 'rgba('+r[0]+','+r[1]+','+r[2]+','+(a*0.95)+')';
+        ctx.font = 'bold 10px ui-monospace,monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(n.label, n.x, n.y - (n.sub ? 2 : 0));
+        if (n.sub) {
+          ctx.fillStyle = 'rgba(184,204,224,'+(a*0.55)+')';
+          ctx.font = '7.5px ui-monospace,monospace';
+          ctx.fillText(n.sub, n.x, n.y+8);
+        }
+      });
+
+      if (!reduced) {
+        theta += 0.0025;
+        rafId = requestAnimationFrame(drawFrame);
+      }
+    }
+
+    drawFrame();
+    canvas._steleStop = function() { if (rafId) cancelAnimationFrame(rafId); };
+  }
+
+  /* ══════════════════════════════════════════════════════════════════════ */
   /* Auto-init on DOMContentLoaded                                           */
   /* ══════════════════════════════════════════════════════════════════════ */
 
@@ -413,7 +629,8 @@
     'proof-graph':         renderProofGraph,
     'symbol-field':        renderLogicSymbolField,
     'kripke-motif':        renderKripkeMotif,
-    'proof-constellation': renderProofConstellation
+    'proof-constellation': renderProofConstellation,
+    'proof-orb':           renderProofOrb
   };
 
   function autoInit() {
@@ -447,6 +664,7 @@
     renderProofGraph:          renderProofGraph,
     renderLogicSymbolField:    renderLogicSymbolField,
     renderKripkeMotif:         renderKripkeMotif,
-    renderProofConstellation:  renderProofConstellation
+    renderProofConstellation:  renderProofConstellation,
+    renderProofOrb:            renderProofOrb
   };
 }(typeof window !== 'undefined' ? window : {}));

@@ -15,11 +15,13 @@ _ROOT = pathlib.Path(__file__).parent.parent
 # Version
 # ---------------------------------------------------------------------------
 
-def test_version_is_1_1_0():
+def test_version_is_post_v1_1():
     from stele import __version__
-    assert __version__ == "1.1.0", (
-        f"Expected version 1.1.0, got {__version__}. "
-        "Update stele/__version__.py before the v1.1 release."
+    # The v1.1 invariants apply to any release at or after v1.1.0.
+    # Exact version is checked in test_v12_release.py for v1.2.
+    major, minor, _patch = __version__.split(".")
+    assert (int(major), int(minor)) >= (1, 1), (
+        f"Version must be at least 1.1.0; got {__version__}."
     )
 
 

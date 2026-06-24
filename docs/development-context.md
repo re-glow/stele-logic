@@ -32,11 +32,11 @@ Hypothesis 없이 `python -m pytest -q`는 항상 통과한다.
 
 ---
 
-## 2. 이미 구현된 것 (v1.1: 1,836개 테스트 통과; 4 skipped without Hypothesis)
+## 2. 이미 구현된 것 (v1.2: 2,390개 테스트 통과; 4 skipped without Hypothesis)
 
 ```
 stele/
-  __version__.py  버전 문자열 ("1.1.0")
+  __version__.py  버전 문자열 ("1.2.0")
   ast.py     uniform Formula: Var, Op(연결사 무지) + pretty()
   proof.py   frozen dataclass: Assume/Have/Suppose/Conclude/Theorem (+line) + MatrixDirective
   parser.py  직접 구현 토크나이저 + 재귀하강 파서(의존성 0) + parse_matrix_file()
@@ -90,8 +90,14 @@ stele/core/   terms.py / typing.py / reduce.py / term_parser.py / debruijn.py / 
                   · 명제 공식 전용; 직관 코어 미변경; λμ/callcc 미구현
                   · 커널 밖, 안정 API 아님
 stele/elaborate.py  — 스크립트 → 증명항 정교화(crosscheck_theorem), 직관 논리만 지원
-site/             — 공개 사이트 (HTML/CSS/JS, Pyodide 기반)
-  index.html        랜딩페이지: 튜토리얼·갤러리·Studio
+site/             — 공개 사이트 (HTML/CSS/JS, Pyodide 기반) [v1.2: 7개 페이지 완성]
+  index.html        랜딩페이지: 튜토리얼·갤러리 (Studio 분리됨)
+  studio.html       Studio 워크벤치 (Pyodide, 백엔드 없음)
+  theory.html       이론·의미론 문서 페이지 (⊢ vs ⊨, 증명항, 크립키, 행렬)
+  architecture.html 신뢰 경계·아키텍처 페이지
+  foundations.html  유리학 연구 프로그램 페이지 (동기/미래, 구현된 논리 아님)
+  research.html     백서·참고문헌 페이지
+  about.html        저자·프로젝트 스토리 페이지
   examples_gallery.json  갤러리 정직성 테스트 소스 (15개 항목)
 stele_ml/    — ML 기준선 (optional, isolated, experimental)
                · build_dataset.py: 결정론적 train/dev/test 3-분할 빌더
@@ -176,7 +182,7 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 
 ## 6. 알려진 한계 / v1.2+ TODO
 
-**v1.1 에서 여전히 적용되는 한계:**
+**v1.2 에서 여전히 적용되는 한계:**
 - **Stele-Light 표면은 명제논리 단편**만. 1차 논리 한정사(`forall`, `exists`)는 proof-term 층에만 있고 증명 스크립트에서는 아직 미지원.
 - **크립키 반례 탐색은 유한 제한**(bounded ≤4 worlds). 반례 없음 = 직관 타당성 보장 아님.
 - **minicheck 독립성은 코드 수준**. 동일 Python 프로세스에서 실행; Rust/OCaml 독립 포팅은 미래 작업.
@@ -189,7 +195,7 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 - 증명 탐색/자동화 없음(설계상 — 검사기≠증명기).
 - 웹 UI는 단일 로컬 사용자(영속성·계정 없음).
 
-**v1.2+ 로드맵:**
+**v1.3+ 로드맵:**
 - Stele-Light 표면에 FOL 한정사 추가
 - Lean 브릿지 고도화 (`stele_lean/`, 41+)
 - Minicheck Rust/OCaml 독립 포팅
@@ -218,14 +224,13 @@ tests/     parser / kernel_valid / kernel_invalid / relativism / matrix
 4. **구조 규칙 정책** — 약화/축약/교환을 논리별 선언으로 → 선형·관련성·초일관 세계.
 5. **de Bruijn FOL 완성** — `to_debruijn_fol` (객체 변수까지 DB 인덱스화).
 
-**공개 사이트 디자인 시스템 (v1.1 이후, Prompts 42–50):**
+**공개 사이트 디자인 시스템 (Prompts 42–50, v1.2에서 완성):**
 공개 사이트(`site/`)에 대한 정보 아키텍처 계획과 디자인 시스템이
 `docs/design-system.md`에 정의되어 있다.
-대상 구조: Landing, Studio, Theory, Architecture, Research, About, Docs 페이지.
+구조: Landing, Studio, Theory, Architecture, Foundations, Research, About 7개 페이지 — v1.2 완성.
 CSS 토큰(`site/assets/tokens.css`), 컴포넌트 라이브러리(`site/assets/components.css`),
-시각적 모티프(`site/assets/visuals.js`)가 추가됐다.
-스켈레톤 페이지: `studio.html`, `theory.html`, `architecture.html`, `research.html`, `about.html`.
-Prompts 43–49에서 순차적으로 채워진다.
+시각적 모티프(`site/assets/visuals.css`)가 포함된다.
+추가 문서: `docs/references.md`, `docs/provenance-map.md`, `docs/research-notes/` (12개 파일 + 주장-증거 행렬).
 
 **v1.0 이후 — 선택적 확장 (신뢰 코어 밖):**
 6. **ML/SLM 증명검증 보조 고도화** — 커널이 재검사하는 untrusted 보조자 (`stele_ml/` 확장).

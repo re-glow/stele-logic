@@ -1,10 +1,20 @@
-# Stele — v1.1.0
+# Stele — v1.2.0
 
 **Formal Verification Framework for Mathematical Reasoning**
 (수학적 추론의 형식 검증 프레임워크)
 
 **Public site:** https://re-glow.github.io/stele-logic/
 — browser-local Studio, interactive tutorial, verified example gallery (no install, no server, no data transmitted)
+
+| Page | URL |
+|------|-----|
+| Landing | https://re-glow.github.io/stele-logic/ |
+| Studio | https://re-glow.github.io/stele-logic/studio.html |
+| Theory & Semantics | https://re-glow.github.io/stele-logic/theory.html |
+| Architecture & Trust | https://re-glow.github.io/stele-logic/architecture.html |
+| Foundations & Research | https://re-glow.github.io/stele-logic/foundations.html |
+| Whitepaper | https://re-glow.github.io/stele-logic/research.html |
+| About | https://re-glow.github.io/stele-logic/about.html |
 
 Stele is an independent research software project. It provides a rule-checked proof language, proof-term core, structural diagnostics, dependency graphs, matrix semantic diagnostics, and a browser-local Studio. It is **not** a theorem prover — it does not search for proofs. The user writes each proof step; the trusted kernel checks whether each step is valid under the declared logic.
 
@@ -15,9 +25,11 @@ Language guide: `GUIDE.md` · Decisions/rationale: `DECISIONS.md` · Results: `R
 Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`docs/semantics.md`](docs/semantics.md) · Metatheory: [`docs/metatheory.md`](docs/metatheory.md) · Maintainer context: `CLAUDE.md`
 **Technical whitepaper:** [`docs/whitepaper.md`](docs/whitepaper.md) (Markdown) · [`paper/stele-whitepaper.tex`](paper/stele-whitepaper.tex) (LaTeX source) · [`paper/README.md`](paper/README.md) (build instructions)
 **Research notes (paper-drafting source packet):** [`docs/research-notes/`](docs/research-notes/) — modules, claims, evidence, examples, limitations, figure plan, and GPT writing instructions for a stronger paper
-**Site design system:** [`docs/design-system.md`](docs/design-system.md) — IA plan, design tokens, component library, accessibility policy for Prompts 43–49
+**Annotated references:** [`docs/references.md`](docs/references.md) — which algorithms are implemented, which are inspiration, what Stele does not claim
+**Provenance map:** [`docs/provenance-map.md`](docs/provenance-map.md) — claim → module → test → source → limitation (4 structured tables)
+**Site design system:** [`docs/design-system.md`](docs/design-system.md) — IA plan, design tokens, component library, accessibility policy
 
-## v1.1 Capability Matrix
+## v1.2 Capability Matrix
 
 | Capability | v1.0 Status | How to use | Limitations |
 |---|---|---|---|
@@ -175,7 +187,7 @@ python -m stele.cli demos
 python -m pytest -q
 ```
 
-## Limitations (v1.1)
+## Limitations (v1.2)
 
 - **Stele-Light remains propositional** — the proof-script language does not support first-order quantifiers (`forall`, `exists`) at the surface level. The proof-term core (`stele.core`) has an experimental FOL fragment, but FOL proof scripts are not yet supported.
 - **Proof checker, not prover** — Stele does not search for proofs. The user writes every step; the kernel checks them.
@@ -322,12 +334,12 @@ stele/
   web.py      Stele Studio HTTP 서버(stdlib) + JSON API 엔드포인트
   webapp/index.html  Stele Studio 단일 파일 프런트엔드
 examples/     증명·행렬·세계 예제 (.stele + .py)
-tests/        1,836개 통과 (4 skipped without Hypothesis)
+tests/        2,390개 통과 (4 skipped without Hypothesis)
 ```
 
 ## 구현된 것 / 로드맵
 
-**v1.1 구현 (전체 목록):**
+**v1.2 구현 (전체 목록):**
 - 자연연역 증명검증기 (proof 모드, 커널 신뢰 코어)
 - 공통 명제 규칙 전체 + 고전 전용 규칙 (`dne`, `lem`, `pbc`) + 상대성 데모
 - 다치 의미론 (K3, LP, boolean) + 행렬 모드 + 규칙 건전성 + 세계 격자 데모
@@ -340,10 +352,11 @@ tests/        1,836개 통과 (4 skipped without Hypothesis)
 - ML 기준선 (`stele_ml/`, optional, experimental) + 3-분할 + 벤치마크 카드
 - Lean 4 브릿지 (`stele_lean/`, optional, experimental) + 기술 백서
 
-**v1.2+ 후보 로드맵:**
+**v1.3+ 후보 로드맵:**
 - Stele-Light 표면에 FOL 한정사 (`forall`, `exists`) 추가
 - 구조 규칙 정책 (약화·축약 제거 → 선형·관련성·초일관 세계)
 - Lean 브릿지 고도화 (Lean 4 export 범위 확대)
 - 커널 Rust/OCaml 포팅 (sum type + 망라적 패턴매칭)
 - Minicheck Rust/OCaml 독립 포팅 (프로세스 수준 격리)
 - FOL 의미론 + proof-term 층 객체 변수 de Bruijn 완성
+- 기계 검증 메타이론 (Lean/Coq/Agda export) — 먼 미래

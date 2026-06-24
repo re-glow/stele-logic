@@ -19,7 +19,7 @@
 
 <!-- ── Sticky nav ─────────────────────────────────────────────────────────── -->
 <nav class="site-nav" aria-label="Site navigation">
-  <a class="nav-brand" href="#hero">STELE</a>
+  <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
     <a href="studio.html">Studio</a>
     <a href="#tutorial">Tutorial</a>
@@ -80,7 +80,7 @@
 
       <!-- Primary actions -->
       <div class="hero-actions">
-        <a href="#studio"       class="btn btn-primary  hero-cta">Open Studio</a>
+        <a href="studio.html"   class="btn btn-primary  hero-cta">Open Studio</a>
         <a href="#tutorial"     class="btn btn-ghost    hero-cta">Try Tutorial</a>
         <a href="research.html" class="btn btn-secondary hero-cta">Read Whitepaper</a>
         <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
@@ -532,10 +532,6 @@
   <div class="section-inner">
     <div class="section-label">Proof Workbench</div>
     <h2 id="studio-cta-heading" class="section-heading">Write and verify proofs</h2>
-    <p class="section-sub">
-      The full workbench runs entirely in your browser via Pyodide/WASM.
-      No installation, no backend, no data transmitted.
-    </p>
 
     <div class="studio-preview-block">
       <pre class="studio-preview-code" aria-label="Example proof: P implies P">theorem imp_self:
@@ -549,11 +545,6 @@
           <a href="studio.html" class="btn btn-primary">Open Studio →</a>
           <a href="studio.html?example=imp_self" class="btn btn-ghost">Load this example</a>
         </div>
-        <ul class="studio-feature-list" aria-label="Studio features">
-          <li>Verify · Diagnose · Graph</li>
-          <li>Matrix Semantics · Kripke Countermodels</li>
-          <li>5 built-in logics · Example gallery</li>
-        </ul>
       </div>
     </div>
 
@@ -724,7 +715,6 @@
     </div>
     <div class="footer-note">
       Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
-      Local Studio: <code>python -m stele</code>
     </div>
   </div>
 </footer>

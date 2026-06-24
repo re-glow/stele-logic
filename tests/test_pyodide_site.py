@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parent.parent
 
 SITE_SRC      = REPO / "site"
@@ -512,6 +514,86 @@ class TestStudioHtml:
         for eid in required_ids:
             assert f'id="{eid}"' in html or f"id='{eid}'" in html, \
                 f"studio.html is missing required element id='{eid}'"
+
+
+# ── Nav / footer consistency ─────────────────────────────────────────────────
+
+# Canonical nav link targets that EVERY secondary page (non-index) must include.
+# index.html is excluded because it IS the Overview — no self-link needed.
+_CANONICAL_NAV_TARGETS = [
+    "index.html",       # Overview
+    "studio.html",
+    "theory.html",
+    "architecture.html",
+    "research.html",
+    "foundations.html",
+    "about.html",
+    "github.com/re-glow/stele-logic",
+]
+
+_SECONDARY_PAGES = [
+    "studio.html",
+    "theory.html",
+    "architecture.html",
+    "research.html",
+    "foundations.html",
+    "about.html",
+]
+
+
+class TestNavConsistency:
+    """Every secondary page must have the same canonical nav link set."""
+
+    @pytest.mark.parametrize("page", _SECONDARY_PAGES)
+    def test_page_has_all_canonical_nav_links(self, page):
+        html = (SITE_SRC / page).read_text(encoding="utf-8")
+        missing = [t for t in _CANONICAL_NAV_TARGETS if t not in html]
+        assert not missing, \
+            f"site/{page} nav is missing canonical link targets: {missing}"
+
+    @pytest.mark.parametrize("page", _SECONDARY_PAGES)
+    def test_page_has_exactly_one_aria_current(self, page):
+        html = (SITE_SRC / page).read_text(encoding="utf-8")
+        nav_block = re.search(r'<nav class="site-nav".*?</nav>', html,
+                              re.DOTALL)
+        assert nav_block, f"site/{page} must have a site-nav element"
+        nav_html = nav_block.group(0)
+        current_count = nav_html.count('aria-current="page"')
+        assert current_count == 1, \
+            f"site/{page} nav must have exactly 1 aria-current='page', found {current_count}"
+
+    @pytest.mark.parametrize("page", _SECONDARY_PAGES)
+    def test_page_nav_aria_current_matches_self(self, page):
+        html = (SITE_SRC / page).read_text(encoding="utf-8")
+        nav_block = re.search(r'<nav class="site-nav".*?</nav>', html,
+                              re.DOTALL)
+        assert nav_block, f"site/{page} must have a site-nav element"
+        nav_html = nav_block.group(0)
+        assert f'href="{page}" aria-current="page"' in nav_html or \
+               f"href='{page}' aria-current='page'" in nav_html, \
+            f"site/{page} nav must mark its own link as aria-current='page'"
+
+    @pytest.mark.parametrize("page", ["index.html"] + _SECONDARY_PAGES)
+    def test_page_footer_has_github_link(self, page):
+        html = (SITE_SRC / page).read_text(encoding="utf-8")
+        footer_block = re.search(r'<footer.*?</footer>', html, re.DOTALL)
+        assert footer_block, f"site/{page} must have a footer element"
+        assert "github.com/re-glow/stele-logic" in footer_block.group(0), \
+            f"site/{page} footer must link to GitHub"
+
+    @pytest.mark.parametrize("page", ["index.html"] + _SECONDARY_PAGES)
+    def test_page_footer_has_no_intermediate_page_links(self, page):
+        """Footer should only carry the GitHub link — not redundant in-site page links."""
+        html = (SITE_SRC / page).read_text(encoding="utf-8")
+        footer_block = re.search(r'<footer.*?</footer>', html, re.DOTALL)
+        assert footer_block, f"site/{page} must have a footer element"
+        footer_html = footer_block.group(0)
+        for internal_page in ["index.html", "studio.html", "theory.html",
+                               "architecture.html", "foundations.html",
+                               "research.html", "about.html"]:
+            assert internal_page not in footer_html, \
+                f"site/{page} footer must not link to internal page {internal_page!r}; " \
+                "footer should only carry the GitHub link"
 
 
 # ── Build output: all pages copied, no dangling links ─────────────────────────

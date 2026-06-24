@@ -4,6 +4,54 @@ Development history of Stele Logic System.
 
 ---
 
+## [v1.3.0] — 2026-06-24  `release/v1.3-presentation-freeze`
+
+v1.3 presentation freeze: amethyst visual system applied across all site pages;
+full internal/external link audit; claim/status audit; accessibility pass (WCAG AA,
+keyboard, reduced-motion); clean static build; pytest green. No new proof semantics.
+
+### Changed
+
+- **Design system — landing (Prompt 53):** Full visual overhaul on `design/visual-system-landing`.
+  - New amethyst palette (`#7C5CFF`/`#9D7BFF` primary, `#3E9C8F` success, `#36D6FF` cyan-accent-only).
+  - Background graphite `#0B0A10`. Terminal-mint retired across all CSS/JS.
+  - Self-hosted OFL fonts: Spectral (display headings), IBM Plex Sans (body/UI), IBM Plex Mono (code/proofs).
+  - 10 woff2 files + `site/assets/fonts/fonts.css` + `OFL.txt`.
+  - `tokens.css` rewritten as palette/typography source of truth.
+  - `stele_site.css`, `components.css`, `visuals.css` updated (cyan→amethyst, mint→success).
+  - ProofOrb particle palette updated to amethyst.
+  - Hero copy: "Write a proof. Verify each step." + natural prose (no stacked negatives).
+
+- **Page design polish — all sub-pages (Prompt 54):** Applied v1.3 design system to
+  studio, theory, architecture, research, foundations, about on `design/page-polish`.
+  - All hardcoded old-palette SVG/inline colors fixed (`#52c97a`→`#3E9C8F`, `#b06aff`→`#9D7BFF`, etc.).
+  - `.page-motif` CSS: dim decorative glyph per page (⊢ studio/arch, ∴ theory/research, ∀ foundations, λ about).
+  - `.trust-grid` class replaces cramped `gap:14px` inline card grids.
+  - `.prose-reading` class: 72ch reading column for academic pages.
+  - `research.html` rewritten: skeleton placeholders replaced with real content
+    (Research Motivation, Proof Assistants comparison table, References table).
+
+- `stele/__version__.py`: `"1.2.0"` → `"1.3.0"`.
+- `README.md`: version heading and capability matrix updated to v1.3.0.
+- `docs/site-quality.md`: accessibility checklist updated with v1.3 audit results.
+- `docs/release-checklist.md`: updated for v1.3.
+
+### QA / v1.3 audit (Prompt 55)
+
+- Internal link audit: all 7 nav links resolve to deployed pages; no broken paths.
+- External link audit: all GitHub repo links verified to exist in current main.
+- Claim/status audit: no invented metrics; all experimental features carry Experimental/Untrusted labels.
+- Accessibility: `prefers-reduced-motion` honored everywhere; SVGs have `role="img"` + `<title>`/`<desc>`; focus rings on all interactive elements; `.focus-skip` on every page.
+- Build: `python tools/build_pyodide_site.py` deploys all 7 pages; 2512 tests pass (4 skipped).
+
+### Documentation
+
+- `CHANGELOG.md` — this v1.3.0 entry.
+- `docs/site-quality.md` — v1.3 accessibility audit results.
+- `docs/release-checklist.md` — v1.3 checklist.
+
+---
+
 ## [v1.2.0] — 2026-06-24  `release/v1.2-presentation-freeze`
 
 v1.2 public-presentation freeze: Prompts 42–49 site/research integration arc consolidated,

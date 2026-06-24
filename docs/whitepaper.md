@@ -249,7 +249,7 @@ If all three stages succeed, the result is a `CrossCheckResult` containing the p
 - Confluence: local confluence tests pass; full Church-Rosser proof not machine-checked.
 - Consistency: no closed term of type `⊥` can be constructed; verified for the rule set by construction.
 
-These claims are supported by 1836 regression tests (including optional Hypothesis property-based tests) and by proof sketches in `docs/metatheory.md`. They are **not machine-checked proofs** in a formal proof assistant.
+These claims are supported by over 2,000 regression tests (including optional Hypothesis property-based tests) and by proof sketches in `docs/metatheory.md`. They are **not machine-checked proofs** in a formal proof assistant.
 
 ### Experimental FOL Fragment
 
@@ -459,7 +459,7 @@ Data discipline features implemented:
 
 ### Test Suite
 
-Stele has 1836 tests (1836 passing, 4 skipped without Hypothesis), organized into 44+ test files:
+Stele has over 2,000 tests (2390 passing as of v1.2.0, 4 skipped without Hypothesis), organized into 44+ test files:
 
 | Category | Tests | Notes |
 |----------|-------|-------|
@@ -608,7 +608,7 @@ Stele is a lightweight, auditable formal verification framework occupying a spac
 
 Stele is designed to make the trust boundary explicit and auditable at every layer. Components outside the kernel are systematically marked UNTRUSTED and require kernel re-verification. The optional ML baseline is statistically measured, uses disciplined corpus management, and makes no verified claims. Metatheoretic properties are supported by proof sketches and tests, not by machine-checked proofs, and this limitation is consistently documented.
 
-Stele v1.1.0 comprises 1836 tests, 15 curated gallery examples with CI-enforced honesty labels, and zero runtime dependencies for the core verification path. It is available as a public GitHub Pages site, a single-file HTML, a standalone executable, and a local Python package.
+Stele v1.2.0 comprises over 2,000 tests (2390 as of the v1.2 freeze), 15 curated gallery examples with CI-enforced honesty labels, and zero runtime dependencies for the core verification path. It is available as a public GitHub Pages site with dedicated pages for theory, architecture, foundations, and research, a single-file HTML, a standalone executable, and a local Python package. The public site and research-notes packet are new in v1.2. The whitepaper was drafted for v1.1; the v1.2 site and docs extend it without changing the core proof semantics.
 
 ---
 

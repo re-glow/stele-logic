@@ -3,6 +3,8 @@
 Use this checklist before creating and pushing a release tag.
 **Do not create the tag until all "Before tag" items are complete.**
 
+This checklist applies to v1.2.0 and future releases.
+
 ---
 
 ## Before tag
@@ -31,7 +33,7 @@ python -m pytest tests/test_proof_term_properties.py -v
 ### 3. Build artifacts (fast, no Pyodide download)
 
 ```bash
-# Pyodide site (static HTML/JS, no browser)
+# Pyodide site (static HTML/JS, no browser needed)
 python tools/build_pyodide_site.py --output-dir _site
 # verify _site/index.html exists and is not empty
 
@@ -58,40 +60,49 @@ latexmk -pdf stele-whitepaper.tex
 cd ..
 ```
 
-### 6. Site check
+### 6. Site check (post Pages deploy)
 
-- Confirm the GitHub Pages URL loads the Studio landing page.
+- Confirm the GitHub Pages URL loads the landing page.
   URL: `https://re-glow.github.io/stele-logic/`
-- Confirm the 5-minute tutorial section is visible.
+- Confirm Studio page loads: `https://re-glow.github.io/stele-logic/studio.html`
+- Confirm Theory page loads: `https://re-glow.github.io/stele-logic/theory.html`
+- Confirm Architecture page loads: `https://re-glow.github.io/stele-logic/architecture.html`
+- Confirm Foundations page loads: `https://re-glow.github.io/stele-logic/foundations.html`
+- Confirm Research page loads: `https://re-glow.github.io/stele-logic/research.html`
+- Confirm About page loads: `https://re-glow.github.io/stele-logic/about.html`
+- Confirm the 5-minute interactive tutorial section is visible on the landing.
 - Confirm the example gallery renders 15 cards.
 - Confirm the Studio loads (Pyodide first-load may take ~10 s).
-- Confirm "Kripke Countermodel" section is visible in the Semantics panel.
 
 ### 7. Documentation consistency
 
-- [ ] CHANGELOG.md has a `[v1.1.0]` entry at the top.
-- [ ] README.md capability matrix heading says "v1.1".
-- [ ] `stele/__version__.py` is set to `"1.1.0"`.
+- [ ] `stele/__version__.py` is set to `"1.2.0"`.
+- [ ] `CHANGELOG.md` has a `[v1.2.0]` entry at the top.
+- [ ] README.md version heading says `# Stele — v1.2.0`.
+- [ ] README.md capability matrix heading says `## v1.2 Capability Matrix`.
 - [ ] No generated files tracked in git:
   ```bash
   git status  # dist/, _site/, build/, __pycache__/, paper/*.pdf must not appear
   ```
 
-### 8. Claim audit — v1.1 specific
+### 8. Claim audit — v1.2 specific
 
 - [ ] No "complete theorem prover" — Stele is a proof checker.
 - [ ] No "machine-checked metatheory" or "formally verified metatheory".
   Acceptable: "proof sketches + regression/property tests".
 - [ ] Kripke section says "bounded finite search"; absence-of-countermodel ≠ validity.
-- [ ] Certificates/minicheck: "experimental", "independent Python code path, not formally verified".
-- [ ] Proof-state hints: "UNTRUSTED", requires kernel-recheck.
-- [ ] ML baseline: "optional / experimental"; no unverified accuracy claims;
-  metrics reference the generated corpus only (see `docs/benchmark-card.md`).
+- [ ] Certificates/minicheck: "experimental"; "independent Python code path, not formally verified".
+- [ ] Proof-state hints: "UNTRUSTED"; requires kernel-recheck.
+- [ ] ML baseline: "optional / experimental"; no unverified accuracy claims.
 - [ ] No "fully offline" claim for single-file HTML — Pyodide loads from CDN.
 - [ ] No "state-of-the-art" or "production-ready" claims.
 - [ ] FOL described as "experimental proof-term fragment"; no "full first-order logic" claim.
 - [ ] Lean bridge: "optional, experimental, propositional fragment only".
 - [ ] Classical bridge: "experimental, formula-level only (Gödel–Gentzen)"; no λμ/callcc claim.
+- [ ] Foundations/Yurihak: "research motivation / future formalization"; not "implemented logic".
+- [ ] About page: no email, no school name, no location.
+- [ ] Site pages: no `/api/` backend calls in static HTML.
+- [ ] Site pages: no React/Three.js/Spline/Framer/Tailwind CDN references.
 
 ### 9. No accidental commits
 
@@ -108,10 +119,10 @@ Once all "Before tag" items are checked:
 
 ```bash
 # Create annotated tag
-git tag -a v1.1.0 -m "Stele v1.1.0"
+git tag -a v1.2.0 -m "Stele v1.2.0"
 
 # Push tag to trigger the release workflow
-git push origin v1.1.0
+git push origin v1.2.0
 ```
 
 ### After push
@@ -119,12 +130,14 @@ git push origin v1.1.0
 1. Watch `.github/workflows/release.yml` run on GitHub Actions.
 2. Confirm all three OS builds (Windows, macOS, Linux) upload `SteleStudio` artifacts.
 3. Confirm `stele.html` artifact is uploaded.
-4. Create a GitHub Release from the tag and attach the artifacts.
-5. Confirm GitHub Pages is still live at the expected URL.
+4. Create a GitHub Release from the tag.
+   - Use `docs/release-notes-v1.2.0.md` as the release description.
+   - Attach the SteleStudio executables and `stele.html`.
+5. Confirm GitHub Pages is still live at the expected URLs (all 7 pages).
 
 ---
 
-## Known limitations to include in release notes (v1.1)
+## Known limitations to include in release notes (v1.2)
 
 - Stele-Light proof-script language remains propositional — no FOL quantifiers at script level.
   FOL is available in the proof-term core (`stele.core`) only, as an experimental API.
@@ -138,3 +151,5 @@ git push origin v1.1.0
 - Lean bridge (`stele_lean/`) is optional, experimental, propositional fragment only.
 - Metatheory claims are proof sketches + regression/property tests; not machine-checked proofs.
 - Single-file `stele.html` requires internet (Pyodide CDN, ~8 MB, cached after first load).
+- Whitepaper is a draft technical report; not peer-reviewed.
+- Foundations page covers research motivation (Yurihak); Yurihak is not yet a formal Stele logic.

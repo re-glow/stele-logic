@@ -57,6 +57,11 @@ paper/*.synctex.gz
 
 # Local reference PDFs used during drafting; not committed by default.
 references/
+references/incoming/
+
+# Test output files
+test_out.txt
+test_output.txt
 
 # Editor / OS
 .DS_Store

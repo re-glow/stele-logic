@@ -17,11 +17,11 @@
 관련 문서: 언어 가이드 `GUIDE.md`, 결정·근거 `DECISIONS.md`, 실행 결과 `RESULTS.md`,
 형식 문법/타입/환원 규칙 `docs/semantics.md`, 메타이론 주장 `docs/metatheory.md`.
 
-## 구조 (v1.1)
+## 구조 (v1.2)
 
 ```
 stele/
-  __version__.py  버전 ("1.1.0")
+  __version__.py  버전 ("1.2.0")
   ast.py      식 표현(연결사 무지 Op) + pretty 출력기
   proof.py    증명 노드(Assume/Have/Suppose/Conclude/Theorem) + MatrixDirective
   parser.py   직접 구현한 토크나이저 + 재귀하강 파서 (의존성 없음)
@@ -47,7 +47,8 @@ stele/
   core/       증명항 계산법: terms/typing/reduce/debruijn/fol/term_parser/classical_experimental
 examples/  *.stele  (증명·행렬·진단)
 site/      공개 사이트 HTML/CSS/JS (Pyodide, 튜토리얼, 갤러리)
-tests/     pytest 1,836개 통과 (4 skipped without Hypothesis)
+             index/studio/theory/architecture/foundations/research/about.html
+tests/     pytest 2,390개 통과 (4 skipped without Hypothesis)
 ```
 
 ## 실행
@@ -105,7 +106,7 @@ python -m pytest -q                          # Hypothesis 없이도 통과
 - `git tag -a vX.Y.Z -m "Stele vX.Y.Z"` 로 annotated 태그 생성.
 - 태그 push 시 `.github/workflows/release.yml`이 실행파일과 `stele.html`을 빌드.
 
-## 로드맵 (v1.1 이후 다음 작업 후보)
+## 로드맵 (v1.2 이후 다음 작업 후보)
 
 **검증 코어:**
 - Stele-Light 표면에 FOL 한정사 (`forall`, `exists`) 추가 (현재 proof-term 층만)

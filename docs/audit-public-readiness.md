@@ -650,3 +650,63 @@ All new pages + `CHANGELOG.md` + `docs/release-checklist.md` update
 - [ ] Machine-checked metatheory (Lean/Coq/Agda) — far future
 - [ ] FOL quantifiers in Stele-Light proof scripts — next research arc
 - [ ] Interactive proof-dependency graph (live, WASM-driven) in landing hero
+
+---
+
+## 13. v1.2 Closure — Prompt 50 Audit
+
+**Date:** 2026-06-24
+**Branch:** `release/v1.2-presentation-freeze`
+**Test count at closure:** 2390 passed, 4 skipped
+
+### P0 Items (must fix before public presentation)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| `docs/proof-terms.md` "Stele v2" header | **Resolved** | Fixed to "Stele v1.1" in an earlier prompt (verified in file) |
+| Whitepaper linked from site Docs section | **Resolved** | `site/research.html` links to whitepaper; `site/index.html` §7 docs grid links to research.html |
+| Whitepaper card in Tutorial Step 6 "What's next" | **Resolved** | `site/research.html` added; landing links to Research page |
+
+### P1 Items (should fix during prompts 42–50)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Separate landing page from Studio workbench | **Resolved** | `site/studio.html` created (Prompt 44); landing no longer embeds the full workbench |
+| Add Kripke to §2 "Semantic Tools" card (Experimental badge) | **Resolved** | `site/theory.html` covers Kripke; landing cards updated to reference Theory page |
+| Replace hero symbol cascade with proof-graph motif | **Resolved** | Landing hero redesigned with SVG/Canvas proof-graph motif (Prompts 43–44) |
+| Fix muted text contrast (--muted #46586d, ~2.5:1) | **Partially resolved** | Design token `--muted` updated in `site/assets/tokens.css`; confirmed WCAG AA improved in new pages. Original landing page muted contrast is a known residual P2 item. |
+| Hero animation `prefers-reduced-motion` | **Resolved** | `@media (prefers-reduced-motion: reduce)` guards present in `site/assets/stele_site.css` and `site/assets/tokens.css` |
+| Switch body prose font from monospace to sans-serif | **Resolved** | `site/assets/components.css` uses `var(--font-sans)` for prose in new pages; old landing sections use monospace for code labels |
+| Add research/about section to site | **Resolved** | `site/foundations.html` (Prompt 46), `site/about.html` (Prompt 49) |
+| Add status labels (Experimental) to Kripke in §2 or Tutorial | **Resolved** | Status badges throughout `site/theory.html`, `site/architecture.html`, and the Studio page |
+| Update test count in README/CLAUDE/development-context | **Resolved** | Updated to 2390 in Prompt 50 (this prompt) |
+
+### P2 Items (polish)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Add version to site footer | **Deferred** | Version is in CHANGELOG, README, whitepaper; adding to every footer is a minor polish item for v1.3 |
+| Add `DECISIONS.md` link to site §7 Docs grid | **Deferred** | Not blocking; available via GitHub link |
+| Add CHANGELOG link to site §7 Docs grid | **Deferred** | Same as above |
+| Quickstart §6 CDN hint inline | **Deferred** | Minor polish |
+| webapp/index.html version label | **Deferred** | Local Studio is for CLI users |
+
+### New items resolved in 42–50 (not in original P0/P1 list)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Annotated references document | **Resolved** | `docs/references.md` (Prompt 47) |
+| Provenance map | **Resolved** | `docs/provenance-map.md` (Prompt 47) |
+| Research notes packet | **Resolved** | `docs/research-notes/` 12-file packet + claim-evidence-matrix (Prompt 48) |
+| BibTeX `\cite{TODO:*}` keys fixed | **Resolved** | 3 new BibTeX entries in `paper/references.bib` (Prompt 47) |
+| About / author page | **Resolved** | `site/about.html` (Prompt 49) |
+| Navigation consistent across all 7 pages | **Resolved** | All pages link to all other pages; `aria-current` on active page |
+
+### Remaining known limitations (v1.2, not in scope of 42–50 arc)
+
+- Stele-Light surface remains propositional; no FOL at script level.
+- Kripke search bounded; no completeness guarantee.
+- Minicheck is same-process Python code path; not process-isolated.
+- Metatheory not machine-checked.
+- Whitepaper is a draft; not peer-reviewed.
+- Yurihak formalization is future work; not a current Stele logic.

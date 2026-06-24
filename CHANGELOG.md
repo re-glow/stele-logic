@@ -4,6 +4,99 @@ Development history of Stele Logic System.
 
 ---
 
+## [v1.2.0] — 2026-06-24  `release/v1.2-presentation-freeze`
+
+v1.2 public-presentation freeze: Prompts 42–49 site/research integration arc consolidated,
+claim-audited, and synchronized. No new proof semantics in this release — version update,
+documentation synchronization, site completion, release preparation only.
+
+### Added
+
+- **Public site pages (Prompts 42–50):** Information architecture redesigned; landing,
+  Studio, Theory, Architecture, Foundations, Research, About pages fully implemented.
+  - `site/index.html` — redesigned landing with proof-graph hero, tutorial, gallery.
+  - `site/studio.html` — separate Studio workbench page (Pyodide-backed, no backend).
+  - `site/theory.html` — theory and semantics documentation page (⊢ vs ⊨, proof terms,
+    Kripke, matrix, metatheory).
+  - `site/architecture.html` — trust boundary and architecture page.
+  - `site/foundations.html` — Yurihak research program page (motivation/future, not
+    implemented logic).
+  - `site/research.html` — whitepaper and references page.
+  - `site/about.html` — author and project-story page.
+- **Design system** (`docs/design-system.md`, `site/assets/tokens.css`,
+  `site/assets/stele_site.css`, `site/assets/components.css`, `site/assets/visuals.css`):
+  design tokens, component library, accessibility policy, IA plan.
+- **Annotated references** (`docs/references.md`): 6-section reference guide mapping each
+  algorithmic foundation to implementation module, status, and limitation.
+- **Provenance map** (`docs/provenance-map.md`): 4 structured tables — claim → module →
+  test → source → limitation; citation status; inspiration vs implementation.
+- **Research notes packet** (`docs/research-notes/`): 12 structured notes covering
+  architecture, proof language, proof terms, diagnostics, semantics, certificates, ML,
+  foundations, related work, limitations, and paper outline. Includes
+  `claim-evidence-matrix.md` (26 rows, 7 columns per claim) and GPT writing instructions.
+- **BibTeX entries** (`paper/references.bib`): Malinowski 1993, Harper et al. 1993,
+  Yang et al. 2023 (LeanDojo). Replaced `\cite{TODO:*}` keys in whitepaper.
+- **Public-readiness audit** (`docs/audit-public-readiness.md`): full v1.2 closure section
+  documenting resolution of all P0/P1 items from Prompt 41.
+- **Release notes draft** (`docs/release-notes-v1.2.0.md`): copy-pasteable GitHub
+  Release description.
+
+### Changed
+
+- `stele/__version__.py`: `"1.1.0"` → `"1.2.0"`.
+- README.md: version heading updated to v1.2.0; capability matrix updated; site page links
+  added (Studio, Theory, Architecture, Foundations, Research, About); provenance map and
+  research notes links added; test count updated.
+- `CLAUDE.md`: structure section updated to v1.2; test count updated.
+- `docs/development-context.md`: version string and test count updated; site page inventory
+  updated; roadmap section updated.
+- `docs/release-checklist.md`: updated for v1.2.0 steps.
+- `docs/whitepaper.md`: test count references updated; version in conclusion updated.
+
+### Documentation
+
+- `CHANGELOG.md` — this v1.2.0 entry.
+- `docs/references.md` — new annotated references document.
+- `docs/provenance-map.md` — new claim/implementation provenance tables.
+- `docs/research-notes/` — new 12-file research notes packet.
+- `docs/release-notes-v1.2.0.md` — release notes draft.
+- `docs/audit-public-readiness.md` — v1.2 closure section added.
+- `docs/release-checklist.md` — updated for v1.2.
+
+### Site / UX
+
+- Landing page: proof-dependency-graph hero motif (Canvas/SVG), tutorial, 15-entry gallery.
+- Studio separated from landing: `site/studio.html` (dedicated page, Pyodide-backed).
+- Theory page: ⊢ vs ⊨ diagram, proof terms, Kripke semantics, matrix semantics, metatheory.
+- Architecture page: trust-boundary diagram, import invariants, certificate flow, deployment modes.
+- Foundations page: Yurihak program framing (motivation/future distinction enforced).
+- Research page: whitepaper link, BibTeX references link, research notes.
+- About page: project story, evidence cards, author role, AI-tool transparency note, limitations.
+- Status badges (Stable/Experimental/Optional/Demo/Motivation/Untrusted) applied across all pages.
+- Navigation complete: all 7 pages linked from every page nav, with `aria-current` on active page.
+- Accessibility: `prefers-reduced-motion`, `focus-visible`, `aria-*` labels throughout.
+
+### CI / Release
+
+- No workflow changes: `ci.yml` (Python 3.10–3.12), `pages.yml` (GitHub Pages),
+  `release.yml` (executables + stele.html), `ml.yml` (optional dispatch) unchanged.
+- `.gitignore` updated: `references/incoming/`, `test_out.txt` added.
+
+### Known limitations (v1.2)
+
+- Stele-Light proof-script surface remains propositional — no `forall`/`exists` at script level.
+- Kripke countermodel search is bounded finite (≤4 worlds default); no completeness theorem.
+- Classical proof-term bridge is formula-level only (Gödel–Gentzen); no λμ/callcc.
+- Minicheck is a Python code path (same process as kernel); not formally isolated.
+- Proof-state hints are UNTRUSTED structural suggestions; require kernel-recheck.
+- ML baseline remains optional/experimental; metrics cover the 40-record synthetic corpus only.
+- Metatheory claims are proof sketches + regression/property tests; not machine-checked.
+- Single-file `stele.html` requires Pyodide CDN (~8 MB, cached after first load).
+- Whitepaper is a draft technical report; not peer-reviewed.
+- Foundations page covers research motivation only; Yurihak is not yet a formal Stele logic.
+
+---
+
 ## [v1.1.0] — 2026-06-23  `release/v1.1-freeze`
 
 v1.1 freeze: post-v1.0 research arc (Prompts 34–42) consolidated, audited, and stabilized.

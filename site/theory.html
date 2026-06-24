@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stele — Theory &amp; Formal Semantics</title>
 <meta name="description"
-  content="Stele formal theory: Stele-Light proof language, proof-term calculus, matrix semantics, Kripke countermodels. Metatheory claims and evidence.">
+  content="Stele formal theory: Stele-Light proof language, syntactic vs semantic derivability, proof-term calculus, matrix semantics, and bounded Kripke countermodel search.">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
 <link rel="stylesheet" href="assets/components.css">
@@ -18,8 +18,10 @@
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
-    <a href="index.html">Home</a>
+    <a href="index.html">Overview</a>
     <a href="studio.html">Studio</a>
+    <a href="theory.html" aria-current="page">Theory</a>
+    <a href="architecture.html">Architecture</a>
     <a href="research.html">Research</a>
     <a href="about.html">About</a>
     <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
@@ -29,158 +31,808 @@
 
 <main class="page-main" id="main-content">
 
-  <!-- Hero -->
-  <section class="page-section" aria-labelledby="theory-heading"
-    style="background:radial-gradient(ellipse at 50% 0%,rgba(176,106,255,.05) 0%,transparent 60%)">
-    <div class="section-inner">
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="theory-heading">
+  <div class="section-inner">
 
-      <!-- Kripke motif (decorative) -->
-      <div class="kripke-motif" style="float:right;margin:0 0 1rem 2rem;opacity:.7"
-           aria-hidden="true"
-           data-stele-visual="kripke-motif" data-decorative="true">
-        <div class="visual-fallback">⊢</div>
-      </div>
+    <span class="section-label">Formal Foundations</span>
+    <h1 id="theory-heading" class="section-heading">Theory &amp; Semantics</h1>
 
-      <span class="section-label">Formal Foundations</span>
-      <h1 id="theory-heading" class="section-heading">Theory &amp; Semantics</h1>
-      <p class="section-sub" style="font-family:var(--font-sans)">
-        Stele's formal underpinnings: the Stele-Light proof language,
-        Curry–Howard proof-term calculus, multi-valued matrix semantics,
-        and bounded Kripke countermodel search.
+    <div class="prose-body" style="max-width:680px;margin-bottom:var(--space-10)">
+      <p>
+        Stele is a <strong>proof checker, not a theorem prover</strong>.
+        You write a natural-deduction proof step by step; Stele's trusted kernel
+        checks each rule application against the formal inference rules you have
+        selected. If a rule does not match, the proof fails — there is no search,
+        no backtracking, no AI assistance.
       </p>
-
-      <div class="callout callout-info" style="max-width:640px;clear:both">
-        <span class="callout-label">Page status — Prompt 45</span>
-        <p>
-          This page is a skeleton. Full content will be written in Prompt 45.
-          See <a href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md">docs/semantics.md</a>
-          and <a href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md">docs/metatheory.md</a>
-          for the current formal specification.
-        </p>
-      </div>
+      <p>
+        The system has three independent layers. The <em>proof checker kernel</em>
+        is the sole source of validity verdicts; it is small, dependency-free, and
+        purely syntactic. An optional <em>proof-term calculus</em> layer lets you
+        extract Curry–Howard witnesses from well-formed proofs, though this layer is
+        experimental. A separate <em>semantic diagnostics</em> layer — matrices,
+        world lattice, Kripke countermodel search — helps you understand why a
+        formula behaves differently across logics; these tools are explicitly
+        untrusted and cannot affect kernel verdicts.
+      </p>
+      <p>
+        This page explains those layers honestly.
+        Features that are not yet stable are labeled <span class="badge badge-experimental">Experimental</span>.
+        Metatheory claims backed only by regression tests — not machine-checked proofs — are
+        described as "supported by regression tests", not "verified".
+      </p>
     </div>
-  </section>
 
-  <!-- Sections planned for Prompt 45 -->
-  <section class="page-section page-section--alt" aria-labelledby="stele-light-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-label">Proof Language</span>
-        <h2 id="stele-light-heading" class="section-heading">
-          Stele-Light
-          <span class="badge badge-stable">Stable</span>
-        </h2>
-      </div>
-      <div class="skeleton-notice">
-        <strong>Planned content — Prompt 45</strong>
-        Proof syntax, inference rules (12 IPL + 3 classical), theorem structure,
-        assume / have / suppose / conclude keywords, scope and discharge rules.
-      </div>
+    <!-- Status table -->
+    <h2 id="status-table-heading" class="section-heading" style="font-size:var(--text-lg);margin-bottom:var(--space-6)">
+      Feature status
+    </h2>
+    <div class="table-scroll" role="region" aria-labelledby="status-table-heading" tabindex="0">
+    <table class="theory-table" style="max-width:760px;width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:var(--text-sm)">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Feature</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Status</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary);font-weight:600">Module</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Proof checker (Stele-Light)</td>
+          <td style="padding:8px 12px"><span class="badge badge-stable">Stable</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">kernel.py · logic.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Parser (recursive descent)</td>
+          <td style="padding:8px 12px"><span class="badge badge-stable">Stable</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">parser.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Proof-term calculus (Curry–Howard, IPL)</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">stele/core/</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">FOL proof-term fragment (∀, ∃)</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">core/fol.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Classical negative translation bridge</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">core/classical_experimental.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Matrix semantics (K3, LP, Boolean)</td>
+          <td style="padding:8px 12px"><span class="badge badge-demo">Demo / Diagnostic</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">matrix.py · world.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Kripke countermodel search</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">kripke.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Proof certificates + minicheck</td>
+          <td style="padding:8px 12px"><span class="badge badge-experimental">Experimental</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">certificate.py · minicheck.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Structural diagnostics / hints</td>
+          <td style="padding:8px 12px"><span class="badge badge-untrusted">Untrusted</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">diagnostics.py · proofstate.py</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">ML baseline classifier</td>
+          <td style="padding:8px 12px"><span class="badge badge-optional">Optional</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">stele_ml/</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;color:var(--text)">Lean 4 type-error bridge</td>
+          <td style="padding:8px 12px"><span class="badge badge-optional">Optional</span></td>
+          <td style="padding:8px 12px;font-family:var(--font-mono);color:var(--muted);font-size:.78rem">stele_lean/</td>
+        </tr>
+      </tbody>
+    </table>
     </div>
-  </section>
 
-  <section class="page-section" aria-labelledby="proof-terms-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-label">Curry–Howard</span>
-        <h2 id="proof-terms-heading" class="section-heading">
-          Proof-Term Calculus
-          <span class="badge badge-experimental">Experimental</span>
-        </h2>
-      </div>
-      <div class="skeleton-notice">
-        <strong>Planned content — Prompt 45</strong>
-        Bidirectional type-checking, β-reduction, de Bruijn indices,
-        FOL fragment (ForallIntro/Elim/ExistsIntro/Elim),
-        term-check and term-normalize CLI commands.
-      </div>
-      <div class="callout callout-warning" style="margin-top:1rem;max-width:640px">
-        <span class="callout-label">Limitation</span>
-        <p>
-          Classical proofs are accepted at the rule level. Proof terms are not
-          extracted from classical proofs — acceptance is at rule application, not
-          term level. The classical bridge (Gödel–Gentzen) is formula-level only.
-        </p>
-      </div>
-    </div>
-  </section>
+  </div>
+</section>
 
-  <section class="page-section page-section--alt" aria-labelledby="matrix-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-label">Multi-valued Semantics</span>
-        <h2 id="matrix-heading" class="section-heading">
-          Matrix Semantics
-          <span class="badge badge-stable">Stable</span>
-        </h2>
-      </div>
-      <div class="skeleton-notice">
-        <strong>Planned content — Prompt 45</strong>
-        K3 (Kleene), LP (Priest), Boolean matrices; truth-value tables;
-        rule soundness checks; world lattice and proposition-level independence.
-      </div>
-    </div>
-  </section>
+<!-- ── §1  Stele-Light proof language ───────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="stele-light-heading">
+  <div class="section-inner">
 
-  <section class="page-section" aria-labelledby="kripke-heading">
-    <div class="section-inner">
-      <div class="section-header">
-        <span class="section-label">Intuitionistic Semantics</span>
-        <h2 id="kripke-heading" class="section-heading">
-          Kripke Countermodels
-          <span class="badge badge-experimental">Experimental</span>
-        </h2>
-      </div>
-      <div class="skeleton-notice">
-        <strong>Planned content — Prompt 45</strong>
-        Bounded finite Kripke frame search (≤4 worlds default),
-        intuitionistic propositional logic only, absence-of-countermodel caveat.
-      </div>
-      <div class="callout callout-warning" style="margin-top:1rem;max-width:640px">
-        <span class="callout-label">Important</span>
-        <p>Bounded search — absence of a countermodel is not a proof of validity.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Docs links -->
-  <section class="page-section page-section--alt" aria-labelledby="theory-docs-heading">
-    <div class="section-inner">
-      <h2 id="theory-docs-heading" class="section-heading" style="margin-bottom:1.5rem">
-        Formal Documentation
+    <div class="section-header">
+      <span class="section-label">Proof Language</span>
+      <h2 id="stele-light-heading" class="section-heading">
+        Stele-Light
+        <span class="badge badge-stable">Stable</span>
       </h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:900px">
-        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md"
-           target="_blank" rel="noopener">
-          <span class="doc-link-icon" aria-hidden="true">⊢</span>
-          <span class="doc-link-title">Formal Semantics</span>
-          <span class="badge badge-stable">Stable</span>
-          <span class="doc-link-desc">BNF grammar, typing rules, reduction rules, de Bruijn layer.</span>
-        </a>
-        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md"
-           target="_blank" rel="noopener">
-          <span class="doc-link-icon" aria-hidden="true">∴</span>
-          <span class="doc-link-title">Metatheory</span>
-          <span class="badge badge-experimental">Proof sketches</span>
-          <span class="doc-link-desc">Subject reduction, normalization, consistency — claims and evidence.</span>
-        </a>
-        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/proof-terms.md"
-           target="_blank" rel="noopener">
-          <span class="doc-link-icon" aria-hidden="true">λ</span>
-          <span class="doc-link-title">Proof Terms</span>
-          <span class="badge badge-experimental">Experimental</span>
-          <span class="doc-link-desc">Curry–Howard core, FOL fragment, term parser, elaboration API.</span>
-        </a>
-        <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
-           target="_blank" rel="noopener">
-          <span class="doc-link-icon" aria-hidden="true">📖</span>
-          <span class="doc-link-title">Language Guide</span>
-          <span class="badge badge-stable">Stable</span>
-          <span class="doc-link-desc">Proof syntax, rules, matrix semantics, world lattice, CLI.</span>
-        </a>
+      <p class="section-sub">
+        A structured natural-deduction language for propositional logic.
+        Every proof is a sequence of explicit rule applications.
+        The kernel checks each application; nothing is assumed or guessed.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1fr);gap:var(--space-8);align-items:start;max-width:900px">
+
+      <div>
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-4)">Proof keywords</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm)">
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">theorem NAME:</td>
+              <td style="padding:6px 10px;color:var(--muted)">Theorem header</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">assume L: φ</td>
+              <td style="padding:6px 10px;color:var(--muted)">Global assumption</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">suppose L: φ</td>
+              <td style="padding:6px 10px;color:var(--muted)">Subproof assumption</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">have L: φ by RULE refs…</td>
+              <td style="padding:6px 10px;color:var(--muted)">Derived step</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">conclude φ by L</td>
+              <td style="padding:6px 10px;color:var(--muted)">Final conclusion</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin:var(--space-6) 0 var(--space-4)">Inference rules</h3>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);margin-bottom:var(--space-3)">
+          15 rules in two sets. Rules are data (<code>logic.py</code>), not kernel logic.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">copy</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">mp</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">imp_intro</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">and_intro</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">and_elim_left</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">and_elim_right</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">or_intro_left</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">or_intro_right</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">or_elim</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">neg_intro</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">neg_elim</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--text)">ex_falso</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surf2);border:1px solid var(--bord2);border-radius:3px;color:var(--amber)">dne ¹</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surf2);border:1px solid var(--bord2);border-radius:3px;color:var(--amber)">lem ¹</span>
+          <span style="font-family:var(--font-mono);font-size:.72rem;padding:2px 7px;background:var(--surf2);border:1px solid var(--bord2);border-radius:3px;color:var(--amber)">pbc ¹</span>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:.72rem;color:var(--dim);margin-top:var(--space-2)">¹ classical only — rejected by intuitionistic_prop</p>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-4)">Example proof — P → P</h3>
+        <pre class="proof-snippet" aria-label="Stele proof: P implies P"><span class="ps-keyword">theorem</span> <span class="ps-label">imp_self</span>:
+  <span class="ps-keyword">suppose</span> <span class="ps-label">h1</span>: <span class="ps-formula">P</span>
+    <span class="ps-keyword">have</span> <span class="ps-label">h2</span>: <span class="ps-formula">P</span> <span class="ps-keyword">by</span> <span class="ps-rule">copy</span> <span class="ps-label">h1</span>
+  <span class="ps-keyword">have</span> <span class="ps-label">r</span>: <span class="ps-formula">P -&gt; P</span> <span class="ps-keyword">by</span> <span class="ps-rule">imp_intro</span> <span class="ps-label">h1</span> <span class="ps-label">h2</span>
+  <span class="ps-keyword">conclude</span> <span class="ps-formula">P -&gt; P</span> <span class="ps-keyword">by</span> <span class="ps-label">r</span></pre>
+
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);margin-top:var(--space-3);margin-bottom:var(--space-6);max-width:380px">
+          Valid under both <code>intuitionistic_prop</code> and <code>classical_prop</code>.
+          <code>imp_intro</code> discharges the <code>suppose h1</code> assumption.
+        </p>
+
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-4)">Classical-only example — DNE</h3>
+        <pre class="proof-snippet" aria-label="Double negation elimination — classical only"><span class="ps-keyword">theorem</span> <span class="ps-label">dne_consequent</span>:
+  <span class="ps-keyword">assume</span> <span class="ps-label">h</span>: <span class="ps-formula">not not P</span>
+  <span class="ps-keyword">have</span> <span class="ps-label">r</span>: <span class="ps-formula">P</span> <span class="ps-keyword">by</span> <span class="ps-rule">dne</span> <span class="ps-label">h</span>
+  <span class="ps-keyword">conclude</span> <span class="ps-formula">P</span> <span class="ps-keyword">by</span> <span class="ps-label">r</span></pre>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);margin-top:var(--space-3);max-width:380px">
+          Accepted by <code>classical_prop</code>; <strong>rejected</strong> by
+          <code>intuitionistic_prop</code> — the <code>dne</code> rule is not in the
+          intuitionistic rule set.
+        </p>
       </div>
     </div>
-  </section>
+
+    <div class="callout callout-info" style="max-width:640px;margin-top:var(--space-8)">
+      <span class="callout-label">Proof mode</span>
+      <p>
+        The proof checker kernel operates on the <em>proof script</em> alone.
+        It makes no semantic claims: verifying <code>P → P</code> does not mean the kernel
+        computed its truth value. The kernel checks that each <code>have</code> step follows
+        from the cited references by the cited rule — nothing more.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §2  ⊢ vs ⊨ ────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="turnstile-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Derivability vs. Validity</span>
+      <h2 id="turnstile-heading" class="section-heading">⊢ and ⊨ are distinct</h2>
+      <p class="section-sub">
+        Stele uses both symbols, but they are computed by entirely separate subsystems
+        that do not share code.
+      </p>
+    </div>
+
+    <!-- SVG diagram: ⊢ vs ⊨ -->
+    <figure aria-labelledby="turnstile-diagram-caption" style="max-width:700px;margin-bottom:var(--space-8)">
+      <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-labelledby="turnstile-svg-title turnstile-svg-desc"
+           style="width:100%;height:auto;display:block">
+        <title id="turnstile-svg-title">⊢ vs ⊨ distinction diagram</title>
+        <desc id="turnstile-svg-desc">
+          Left side: Γ ⊢ φ (syntactic derivability) — the kernel checks each
+          rule application; result is Valid or Invalid.
+          Right side: Γ ⊨ φ (semantic validity) — the matrix layer evaluates
+          truth values; result is Sound or Unsound under a matrix.
+          Both are separate subsystems that do not share code.
+        </desc>
+        <!-- Background -->
+        <rect width="700" height="200" fill="#07090f" rx="8"/>
+
+        <!-- Left box: ⊢ -->
+        <rect x="20" y="30" width="290" height="140" rx="6"
+              fill="#0d1220" stroke="#1c2840" stroke-width="1.5"/>
+        <text x="165" y="22" text-anchor="middle" font-family="monospace"
+              font-size="12" fill="#5e7a8f" letter-spacing="2">SYNTACTIC</text>
+        <text x="165" y="70" text-anchor="middle" font-family="monospace"
+              font-size="32" fill="#b06aff">⊢</text>
+        <text x="165" y="100" text-anchor="middle" font-family="monospace"
+              font-size="14" fill="#b8cce0">Γ ⊢ φ</text>
+        <text x="165" y="122" text-anchor="middle" font-family="sans-serif"
+              font-size="11" fill="#5e7a8f">kernel.py checks each rule</text>
+        <text x="165" y="138" text-anchor="middle" font-family="sans-serif"
+              font-size="11" fill="#5e7a8f">application against logic.py</text>
+        <text x="165" y="158" text-anchor="middle" font-family="monospace"
+              font-size="11" fill="#52c97a">→ Valid / Invalid</text>
+
+        <!-- Centre divider -->
+        <line x1="350" y1="10" x2="350" y2="190" stroke="#1c2840" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="350" y="105" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#283a54">no shared</text>
+        <text x="350" y="118" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#283a54">code</text>
+
+        <!-- Right box: ⊨ -->
+        <rect x="390" y="30" width="290" height="140" rx="6"
+              fill="#0d1220" stroke="#1c2840" stroke-width="1.5"/>
+        <text x="535" y="22" text-anchor="middle" font-family="monospace"
+              font-size="12" fill="#5e7a8f" letter-spacing="2">SEMANTIC</text>
+        <text x="535" y="70" text-anchor="middle" font-family="monospace"
+              font-size="32" fill="#00e8ff">⊨</text>
+        <text x="535" y="100" text-anchor="middle" font-family="monospace"
+              font-size="14" fill="#b8cce0">Γ ⊨ φ</text>
+        <text x="535" y="122" text-anchor="middle" font-family="sans-serif"
+              font-size="11" fill="#5e7a8f">matrix.py evaluates truth values</text>
+        <text x="535" y="138" text-anchor="middle" font-family="sans-serif"
+              font-size="11" fill="#5e7a8f">K3 / LP / Boolean matrices</text>
+        <text x="535" y="158" text-anchor="middle" font-family="monospace"
+              font-size="11" fill="#d4a050">→ Sound / Unsound (diagnostic)</text>
+      </svg>
+      <figcaption id="turnstile-diagram-caption"
+                  style="font-family:var(--font-sans);font-size:var(--text-xs);color:var(--muted);text-align:center;margin-top:var(--space-2)">
+        Kernel invariant: <code>kernel.py</code> never imports <code>matrix.py</code>,
+        and <code>matrix.py</code> never imports <code>kernel.py</code>.
+        Enforced by <code>test_regression_invariants.py</code>.
+      </figcaption>
+    </figure>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);max-width:760px">
+      <div>
+        <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-3)">
+          Syntactic derivability (⊢)
+        </h3>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7;margin-bottom:var(--space-3)">
+          <code>Γ ⊢ φ</code> means: the formula φ can be derived from assumptions Γ
+          using only the rules in the selected logic. The kernel decides this by
+          pattern-matching rule schemas against each proof step. No truth values are
+          computed. The decision is purely structural.
+        </p>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+          This is what the kernel checks. A "Valid" verdict means every step matched
+          its rule. It does not mean the formula is a tautology.
+        </p>
+      </div>
+      <div>
+        <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-3)">
+          Semantic validity (⊨)
+        </h3>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7;margin-bottom:var(--space-3)">
+          <code>Γ ⊨ φ</code> means: for every semantic valuation satisfying Γ
+          under a given matrix, φ also holds. The matrix layer
+          (<code>matrix.py</code>, <code>world.py</code>) computes this — as a
+          <em>diagnostic tool</em>, not as a validity oracle.
+        </p>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+          A "Sound" matrix verdict means all rules preserve designated values.
+          A "Unsound" result identifies which rules fail under which valuation.
+          These are <span class="badge badge-demo" style="font-size:.65rem">Demo</span> diagnostics —
+          the matrix layer is explicitly untrusted.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §3  Proof terms / Curry–Howard ───────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="proof-terms-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Curry–Howard</span>
+      <h2 id="proof-terms-heading" class="section-heading">
+        Proof-Term Calculus
+        <span class="badge badge-experimental">Experimental</span>
+      </h2>
+      <p class="section-sub">
+        An optional layer that extracts a typed λ-term (a Curry–Howard witness)
+        from every well-formed intuitionistic proof script.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);max-width:900px;align-items:start">
+      <div class="prose-body">
+        <p>
+          Under the Curry–Howard correspondence, propositions are types and proofs
+          are programs. A proof of <code>A → B</code> corresponds to a function
+          from A to B; a proof of <code>A ∧ B</code> corresponds to a pair; a
+          proof of <code>A ∨ B</code> corresponds to a tagged sum.
+        </p>
+        <p>
+          The <code>stele.core</code> package implements this calculus for
+          intuitionistic propositional logic. The <code>elaborate</code> module
+          converts a verified Stele-Light script into a proof term, then
+          <code>stele.core.typing</code> checks that term independently. The
+          <code>crosscheck_theorem</code> function runs both checks in sequence.
+        </p>
+        <p>
+          β-reduction is implemented (<code>stele.core.reduce</code>), as are de Bruijn
+          indices for capture-avoiding substitution. Metatheory claims (subject
+          reduction, normalization, consistency) are supported by regression tests
+          and proof sketches — they are <strong>not machine-verified</strong>.
+        </p>
+        <div class="callout callout-warning" style="margin-top:var(--space-4)">
+          <span class="callout-label">Classical limitation</span>
+          <p>
+            The proof-term calculus covers intuitionistic proofs only.
+            Classical rules (<code>dne</code>, <code>lem</code>, <code>pbc</code>)
+            are accepted at the proof-checker level but are excluded from the
+            proof-term extractor (<code>_CLASSICAL_RULES</code> frozenset).
+            The Gödel–Gentzen bridge is a separate experimental module.
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-3)">
+          Curry–Howard correspondence (excerpt)
+        </h3>
+        <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm)">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th scope="col" style="text-align:left;padding:6px 10px;color:var(--text-secondary)">Logic</th>
+              <th scope="col" style="text-align:left;padding:6px 10px;color:var(--text-secondary)">Type</th>
+              <th scope="col" style="text-align:left;padding:6px 10px;color:var(--text-secondary)">Term</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:var(--text)">A → B</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">A → B</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--muted)">Lam(x, A, body)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:var(--text)">A ∧ B</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">A × B</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--muted)">Pair(a, b)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:var(--text)">A ∨ B</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">A + B</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--muted)">Inl / Inr / Case</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;color:var(--text)">⊥</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">Empty</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--muted)">Abort(t, type)</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;color:var(--text)">∀x. A(x)</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--cyan)">Π-type (approx)</td>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--muted)">ForallIntro/Elim</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top:var(--space-5)">
+          <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-3)">CLI commands</h3>
+          <pre style="background:var(--surf3);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-family:var(--font-mono);font-size:.77rem;color:var(--text);overflow-x:auto"># Cross-check a proof (kernel + type checker)
+python -m stele.cli elaborate examples/imp_self.stele
+
+# Check a single term
+python -m stele.cli term-check "(fun x:P => x)" "P -> P"
+
+# Normalize a term
+python -m stele.cli term-normalize "(fun x:P => x) y"</pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §4  FOL fragment ──────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="fol-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">First-Order Logic</span>
+      <h2 id="fol-heading" class="section-heading">
+        FOL Proof-Term Fragment
+        <span class="badge badge-experimental">Experimental</span>
+      </h2>
+      <p class="section-sub">
+        Universal and existential quantifiers are supported in the proof-term layer.
+        The surface proof language (<code>Stele-Light</code>) does not yet support FOL
+        syntax — quantifiers are available only at the term level.
+      </p>
+    </div>
+
+    <div class="prose-body" style="max-width:640px">
+      <p>
+        The proof-term calculus (<code>stele.core.fol</code>) extends the IPL fragment
+        with <code>ForallIntro</code>, <code>ForallElim</code>, <code>ExistsIntro</code>,
+        and <code>ExistsElim</code> constructors. These correspond to universal and
+        existential quantifiers in the Curry–Howard reading.
+      </p>
+      <p>
+        Freshness conditions are enforced: <code>ExistsElim</code> rejects introductions
+        where the witness variable appears free in the conclusion type.
+        Formula-level α-equivalence uses a separate de Bruijn layer
+        (<code>to_debruijn_formula</code>) to handle shadowing correctly.
+      </p>
+    </div>
+
+    <div class="callout callout-warning" style="max-width:640px;margin-top:var(--space-4)">
+      <span class="callout-label">Surface language limitation</span>
+      <p>
+        The Stele-Light surface language does not yet support <code>forall</code> /
+        <code>exists</code> syntax. Adding FOL quantifiers to the surface language and
+        kernel is listed as a roadmap item. The current FOL support is proof-term level
+        only (<code>stele.core.fol</code>), accessible via the Python API.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── §5  Classical bridge ──────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="classical-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Classical Proof Terms</span>
+      <h2 id="classical-heading" class="section-heading">
+        Gödel–Gentzen Bridge
+        <span class="badge badge-experimental">Experimental</span>
+      </h2>
+      <p class="section-sub">
+        An experimental module that translates classical propositional formulas into
+        intuitionistic formulas via the Gödel–Gentzen double-negation translation,
+        then type-checks manually-written proof terms for the translated formula.
+      </p>
+    </div>
+
+    <div class="prose-body" style="max-width:640px">
+      <p>
+        The core claim being exploited is the metatheorem CPC ⊢ φ implies IPC ⊢ φ<sup>N</sup>,
+        where φ<sup>N</sup> is the double-negation translation of φ (Gödel–Gentzen, 1933).
+        This is a classical metatheory result; Stele does not machine-prove it.
+      </p>
+      <p>
+        The module (<code>stele/core/classical_experimental.py</code>) provides
+        formula-level translation and an API to check proof terms for translated formulas.
+        Representative cases (DNE, LEM, Peirce) are covered by regression tests.
+      </p>
+    </div>
+
+    <div class="callout callout-warning" style="max-width:640px;margin-top:var(--space-4)">
+      <span class="callout-label">Not implemented</span>
+      <p>
+        λμ-calculus, <code>callcc</code>, continuation typing, classical normalization,
+        automatic proof translation, and proof search are not implemented.
+        The bridge is formula-level translation only — it does not automatically
+        produce proof terms.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── §6  Matrix semantics ──────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="matrix-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Multi-valued Semantics</span>
+      <h2 id="matrix-heading" class="section-heading">
+        Matrix Semantics
+        <span class="badge badge-demo">Demo / Diagnostic</span>
+      </h2>
+      <p class="section-sub">
+        Three truth-value matrices — Boolean (classical), K3 (strong Kleene),
+        and LP (Logic of Paradox) — let you inspect whether proof rules remain
+        sound when truth can be indeterminate or paradoxical.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-6);max-width:900px;margin-bottom:var(--space-8)">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:var(--text-md);font-weight:700;color:var(--text);margin-bottom:var(--space-2)">Boolean</div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-3)">
+          Classical two-valued logic. All 15 rules sound.
+          Baseline for comparison.
+        </p>
+        <code style="font-size:.72rem;color:var(--muted)">values: T, F</code>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:var(--text-md);font-weight:700;color:var(--text);margin-bottom:var(--space-2)">K3 (strong Kleene)</div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-3)">
+          Three values: T, I (indeterminate), F. No designated I.
+          LEM and DNE fail.
+        </p>
+        <code style="font-size:.72rem;color:var(--muted)">designated: {T} · I→F=I, F→I=T</code>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:var(--text-md);font-weight:700;color:var(--text);margin-bottom:var(--space-2)">LP (Logic of Paradox)</div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-3)">
+          Three values: T, I, F. I is designated (paradoxical truths preserve).
+          <em>mp</em> fails to preserve single-valuedness.
+        </p>
+        <code style="font-size:.72rem;color:var(--muted)">designated: {T, I}</code>
+      </div>
+    </div>
+
+    <div class="callout callout-info" style="max-width:640px">
+      <span class="callout-label">Rule soundness vs. proof mode</span>
+      <p>
+        Matrix soundness checks (<code>⊨</code>) are computed by
+        <code>matrix.py</code> / <code>world.py</code> and are entirely separate
+        from proof checking. A rule being "unsound under K3" does not make the
+        kernel reject proofs — it only tells you whether the rule preserves
+        designated values in that matrix. These are diagnostic tools for
+        exploring semantic behaviour, not validity gates.
+      </p>
+    </div>
+
+    <div style="margin-top:var(--space-6)">
+      <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-3)">
+        CLI commands
+      </h3>
+      <pre style="background:var(--surf3);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-family:var(--font-mono);font-size:.77rem;color:var(--text);overflow-x:auto"># Check rule soundness under K3
+python -m stele.cli soundness --logic classical_prop --matrix K3
+
+# World lattice: P or not P across Γ, Γ+P, Γ+¬P
+python -m stele.cli lattice "P or not P"</pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §7  Kripke countermodels ──────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="kripke-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Intuitionistic Semantics</span>
+      <h2 id="kripke-heading" class="section-heading">
+        Kripke Countermodels
+        <span class="badge badge-experimental">Experimental</span>
+      </h2>
+      <p class="section-sub">
+        A bounded finite-frame search that looks for a Kripke countermodel
+        for a given propositional formula under intuitionistic logic.
+        Finding a countermodel proves a formula is not intuitionistically valid.
+        <em>Failing to find one within the bound is not a proof of validity.</em>
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);max-width:900px;align-items:start">
+      <div class="prose-body">
+        <p>
+          A Kripke frame for intuitionistic propositional logic is a set of
+          possible worlds with an accessibility relation. A formula is forced
+          at a world if it holds at that world and at all reachable worlds.
+          Intuitionistic validity means forcing at all worlds in all frames.
+        </p>
+        <p>
+          <code>stele.kripke</code> exhaustively searches frames up to a
+          configurable bound (default: 3 worlds). If it finds a world where
+          the formula fails to be forced, it returns a countermodel.
+          The search is sound: any countermodel returned is a genuine Kripke
+          countermodel for the intuitionistic semantics.
+        </p>
+        <p>
+          The search is <strong>not complete</strong>: a countermodel may
+          require more worlds than the bound. A "no countermodel found"
+          result within a small bound is not a proof of intuitionistic validity.
+        </p>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-4)">Known countermodels</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm)">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th scope="col" style="text-align:left;padding:6px 10px;color:var(--text-secondary)">Formula</th>
+              <th scope="col" style="text-align:left;padding:6px 10px;color:var(--text-secondary)">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--text)">P or not P</td>
+              <td style="padding:6px 10px;color:var(--amber)">Countermodel found (2 worlds)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--text)">not not P -> P</td>
+              <td style="padding:6px 10px;color:var(--amber)">Countermodel found (2 worlds)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--text)">((P->Q)->P)->P</td>
+              <td style="padding:6px 10px;color:var(--amber)">Countermodel found (3 worlds)</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;font-family:var(--font-mono);color:var(--text)">P -> P</td>
+              <td style="padding:6px 10px;color:var(--muted)">No countermodel (≤ 3 worlds) <em>†</em></td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-family:var(--font-sans);font-size:.72rem;color:var(--dim);margin-top:var(--space-2)">
+          † Absence of countermodel within the bound is not a proof of validity.
+        </p>
+
+        <div style="margin-top:var(--space-5)">
+          <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-3)">CLI</h3>
+          <pre style="background:var(--surf3);border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-family:var(--font-mono);font-size:.77rem;color:var(--text);overflow-x:auto">python -m stele.cli kripke "P or not P"
+python -m stele.cli kripke "not not P -> P" --max-worlds 4</pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── §8  Metatheory honesty ────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="metatheory-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Metatheory</span>
+      <h2 id="metatheory-heading" class="section-heading">
+        Metatheory claims and status
+      </h2>
+      <p class="section-sub">
+        Python regression tests are not machine-verified proofs.
+        The table below uses precise language about what has and has not been shown.
+      </p>
+    </div>
+
+    <div class="callout callout-warning" style="max-width:640px;margin-bottom:var(--space-6)">
+      <span class="callout-label">Honesty statement</span>
+      <p>
+        No metatheory claim in Stele is backed by a machine-checked proof
+        (Lean/Coq/Agda). "Supported by regression tests" means specific cases
+        pass. "Proof sketch" means a standard-metatheory argument is cited
+        but not formalized in code. "Implementation invariant" means the code
+        structure enforces the property, checkable by static inspection.
+      </p>
+    </div>
+
+    <div class="table-scroll" role="region" aria-label="Metatheory claims table" tabindex="0">
+    <table style="max-width:760px;width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:var(--text-sm)">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary)">Claim</th>
+          <th scope="col" style="text-align:left;padding:8px 12px;color:var(--text-secondary)">Evidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Elaboration soundness</td>
+          <td style="padding:8px 12px;color:var(--muted)">Regression tests · no machine proof</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Subject reduction (type preservation)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Proof sketch + regression / property tests</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Normalization (strong, IPL fragment)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Standard metatheorem cited · fuel guard in code</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Confluence (Church-Rosser)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Proof sketch · smoke tests for specific paths</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Core consistency (no closed ⊥ term)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Proof sketch + generation tests</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 12px;color:var(--text)">Classical exclusion (dne/lem/pbc not in term core)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Implementation invariant · regression tests</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;color:var(--text)">Matrix separation (kernel ↔ matrix no-import)</td>
+          <td style="padding:8px 12px;color:var(--muted)">Architecture invariant · static import test</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA + docs ─────────────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="theory-cta-heading">
+  <div class="section-inner">
+    <h2 id="theory-cta-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Go deeper
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:900px;margin-bottom:var(--space-8)">
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">⊢</span>
+        <span class="doc-link-title">Formal Semantics</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">BNF grammar, typing rules, reduction rules, de Bruijn layer.</span>
+      </a>
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">∴</span>
+        <span class="doc-link-title">Metatheory</span>
+        <span class="badge badge-experimental">Proof sketches</span>
+        <span class="doc-link-desc">Subject reduction, normalization, consistency — claims and evidence.</span>
+      </a>
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/proof-terms.md"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">λ</span>
+        <span class="doc-link-title">Proof Terms</span>
+        <span class="badge badge-experimental">Experimental</span>
+        <span class="doc-link-desc">Curry–Howard core, FOL fragment, term parser, elaboration API.</span>
+      </a>
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">📖</span>
+        <span class="doc-link-title">Language Guide</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Proof syntax, rules, matrix semantics, world lattice, CLI.</span>
+      </a>
+      <a class="doc-link-card" href="architecture.html">
+        <span class="doc-link-icon" aria-hidden="true">🏗</span>
+        <span class="doc-link-title">Architecture</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Trust boundary, certificate flow, dependency policy, invariants.</span>
+      </a>
+      <a class="doc-link-card" href="research.html">
+        <span class="doc-link-icon" aria-hidden="true">📄</span>
+        <span class="doc-link-title">Whitepaper</span>
+        <span class="badge badge-experimental">Draft</span>
+        <span class="doc-link-desc">Extended technical writeup, design decisions, related work.</span>
+      </a>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-4)">
+      <a href="studio.html" class="btn btn-primary">Open Studio →</a>
+      <a href="architecture.html" class="btn btn-ghost">Architecture &amp; Trust Model</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+         class="btn btn-ghost">View on GitHub ↗</a>
+    </div>
+  </div>
+</section>
 
 </main>
 
@@ -191,11 +843,14 @@
       <span class="footer-sep">·</span>
       <span>Formal Verification Framework for Mathematical Reasoning</span>
       <span class="footer-sep">·</span>
+      <a href="index.html">Overview</a>
+      <span class="footer-sep">·</span>
+      <a href="architecture.html">Architecture</a>
+      <span class="footer-sep">·</span>
       <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
     </div>
     <div class="footer-note">
-      Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
-      Local Studio: <code>python -m stele</code>
+      Stele: proof checker, not theorem prover. browser-local via Pyodide/WASM. No backend.
     </div>
   </div>
 </footer>

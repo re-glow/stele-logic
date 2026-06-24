@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stele — Architecture &amp; Trust Model</title>
 <meta name="description"
-  content="Stele trust model: the trusted kernel, certificates, and explicitly untrusted layers (diagnostics, hints, ML). Zero runtime dependencies.">
+  content="Stele architecture: the trusted kernel, certificate/minicheck path, explicitly untrusted diagnostics and hints, zero runtime dependencies, and browser-local Pyodide execution.">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
 <link rel="stylesheet" href="assets/components.css">
@@ -18,9 +18,10 @@
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
-    <a href="index.html">Home</a>
+    <a href="index.html">Overview</a>
     <a href="studio.html">Studio</a>
     <a href="theory.html">Theory</a>
+    <a href="architecture.html" aria-current="page">Architecture</a>
     <a href="research.html">Research</a>
     <a href="about.html">About</a>
     <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
@@ -30,126 +31,695 @@
 
 <main class="page-main" id="main-content">
 
-  <section class="page-section" aria-labelledby="arch-heading">
-    <div class="section-inner">
-      <span class="section-label">Trust &amp; Architecture</span>
-      <h1 id="arch-heading" class="section-heading">Architecture &amp; Trust Model</h1>
-      <p class="section-sub" style="font-family:var(--font-sans)">
-        Stele's correctness guarantee rests on a single small trusted core.
-        Every other layer is explicitly untrusted and advisory.
-      </p>
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="arch-heading">
+  <div class="section-inner">
 
-      <div class="callout callout-info" style="max-width:640px;margin-bottom:2rem">
-        <span class="callout-label">Page status — Prompt 46–47</span>
+    <span class="section-label">Trust &amp; Architecture</span>
+    <h1 id="arch-heading" class="section-heading">Architecture &amp; Trust Model</h1>
+
+    <div class="prose-body" style="max-width:680px;margin-bottom:var(--space-10)">
+      <p>
+        Stele's correctness guarantee rests on a single small component:
+        <strong><code>kernel.py</code></strong>. Every other layer — the parser,
+        the Studio UI, diagnostics, proof-state hints, certificates, the ML baseline,
+        the Lean bridge — is either explicitly untrusted or optional. They may be
+        helpful, but they cannot change whether the kernel accepts or rejects a proof.
+      </p>
+      <p>
+        This is not a performance claim or a marketing claim. It is a structural
+        invariant enforced by the codebase and checked by tests.
+        <code>kernel.py</code> imports nothing from the standard library except
+        built-in types; no third-party dependency; no semantic reasoning.
+        Everything you need to audit Stele's correctness is in one file.
+      </p>
+      <p>
+        The architecture page explains what each layer does, which layers are
+        trusted, and where the trust boundaries lie. It also covers the
+        certificate/minicheck re-verification path, browser-local execution
+        via Pyodide, and the six invariants the codebase enforces.
+      </p>
+    </div>
+
+    <!-- Trust boundary SVG diagram -->
+    <figure aria-labelledby="trust-diagram-caption" style="max-width:760px;margin-bottom:var(--space-8)">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-labelledby="trust-svg-title trust-svg-desc"
+           style="width:100%;height:auto;display:block">
+        <title id="trust-svg-title">Stele trust boundary diagram</title>
+        <desc id="trust-svg-desc">
+          A layered diagram showing three zones.
+          Trusted core (left): parser.py receives the source proof, passes AST to kernel.py,
+          which produces Valid or Invalid.
+          Experimental (centre): certificate.py emits a certificate JSON from a valid proof;
+          minicheck.py re-verifies that certificate independently.
+          Untrusted / Optional (right): diagnostics.py, proofstate.py (hints),
+          Studio browser UI, stele_ml (optional), stele_lean (optional).
+          Arrows show data flow. The untrusted zone cannot affect kernel verdicts.
+        </desc>
+
+        <!-- Background zones -->
+        <!-- Trusted zone -->
+        <rect x="10" y="40" width="220" height="240" rx="6"
+              fill="rgba(82,201,122,0.04)" stroke="rgba(82,201,122,0.25)" stroke-width="1.5"/>
+        <text x="120" y="32" text-anchor="middle" font-family="monospace" font-size="10"
+              fill="#52c97a" letter-spacing="2">TRUSTED CORE</text>
+
+        <!-- Experimental zone -->
+        <rect x="250" y="40" width="200" height="240" rx="6"
+              fill="rgba(212,160,80,0.04)" stroke="rgba(212,160,80,0.2)" stroke-width="1.5"/>
+        <text x="350" y="32" text-anchor="middle" font-family="monospace" font-size="10"
+              fill="#d4a050" letter-spacing="2">EXPERIMENTAL</text>
+
+        <!-- Untrusted zone -->
+        <rect x="470" y="40" width="280" height="240" rx="6"
+              fill="rgba(255,53,102,0.03)" stroke="rgba(255,53,102,0.18)" stroke-width="1.5"/>
+        <text x="610" y="32" text-anchor="middle" font-family="monospace" font-size="10"
+              fill="#ff3566" letter-spacing="2">UNTRUSTED / OPTIONAL</text>
+
+        <!-- ── Trusted boxes ── -->
+        <!-- parser.py -->
+        <rect x="30" y="70" width="170" height="50" rx="4"
+              fill="#0d1220" stroke="rgba(82,201,122,0.5)" stroke-width="1.5"/>
+        <text x="115" y="91" text-anchor="middle" font-family="monospace"
+              font-size="12" font-weight="bold" fill="#52c97a">parser.py</text>
+        <text x="115" y="107" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#5e7a8f">tokenise + parse → AST</text>
+
+        <!-- Arrow: parser → kernel -->
+        <line x1="115" y1="120" x2="115" y2="148" stroke="#1c2840" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- kernel.py -->
+        <rect x="30" y="150" width="170" height="50" rx="4"
+              fill="#0d1220" stroke="rgba(82,201,122,0.9)" stroke-width="2"/>
+        <text x="115" y="171" text-anchor="middle" font-family="monospace"
+              font-size="12" font-weight="bold" fill="#52c97a">kernel.py</text>
+        <text x="115" y="187" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#5e7a8f">syntactic rule match</text>
+
+        <!-- verdict label -->
+        <text x="115" y="218" text-anchor="middle" font-family="monospace"
+              font-size="11" fill="#52c97a">Valid / Invalid</text>
+
+        <!-- ── Cert / minicheck ── -->
+        <!-- cert arrow from kernel -->
+        <line x1="200" y1="175" x2="248" y2="175" stroke="#1c2840" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- certificate.py -->
+        <rect x="265" y="60" width="165" height="50" rx="4"
+              fill="#0d1220" stroke="rgba(212,160,80,0.5)" stroke-width="1.5"/>
+        <text x="347" y="81" text-anchor="middle" font-family="monospace"
+              font-size="11" font-weight="bold" fill="#d4a050">certificate.py</text>
+        <text x="347" y="97" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#5e7a8f">emit cert JSON</text>
+
+        <!-- Arrow: cert → minicheck -->
+        <line x1="347" y1="110" x2="347" y2="148" stroke="#1c2840" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- minicheck.py -->
+        <rect x="265" y="150" width="165" height="50" rx="4"
+              fill="#0d1220" stroke="rgba(212,160,80,0.5)" stroke-width="1.5"/>
+        <text x="347" y="171" text-anchor="middle" font-family="monospace"
+              font-size="11" font-weight="bold" fill="#d4a050">minicheck.py</text>
+        <text x="347" y="187" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#5e7a8f">independent re-verify</text>
+
+        <text x="347" y="218" text-anchor="middle" font-family="monospace"
+              font-size="10" fill="#d4a050">no kernel import</text>
+
+        <!-- ── Untrusted boxes ── -->
+        <!-- diagnostics -->
+        <rect x="490" y="60" width="230" height="42" rx="4"
+              fill="#0d1220" stroke="rgba(255,53,102,0.3)" stroke-width="1"/>
+        <text x="605" y="78" text-anchor="middle" font-family="monospace"
+              font-size="11" fill="#ff3566">diagnostics.py</text>
+        <text x="605" y="93" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#5e7a8f">structural analysis · advisory</text>
+
+        <!-- hints -->
+        <rect x="490" y="112" width="230" height="42" rx="4"
+              fill="#0d1220" stroke="rgba(255,53,102,0.3)" stroke-width="1"/>
+        <text x="605" y="130" text-anchor="middle" font-family="monospace"
+              font-size="11" fill="#ff3566">proofstate.py (hints)</text>
+        <text x="605" y="145" text-anchor="middle" font-family="sans-serif"
+              font-size="10" fill="#5e7a8f">rule suggestions · trusted=False</text>
+
+        <!-- Studio browser -->
+        <rect x="490" y="164" width="110" height="42" rx="4"
+              fill="#0d1220" stroke="rgba(255,53,102,0.2)" stroke-width="1"/>
+        <text x="545" y="181" text-anchor="middle" font-family="monospace"
+              font-size="10" fill="#5e7a8f">Studio UI</text>
+        <text x="545" y="195" text-anchor="middle" font-family="sans-serif"
+              font-size="9" fill="#46586d">browser-local</text>
+
+        <!-- ML -->
+        <rect x="610" y="164" width="110" height="42" rx="4"
+              fill="#0d1220" stroke="rgba(176,106,255,0.25)" stroke-width="1"/>
+        <text x="665" y="181" text-anchor="middle" font-family="monospace"
+              font-size="10" fill="#b06aff">stele_ml / lean</text>
+        <text x="665" y="195" text-anchor="middle" font-family="sans-serif"
+              font-size="9" fill="#46586d">optional · isolated</text>
+
+        <!-- Arrow marker definition -->
+        <defs>
+          <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c2840"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption id="trust-diagram-caption"
+                  style="font-family:var(--font-sans);font-size:var(--text-xs);color:var(--muted);text-align:center;margin-top:var(--space-2)">
+        Data flows left to right. Only the trusted core zone produces validity verdicts.
+        Untrusted layers are advisory and structurally isolated.
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<!-- ── §1  Trusted core ──────────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="trust-layers-heading">
+  <div class="section-inner">
+
+    <h2 id="trust-layers-heading" class="section-heading" style="margin-bottom:var(--space-8)">
+      Trust layers
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:960px">
+
+      <div class="trust-card trust-card-trusted">
+        <div class="trust-card-header">
+          <span class="badge badge-stable">Trusted core</span>
+          <span class="trust-card-name">Kernel</span>
+        </div>
+        <div class="trust-card-body">
+          Pure syntactic rule matcher. Checks each <code>have</code> / <code>conclude</code>
+          step against the <code>RuleSchema</code> data in <code>logic.py</code>.
+          No semantic reasoning. No external imports. The sole source of
+          proof validity verdicts. De Bruijn criterion: auditable in one reading.
+        </div>
+        <code class="trust-card-path">stele/kernel.py</code>
+      </div>
+
+      <div class="trust-card trust-card-trusted">
+        <div class="trust-card-header">
+          <span class="badge badge-stable">Trusted</span>
+          <span class="trust-card-name">Parser</span>
+        </div>
+        <div class="trust-card-body">
+          Hand-written recursive-descent tokenizer and parser.
+          No external parser library (no lark, no PLY).
+          Stdlib only. Produces the AST consumed by the kernel.
+          Correctness is covered by 200+ parser tests.
+        </div>
+        <code class="trust-card-path">stele/parser.py</code>
+      </div>
+
+      <div class="trust-card trust-card-trusted">
+        <div class="trust-card-header">
+          <span class="badge badge-stable">Trusted</span>
+          <span class="trust-card-name">Logic rule data</span>
+        </div>
+        <div class="trust-card-body">
+          Rules are data — <code>RuleSchema</code> frozen dataclasses — not kernel logic.
+          Five built-in logic objects: <code>intuitionistic_prop</code>,
+          <code>classical_prop</code>, <code>minimal_prop</code>, etc.
+          Adding a new logic means adding rule data, not editing the kernel.
+        </div>
+        <code class="trust-card-path">stele/logic.py</code>
+      </div>
+
+      <div class="trust-card trust-card-untrusted">
+        <div class="trust-card-header">
+          <span class="badge badge-untrusted">Untrusted</span>
+          <span class="trust-card-name">Structural diagnostics</span>
+        </div>
+        <div class="trust-card-body">
+          Multi-pass analysis: undefined symbols, missing hypotheses, circular
+          dependencies, unused assumptions, invalid transitions.
+          Advisory only — never imported by the kernel. Nine stable diagnostic codes.
+        </div>
+        <code class="trust-card-path">stele/diagnostics.py</code>
+      </div>
+
+      <div class="trust-card trust-card-untrusted">
+        <div class="trust-card-header">
+          <span class="badge badge-untrusted">Untrusted</span>
+          <span class="trust-card-name">Proof-state hints</span>
+        </div>
+        <div class="trust-card-body">
+          Rule-suggestion hints based on structural pattern matching of the
+          current proof context. All hints carry <code>trusted=False</code>.
+          No proof search. No ML/LLM. Hints must be verified by the kernel before use.
+        </div>
+        <code class="trust-card-path">stele/proofstate.py</code>
+      </div>
+
+      <div class="trust-card trust-card-experimental">
+        <div class="trust-card-header">
+          <span class="badge badge-experimental">Experimental</span>
+          <span class="trust-card-name">Certificates + minicheck</span>
+        </div>
+        <div class="trust-card-body">
+          Kernel-gated certificate emission: the kernel verifies the proof first,
+          then <code>certificate.py</code> serialises it to a versioned JSON format.
+          <code>minicheck.py</code> provides an independent re-verification path
+          — same process, separate code, no kernel import.
+        </div>
+        <code class="trust-card-path">stele/certificate.py · stele/minicheck.py</code>
+      </div>
+
+      <div class="trust-card trust-card-optional">
+        <div class="trust-card-header">
+          <span class="badge badge-optional">Optional</span>
+          <span class="trust-card-name">ML baseline</span>
+        </div>
+        <div class="trust-card-body">
+          Multinomial Naive Bayes classifier trained on a synthetic proof corpus.
+          Completely isolated: no stele import, no effect on kernel correctness.
+          Disabled unless explicitly installed.
+        </div>
+        <code class="trust-card-path">stele_ml/</code>
+      </div>
+
+      <div class="trust-card trust-card-optional">
+        <div class="trust-card-header">
+          <span class="badge badge-optional">Optional</span>
+          <span class="trust-card-name">Lean 4 type-error bridge</span>
+        </div>
+        <div class="trust-card-body">
+          Parses Lean 4 error output and maps type mismatch patterns to Stele
+          diagnostic codes. One-way, advisory bridge — no round-trip export,
+          no Lean proof generation, no kernel involvement.
+        </div>
+        <code class="trust-card-path">stele_lean/</code>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── §2  Invariants ────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="invariants-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Enforced invariants</span>
+      <h2 id="invariants-heading" class="section-heading">Six structural invariants</h2>
+      <p class="section-sub">
+        These invariants are maintained by the codebase and checked by automated tests.
+        They are not aspirational — violation causes test failure.
+      </p>
+    </div>
+
+    <ol style="max-width:680px;display:flex;flex-direction:column;gap:var(--space-6);padding:0;list-style:none">
+
+      <li style="display:flex;gap:var(--space-5)">
+        <span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--cyan);min-width:2rem;padding-top:2px">1</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-2)">
+            Trust boundary = <code>kernel.py</code> only
+          </h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+            The kernel performs purely syntactic, decidable matching.
+            It makes no appeal to the semantics of any target logic.
+            It stays small and auditable (de Bruijn criterion).
+            Semantic checks are never pulled into the kernel.
+          </p>
+          <code style="font-size:.72rem;color:var(--muted)">Test: test_regression_invariants.py</code>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-5)">
+        <span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--cyan);min-width:2rem;padding-top:2px">2</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-2)">
+            Rules are data, not kernel logic
+          </h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+            Inference rules live in <code>logic.py</code> as <code>RuleSchema</code>
+            dataclasses. The kernel consumes rule data; it does not contain rule logic.
+            Adding a new logic means adding a <code>Logic</code> object — not touching
+            the kernel.
+          </p>
+          <code style="font-size:.72rem;color:var(--muted)">See: stele/logic.py · CLAUDE.md invariant 2</code>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-5)">
+        <span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--cyan);min-width:2rem;padding-top:2px">3</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-2)">
+            Zero runtime dependencies
+          </h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+            The trusted core modules use only the Python standard library.
+            No lark, no PLY, no numpy, no third-party packages in
+            the proof-checking path. Tests require only <code>pytest</code>.
+            Optional extensions (<code>stele_ml</code>) are isolated from the
+            trust path.
+          </p>
+          <code style="font-size:.72rem;color:var(--muted)">CLAUDE.md invariant 3</code>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-5)">
+        <span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--cyan);min-width:2rem;padding-top:2px">4</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-2)">
+            K3/LP matrix definitions are locked
+          </h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+            The K3 and LP truth tables match specific Kleene/Priest conventions.
+            Specifically: <code>I→F = I</code> and <code>F→I = T</code> in K3.
+            A regression test (<code>test_k3_imp_table_matches_manifesto</code>)
+            locks these values; any accidental change fails the test suite.
+          </p>
+          <code style="font-size:.72rem;color:var(--muted)">Test: test_k3_imp_table_matches_manifesto</code>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-5)">
+        <span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--cyan);min-width:2rem;padding-top:2px">5</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-2)">
+            Honesty in documentation and error messages
+          </h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+            Rule-relativity is relative to rule availability, not arbitrary
+            interpretation. Underivability is a meta-claim that the proof
+            checker does not establish directly. Unmeasured metrics and
+            unverified claims must not appear in documentation.
+          </p>
+          <code style="font-size:.72rem;color:var(--muted)">CLAUDE.md invariant 5</code>
+        </div>
+      </li>
+
+      <li style="display:flex;gap:var(--space-5)">
+        <span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--cyan);min-width:2rem;padding-top:2px">6</span>
+        <div>
+          <h3 style="font-family:var(--font-sans);font-size:var(--text-md);font-weight:600;color:var(--text);margin-bottom:var(--space-2)">
+            Proof mode and matrix mode are separated
+          </h3>
+          <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.7">
+            <code>kernel.py</code> does not import <code>matrix.py</code>.
+            <code>matrix.py</code> does not import <code>kernel.py</code>.
+            The proof validity verdict and the semantic soundness check are
+            computed by entirely independent code paths.
+          </p>
+          <code style="font-size:.72rem;color:var(--muted)">Test: test_regression_invariants.py — kernel↔matrix separation</code>
+        </div>
+      </li>
+
+    </ol>
+
+  </div>
+</section>
+
+<!-- ── §3  Certificate / minicheck ──────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="cert-heading">
+  <div class="section-inner">
+
+    <div class="section-header">
+      <span class="section-label">Re-verification</span>
+      <h2 id="cert-heading" class="section-heading">
+        Certificates &amp; minicheck
+        <span class="badge badge-experimental">Experimental</span>
+      </h2>
+      <p class="section-sub">
+        After the kernel verifies a proof, you can export a proof certificate
+        and re-verify it with <code>minicheck</code> — an independent checker
+        that shares no code with the main kernel.
+      </p>
+    </div>
+
+    <!-- Certificate flow SVG -->
+    <figure aria-labelledby="cert-diagram-caption" style="max-width:660px;margin-bottom:var(--space-8)">
+      <svg viewBox="0 0 660 130" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-labelledby="cert-svg-title cert-svg-desc"
+           style="width:100%;height:auto;display:block">
+        <title id="cert-svg-title">Certificate and minicheck flow diagram</title>
+        <desc id="cert-svg-desc">
+          Flow from left to right:
+          Source .stele file → kernel.py (checks proof) → certificate.py (emits JSON) →
+          minicheck.py (independent re-verification) → Verified / Tamper detected.
+          The minicheck does not import kernel.py.
+        </desc>
+        <rect width="660" height="130" fill="#07090f" rx="8"/>
+
+        <!-- Step 1: source -->
+        <rect x="10" y="40" width="110" height="50" rx="4" fill="#0d1220" stroke="#1c2840" stroke-width="1.5"/>
+        <text x="65" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#b8cce0">.stele</text>
+        <text x="65" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">source proof</text>
+
+        <!-- Arrow 1 -->
+        <line x1="120" y1="65" x2="148" y2="65" stroke="#1c2840" stroke-width="1.5" marker-end="url(#ca)"/>
+
+        <!-- Step 2: kernel -->
+        <rect x="150" y="40" width="120" height="50" rx="4" fill="#0d1220" stroke="rgba(82,201,122,0.7)" stroke-width="1.5"/>
+        <text x="210" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#52c97a">kernel.py</text>
+        <text x="210" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">check proof</text>
+
+        <!-- Arrow 2 -->
+        <line x1="270" y1="65" x2="298" y2="65" stroke="#1c2840" stroke-width="1.5" marker-end="url(#ca)"/>
+
+        <!-- Step 3: certificate -->
+        <rect x="300" y="40" width="130" height="50" rx="4" fill="#0d1220" stroke="rgba(212,160,80,0.55)" stroke-width="1.5"/>
+        <text x="365" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#d4a050">certificate.py</text>
+        <text x="365" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">emit cert JSON</text>
+
+        <!-- Arrow 3 -->
+        <line x1="430" y1="65" x2="458" y2="65" stroke="#1c2840" stroke-width="1.5" marker-end="url(#ca)"/>
+
+        <!-- Step 4: minicheck -->
+        <rect x="460" y="40" width="130" height="50" rx="4" fill="#0d1220" stroke="rgba(212,160,80,0.55)" stroke-width="1.5"/>
+        <text x="525" y="62" text-anchor="middle" font-family="monospace" font-size="11" fill="#d4a050">minicheck.py</text>
+        <text x="525" y="79" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5e7a8f">re-verify cert</text>
+
+        <!-- Result label -->
+        <text x="525" y="112" text-anchor="middle" font-family="monospace" font-size="10" fill="#d4a050">✓ / tamper detected</text>
+
+        <!-- "no kernel import" note -->
+        <text x="365" y="112" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#283a54">kernel-gated emit</text>
+
+        <defs>
+          <marker id="ca" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c2840"/>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption id="cert-diagram-caption"
+                  style="font-family:var(--font-sans);font-size:var(--text-xs);color:var(--muted);text-align:center;margin-top:var(--space-2)">
+        <code>minicheck.py</code> does not import <code>kernel.py</code>, <code>parser.py</code>,
+        <code>diagnostics.py</code>, or <code>proof.py</code>.
+        Enforced by <code>tests/test_minicheck.py</code> import isolation tests.
+      </figcaption>
+    </figure>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);max-width:860px;align-items:start">
+      <div class="prose-body">
+        <h3 style="font-size:var(--text-md);margin-bottom:var(--space-3)">What a proof certificate is</h3>
         <p>
-          This page is a skeleton. Full content will be written in Prompts 46–47.
-          See <a href="https://github.com/re-glow/stele-logic/blob/main/docs/development-context.md">docs/development-context.md</a>
-          and <a href="https://github.com/re-glow/stele-logic/blob/main/DECISIONS.md">DECISIONS.md</a>.
+          A proof certificate is a versioned JSON file that encodes a verified
+          proof in a normalised format. It records the theorem name, the logic,
+          the conclusion formula, and each proof step
+          (<code>assume</code>, <code>suppose_open</code>, <code>suppose_close</code>,
+          <code>have</code>, <code>conclude</code>) with explicit rule and references.
+        </p>
+        <p>
+          The certificate is emitted <em>only after</em> the kernel verifies the proof.
+          A proof that the kernel rejects cannot produce a certificate.
+        </p>
+        <h3 style="font-size:var(--text-md);margin:var(--space-4) 0 var(--space-3)">What minicheck is</h3>
+        <p>
+          <code>minicheck.py</code> re-verifies a certificate JSON file using independent
+          Python code — no parser, no kernel, no diagnostics imported.
+          It reconstructs the proof state from the certificate's step list and
+          applies the same syntactic rule checks the kernel would apply.
         </p>
       </div>
-    </div>
-  </section>
 
-  <!-- Trust layers -->
-  <section class="page-section page-section--alt" aria-labelledby="trust-layers-heading">
-    <div class="section-inner">
-      <h2 id="trust-layers-heading" class="section-heading" style="margin-bottom:1.5rem">
-        Trust Layers
-      </h2>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;max-width:900px">
-
-        <div class="trust-card trust-card-trusted">
-          <div class="trust-card-header">
-            <span class="badge badge-stable">Trusted core</span>
-            <span class="trust-card-name">Kernel</span>
-          </div>
-          <div class="trust-card-body">
-            142-line pure syntactic matcher. First-order rule matching only.
-            No semantic reasoning. De Bruijn criterion. Stdlib only.
-            The sole source of proof validity verdicts.
-          </div>
-          <code class="trust-card-path">stele/kernel.py</code>
+      <div>
+        <div class="callout callout-warning" style="margin-bottom:var(--space-5)">
+          <span class="callout-label">Limitations</span>
+          <p>
+            Minicheck runs in the same Python process as the kernel — it is
+            code-level isolation, not process-level or hardware-level isolation.
+            Minicheck has not been formally verified. Its correctness is supported
+            by regression tests only. A future Rust/OCaml port would provide
+            stronger isolation.
+          </p>
         </div>
 
-        <div class="trust-card trust-card-trusted">
-          <div class="trust-card-header">
-            <span class="badge badge-stable">Trusted</span>
-            <span class="trust-card-name">Parser</span>
-          </div>
-          <div class="trust-card-body">
-            Hand-written recursive descent tokenizer and parser. No external parser
-            library. Stdlib only. Produces AST consumed by kernel.
-          </div>
-          <code class="trust-card-path">stele/parser.py</code>
-        </div>
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-3)">CLI</h3>
+        <pre style="background:var(--surf3);border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-family:var(--font-mono);font-size:.77rem;color:var(--text);overflow-x:auto"># Emit certificate
+python -m stele.cli cert examples/imp_self.stele \
+  --logic intuitionistic_prop
 
-        <div class="trust-card trust-card-untrusted">
-          <div class="trust-card-header">
-            <span class="badge badge-untrusted">Untrusted</span>
-            <span class="trust-card-name">Diagnostics</span>
-          </div>
-          <div class="trust-card-body">
-            Structural multi-pass analysis: unused assumptions, missing hypotheses,
-            scope errors, undefined symbols. Advisory only — no kernel import.
-          </div>
-          <code class="trust-card-path">stele/diagnostics.py</code>
-        </div>
-
-        <div class="trust-card trust-card-untrusted">
-          <div class="trust-card-header">
-            <span class="badge badge-untrusted">Untrusted</span>
-            <span class="trust-card-name">Proof-state hints</span>
-          </div>
-          <div class="trust-card-body">
-            Rule suggestion hints based on current proof state.
-            All hints carry <code>trusted=False</code> — never used by kernel.
-          </div>
-          <code class="trust-card-path">stele/proofstate.py</code>
-        </div>
-
-        <div class="trust-card trust-card-experimental">
-          <div class="trust-card-header">
-            <span class="badge badge-experimental">Experimental</span>
-            <span class="trust-card-name">Certificates</span>
-          </div>
-          <div class="trust-card-body">
-            Kernel-gated certificate emission. Minicheck provides an independent
-            Python re-verification path — same process, different code path.
-          </div>
-          <code class="trust-card-path">stele/certificate.py · stele/minicheck.py</code>
-        </div>
-
-        <div class="trust-card trust-card-optional">
-          <div class="trust-card-header">
-            <span class="badge badge-optional">Optional</span>
-            <span class="trust-card-name">ML Baseline</span>
-          </div>
-          <div class="trust-card-body">
-            Multinomial Naive Bayes classifier. Synthetic corpus.
-            Completely isolated from trust core. No effect on kernel correctness.
-          </div>
-          <code class="trust-card-path">stele_ml/</code>
-        </div>
-
+# Save to file and re-verify
+python -m stele.cli cert examples/dne.stele \
+  --logic classical_prop --out dne.json
+python -m stele.cli minicheck dne.json</pre>
       </div>
     </div>
-  </section>
 
-  <!-- Invariants -->
-  <section class="page-section" aria-labelledby="invariants-heading">
-    <div class="section-inner">
-      <h2 id="invariants-heading" class="section-heading" style="margin-bottom:1.5rem">
-        Invariants
+  </div>
+</section>
+
+<!-- ── §4  Pyodide / browser ─────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="pyodide-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Browser Execution</span>
+      <h2 id="pyodide-heading" class="section-heading">
+        Browser-local via Pyodide
+        <span class="badge badge-stable">Stable</span>
       </h2>
-      <div class="skeleton-notice" style="max-width:680px">
-        <strong>Planned content — Prompt 47</strong>
-        Six invariants from CLAUDE.md: trust boundary, rule-data separation,
-        zero runtime deps, K3/LP table definition, honesty policy,
-        proof vs. matrix mode separation. Test evidence for each.
+      <p class="section-sub">
+        Studio runs the full Stele proof checker in your browser via
+        Pyodide/WebAssembly. No proof text is sent to any server.
+        No backend. No installation required.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8);max-width:860px;align-items:start">
+      <div class="prose-body">
+        <p>
+          Pyodide is a port of CPython to WebAssembly. On first visit,
+          the browser downloads the Pyodide runtime (~8 MB, cached).
+          The Stele package is bundled as a zip at build time and unpacked
+          in the browser's virtual filesystem.
+        </p>
+        <p>
+          The <code>stele.browser</code> module exposes thin JSON wrappers
+          over the core functions. These wrappers are called from
+          <code>stele-pyodide.js</code>, which bridges JavaScript and Python.
+          The kernel runs inside Pyodide with the same code path as the
+          local CLI.
+        </p>
+        <p>
+          The browser execution model means: the kernel you see in the
+          repository is the kernel that runs in Studio. No server-side
+          substitution.
+        </p>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--font-mono);font-size:var(--text-md);color:var(--text);margin-bottom:var(--space-3)">
+          Browser execution stack
+        </h3>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+          <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:.78rem;color:var(--muted)">studio.html / index.html</div>
+          <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:.78rem;color:var(--text)">stele-pyodide.js</div>
+          <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:.78rem;color:var(--muted)">Pyodide WASM runtime</div>
+          <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:.78rem;color:var(--text)">stele.browser (JSON wrappers)</div>
+          <div style="padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:.78rem;color:var(--text)">stele.kernel · stele.parser</div>
+          <div style="padding:8px 14px;font-family:var(--font-mono);font-size:.78rem;color:var(--muted)">same code as CLI</div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top:var(--space-5)">
+          <span class="callout-label">Build process</span>
+          <p>
+            <code>tools/build_pyodide_site.py</code> packages the Stele source
+            into <code>stele_source.zip</code> for browser delivery.
+            ML (<code>stele_ml/</code>) and Lean (<code>stele_lean/</code>)
+            bridges are excluded from the browser bundle.
+          </p>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
+
+<!-- ── §5  Dependency policy ─────────────────────────────────────────────── -->
+<section class="page-section page-section--alt" aria-labelledby="deps-heading">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Dependencies</span>
+      <h2 id="deps-heading" class="section-heading">Dependency policy</h2>
+      <p class="section-sub">Zero runtime dependencies in the trusted core.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-5);max-width:860px">
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--status-stable-fg);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--status-stable-fg);margin-bottom:var(--space-2)">Core runtime</div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          Python 3.10+ standard library only.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">requirements: (none)</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--status-experimental-fg);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--status-experimental-fg);margin-bottom:var(--space-2)">Test suite</div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          pytest only. Hypothesis optional for property-based tests.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">pip install pytest</code>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--status-optional-fg);border-radius:var(--radius-md);padding:var(--space-5)">
+        <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;color:var(--status-optional-fg);margin-bottom:var(--space-2)">Optional extensions</div>
+        <p style="font-family:var(--font-sans);font-size:var(--text-sm);color:var(--muted);line-height:1.65;margin-bottom:var(--space-2)">
+          scikit-learn (ML baseline), Lean 4 (type-error bridge).
+          Isolated from trust path.
+        </p>
+        <code style="font-size:.7rem;color:var(--muted)">requirements-dev.txt</code>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────────────────── -->
+<section class="page-section" aria-labelledby="arch-cta-heading">
+  <div class="section-inner">
+    <h2 id="arch-cta-heading" class="section-heading" style="margin-bottom:var(--space-6)">
+      Go deeper
+    </h2>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:860px;margin-bottom:var(--space-8)">
+
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/development-context.md"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">📋</span>
+        <span class="doc-link-title">Development context</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Design decisions, invariants, prohibited patterns, roadmap.</span>
+      </a>
+
+      <a class="doc-link-card" href="https://github.com/re-glow/stele-logic/blob/main/stele/kernel.py"
+         target="_blank" rel="noopener">
+        <span class="doc-link-icon" aria-hidden="true">🔒</span>
+        <span class="doc-link-title">kernel.py source</span>
+        <span class="badge badge-stable">Trusted core</span>
+        <span class="doc-link-desc">The sole source of validity verdicts. Readable in one sitting.</span>
+      </a>
+
+      <a class="doc-link-card" href="theory.html">
+        <span class="doc-link-icon" aria-hidden="true">⊢</span>
+        <span class="doc-link-title">Theory</span>
+        <span class="badge badge-stable">Stable</span>
+        <span class="doc-link-desc">Proof language, ⊢ vs ⊨, proof terms, metatheory status.</span>
+      </a>
+
+      <a class="doc-link-card" href="research.html">
+        <span class="doc-link-icon" aria-hidden="true">📄</span>
+        <span class="doc-link-title">Whitepaper</span>
+        <span class="badge badge-experimental">Draft</span>
+        <span class="doc-link-desc">Extended technical writeup and design rationale.</span>
+      </a>
+
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-4)">
+      <a href="studio.html" class="btn btn-primary">Open Studio →</a>
+      <a href="theory.html" class="btn btn-ghost">Theory &amp; Semantics</a>
+      <a href="https://github.com/re-glow/stele-logic/blob/main/stele/kernel.py"
+         target="_blank" rel="noopener" class="btn btn-ghost">Read kernel.py ↗</a>
+    </div>
+  </div>
+</section>
 
 </main>
 
@@ -160,11 +730,15 @@
       <span class="footer-sep">·</span>
       <span>Formal Verification Framework for Mathematical Reasoning</span>
       <span class="footer-sep">·</span>
+      <a href="index.html">Overview</a>
+      <span class="footer-sep">·</span>
+      <a href="theory.html">Theory</a>
+      <span class="footer-sep">·</span>
       <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
     </div>
     <div class="footer-note">
-      Zero runtime dependencies.
-      <code>python -m pytest -q</code> — 1852 tests, 4 skipped.
+      Zero runtime dependencies. Trusted kernel: <code>stele/kernel.py</code>.
+      Browser Studio runs locally via Pyodide/WASM.
     </div>
   </div>
 </footer>

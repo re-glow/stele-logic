@@ -469,7 +469,7 @@
     var particles = [];
     for (var i = 0; i < 520; i++) {
       /* Latitude biased toward equator (disc shape) */
-      var flatness = 0.48 + rand(i * 5 + 1) * 0.52;
+      var flatness = 0.78 + rand(i * 5 + 1) * 0.22;
       var phi  = (rand(i * 5) * 2 - 1) * Math.PI * 0.5 * flatness;
       var lam  = rand(i * 5 + 2) * Math.PI * 2;
       /* Power-law radial distribution: dense core, sparse edges */
@@ -504,16 +504,16 @@
 
       /* Deep core radial highlight — 3D amethyst depth */
       var inner = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.22);
-      inner.addColorStop(0,   'rgba(190,155,255,.18)');
-      inner.addColorStop(0.5, 'rgba(157,123,255,.08)');
+      inner.addColorStop(0,   'rgba(190,155,255,.34)');
+      inner.addColorStop(0.5, 'rgba(157,123,255,.16)');
       inner.addColorStop(1,   'rgba(124,92,255,0)');
       ctx.fillStyle = inner;
       ctx.fillRect(0, 0, W, H);
 
       /* Mid core glow — the heart of the orb */
       var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.65);
-      core.addColorStop(0,    'rgba(124,92,255,.14)');
-      core.addColorStop(0.38, 'rgba(157,123,255,.06)');
+      core.addColorStop(0,    'rgba(124,92,255,.28)');
+      core.addColorStop(0.38, 'rgba(157,123,255,.13)');
       core.addColorStop(1,    'rgba(11,10,16,0)');
       ctx.fillStyle = core;
       ctx.fillRect(0, 0, W, H);
@@ -537,7 +537,7 @@
             else ctx.lineTo(p.x, p.y);
           } else { moved = false; }
         }
-        ctx.strokeStyle = phi === 0 ? 'rgba(176,106,255,.10)' : 'rgba(176,106,255,.06)';
+        ctx.strokeStyle = phi === 0 ? 'rgba(176,106,255,.22)' : 'rgba(176,106,255,.13)';
         ctx.lineWidth = phi === 0 ? 0.8 : 0.55;
         ctx.stroke();
       });
@@ -556,8 +556,8 @@
         var d01 = (item.z + R) / (2 * R);   /* 0 = far back, 1 = nearest front */
         var rF  = p.r / R;
         /* Stronger depth cue: front particles brighter+bigger, back dimmer+smaller */
-        var alpha = Math.min(0.85, d01 * 0.72 * (1 - rF * 0.38) + 0.02);
-        var sz    = p.sz * (0.30 + d01 * 0.90);
+        var alpha = Math.min(0.92, d01 * 1.10 * (1 - rF * 0.38) + 0.07);
+        var sz    = p.sz * (0.55 + d01 * 1.05);
         if (sz < 0.14 || alpha < 0.018) return;
         var rgb = PAL[p.ci];
         ctx.beginPath();
@@ -571,7 +571,7 @@
         var pr = project(sp.phi, sp.lam0 + theta * 0.75, sp.r);
         if (pr.z < -0.28 * R) return;
         var d01 = (pr.z + R) / (2 * R);
-        var a = d01 * 0.20 + 0.035;
+        var a = d01 * 0.42 + 0.10;
         ctx.fillStyle = 'rgba(205,178,255,' + a.toFixed(3) + ')';
         ctx.font = sp.fs + 'px ui-monospace,monospace';
         ctx.textAlign = 'center';

@@ -2767,3 +2767,187 @@ blockquote.spectral {
   #hero .hero-headline { font-size: clamp(2.2rem, 11vw, 3rem); }
 }
 /* ===== /HERO ===== */
+
+/* ===== FINAL ORB VISIBILITY POLISH (STEP 2) ===== */
+#hero #proof-orb {
+  opacity: 1;
+  filter: drop-shadow(0 0 90px rgba(124, 92, 255, .30));
+}
+#hero .hero-orb-wrap {
+  opacity: .95;
+}
+/* ===== /FINAL ORB VISIBILITY POLISH ===== */
+
+/* ===== FINAL CARD WIDTH / GRID ALIGNMENT POLISH (STEP 3) ===== */
+.gallery-grid,
+.trust-grid,
+.example-grid,
+.qs-grid,
+.feature-grid {
+  width: min(100%, 1080px);
+  margin-inline: auto;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.gallery-grid,
+.example-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trust-grid,
+.qs-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.gallery-card,
+.trust-card,
+.example-card,
+.qs-card,
+.gcard {
+  width: 100%;
+  max-width: none;
+}
+
+.gcard {
+  display: flex;
+  flex-direction: column;
+}
+
+.gcard-code {
+  flex: 1 1 auto;
+}
+
+.gcard-btn {
+  margin-top: auto;
+}
+
+@media (max-width: 980px) {
+  .gallery-grid,
+  .example-grid,
+  .feature-grid,
+  .trust-grid,
+  .qs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 720px);
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery-grid,
+  .example-grid,
+  .feature-grid,
+  .trust-grid,
+  .qs-grid {
+    grid-template-columns: 1fr;
+    width: min(100%, 420px);
+  }
+}
+/* ===== /FINAL CARD WIDTH / GRID ALIGNMENT POLISH ===== */
+
+/* ===== FINAL SUBPAGE POLISH (STEP 4) ===== */
+.page-main {
+  width: 100%;
+}
+
+/* Subpage hero: centered, constrained width */
+.page-section:first-of-type .section-inner,
+.page-main > .page-section:first-child .section-inner {
+  text-align: center;
+}
+
+.page-main .section-inner {
+  width: min(100%, 1100px);
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* Center section labels and kickers */
+.page-section:first-of-type .section-label {
+  display: block;
+  text-align: center;
+  margin-inline: auto;
+}
+
+/* Center main headings and subtitles in page heroes */
+.page-section:first-of-type .section-heading {
+  text-align: center;
+  max-width: 28ch;
+  margin-inline: auto;
+  margin-bottom: var(--space-6);
+}
+
+.page-section:first-of-type .section-sub {
+  text-align: center;
+  max-width: 68ch;
+  margin-inline: auto;
+}
+
+/* Prose reading columns stay left-aligned */
+.page-main .prose-body p,
+.page-main .prose-body li,
+.page-main .prose-reading p,
+.page-main .prose-reading li {
+  text-align: left;
+}
+
+.page-main .prose-body,
+.page-main .prose-reading {
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+/* Page motif: ambient radial glow circle, centered, not left-drifting glyph */
+.page-motif {
+  position: absolute;
+  left: 50%;
+  top: 2rem;
+  transform: translateX(-50%);
+  right: auto;
+  width: min(84vw, 600px);
+  height: 180px;
+  display: grid;
+  place-items: center;
+  font-size: clamp(5rem, 12vw, 9rem);
+  color: rgba(157, 123, 255, .06);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  filter: blur(0.5px);
+}
+
+.page-motif::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    rgba(124, 92, 255, .09),
+    rgba(124, 92, 255, .03) 50%,
+    transparent 72%
+  );
+}
+/* ===== /FINAL SUBPAGE POLISH ===== */
+
+/* ===== STEP 5 — COLOR / GLOW MICRO-ADJUSTMENTS ===== */
+/* Restrict glow: only primary CTA, valid verdict, kernel node */
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 0 14px rgba(124,92,255,.22);
+}
+
+/* Neutral card hover — remove purple glow drift */
+.gallery-card:hover,
+.qs-card:hover {
+  border-color: var(--bord2);
+  box-shadow: none;
+}
+
+/* Weaken body scanline further */
+body::before {
+  background: repeating-linear-gradient(
+    0deg, transparent 0, transparent 3px,
+    rgba(124,92,255,.004) 3px, rgba(124,92,255,.004) 4px
+  );
+}
+/* ===== /STEP 5 ===== */

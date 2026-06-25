@@ -6,6 +6,11 @@
 <title>Stele — About the Project</title>
 <meta name="description"
   content="About Stele: a formal verification framework for mathematical reasoning, built as an independent research project by Jaehwan Kim.">
+<meta property="og:title" content="Stele — About the Project">
+<meta property="og:description" content="Stele is an independent research project by Jaehwan Kim. A browser-local proof checker with a ≈160-line trusted kernel, 2,390+ tests, and zero runtime dependencies.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
@@ -129,7 +134,7 @@
           <span class="badge badge-stable">Stable</span>
         </div>
         <div class="trust-card-body">
-          A small (~400 line) trusted kernel that checks natural-deduction
+          A small (≈160 line) trusted kernel that checks natural-deduction
           proof scripts by syntactic pattern matching. Zero runtime dependencies.
           12 intuitionistic rules + 3 classical rules. Rule sets are data, not
           code — the kernel never changes to add a new logic.
@@ -396,7 +401,7 @@
           <span class="trust-card-name">Regression tests in CI</span>
         </div>
         <div class="trust-card-body">
-          Over 2,000 regression tests covering the kernel, parser, logic rules,
+          2,390+ regression tests covering the kernel, parser, logic rules,
           matrix semantics, proof terms, elaboration, diagnostics, gallery
           examples, and static site checks. Tests run on Python 3.10, 3.11,
           and 3.12 in GitHub Actions.
@@ -636,6 +641,8 @@
       <span>Formal Verification Framework for Mathematical Reasoning</span>
       <span class="footer-sep">·</span>
       <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic/blob/main/CHANGELOG.md" target="_blank" rel="noopener">v1.4.0</a>
     </div>
     <div class="footer-note">
       Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.

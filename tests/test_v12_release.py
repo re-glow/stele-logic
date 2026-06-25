@@ -25,11 +25,11 @@ def _site_html(name: str) -> str:
 
 # ── 1. Version ────────────────────────────────────────────────────────────────
 
-def test_version_is_1_3_0():
+def test_version_is_1_4_0():
     version_file = _ROOT / "stele" / "__version__.py"
     assert version_file.exists(), "stele/__version__.py must exist"
     content = version_file.read_text(encoding="utf-8")
-    assert '"1.3.0"' in content, f"Version must be 1.3.0; got: {content.strip()!r}"
+    assert '"1.4.0"' in content, f"Version must be 1.4.0; got: {content.strip()!r}"
 
 
 # ── 2. CHANGELOG ─────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ def test_changelog_v1_2_entry_before_v1_1():
 
 def test_readme_version_heading():
     readme = _read(_ROOT / "README.md")
-    assert "v1.3.0" in readme, "README.md must reference v1.3.0"
+    assert "v1.4.0" in readme, "README.md must reference v1.4.0"
 
 
 def test_readme_links_to_public_site():

@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use Stele in your research, please cite it as below."
+type: software
+title: "Stele — Formal Verification Framework for Mathematical Reasoning"
+version: 1.4.0
+date-released: "2026-06-25"
+url: "https://re-glow.github.io/stele-logic/"
+repository-code: "https://github.com/re-glow/stele-logic"
+license: MIT
+authors:
+  - family-names: Kim
+    given-names: Jaehwan
+abstract: >
+  Stele is a browser-local formal proof checker for natural-deduction reasoning.
+  It provides a small trusted kernel (≈160 lines) for syntactic rule-schema
+  matching, five built-in propositional logics, structural diagnostics,
+  dependency graphs, matrix semantics (K3/LP/Boolean), bounded Kripke
+  countermodel search, and a proof-term core with Curry–Howard correspondence.
+  The same kernel runs locally via CLI and in the browser via Pyodide/WASM.
+keywords:
+  - proof checker
+  - formal verification
+  - natural deduction
+  - logical pluralism
+  - propositional logic
+  - Pyodide
+  - browser-local

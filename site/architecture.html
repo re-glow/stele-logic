@@ -724,6 +724,58 @@ python -m stele.cli minicheck dne.json</pre>
   </div>
 </section>
 
+<!-- Claim → Evidence → Limitation matrix -->
+<section id="claims" aria-labelledby="claims-heading">
+  <div class="section-inner">
+    <div class="section-label">Transparency</div>
+    <h2 id="claims-heading" class="section-heading">What Stele claims — and doesn't</h2>
+    <p class="section-sub">
+      Evidence values are measured from the repository. Limitations are stated plainly.
+    </p>
+    <div class="claim-matrix-wrap">
+      <table class="claim-matrix" role="table" aria-label="Claim, evidence, and limitation matrix">
+        <thead>
+          <tr>
+            <th scope="col">Claim</th>
+            <th scope="col">Evidence</th>
+            <th scope="col">Limitation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Trusted kernel is small (≈160 lines)</td>
+            <td><code>wc -l stele/kernel.py</code> → ≈160</td>
+            <td class="limitation">Line count ≠ formal correctness; no machine-verified proof of soundness.</td>
+          </tr>
+          <tr>
+            <td>2,390+ tests cover core logic</td>
+            <td>54 test files; <code>pytest -q</code> output</td>
+            <td class="limitation">Tests are regression/property checks — not mathematical proofs of the metatheory claims.</td>
+          </tr>
+          <tr>
+            <td>Rules are data, not kernel code</td>
+            <td><code>logic.py</code> RuleSchema definitions; kernel imports no logic module</td>
+            <td class="limitation">A bad RuleSchema can still produce incorrect verdicts; data-level schemas are not independently verified.</td>
+          </tr>
+          <tr>
+            <td>0 runtime dependencies</td>
+            <td><code>requirements.txt</code> empty; <code>stele/</code> imports stdlib only</td>
+            <td class="limitation">Pyodide/WASM browser build adds its own runtime; Hypothesis is an optional dev dependency.</td>
+          </tr>
+          <tr>
+            <td>K3/LP matrix definitions match Kleene/Priest</td>
+            <td><code>test_k3_imp_table_matches_manifesto</code> pins I→F=I, F→I=T</td>
+            <td class="limitation">One table choice among possible Kleene variants; matrix semantics is separate from proof scoring.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-sub" style="margin-top:var(--space-8)">
+      See <a href="research.html">whitepaper</a> for formal metatheory claims and current evidence status.
+    </p>
+  </div>
+</section>
+
 </main>
 
 <footer class="site-footer" aria-label="Site footer">

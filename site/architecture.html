@@ -6,6 +6,11 @@
 <title>Stele — Architecture &amp; Trust Model</title>
 <meta name="description"
   content="Stele architecture: the trusted kernel, certificate/minicheck path, explicitly untrusted diagnostics and hints, zero runtime dependencies, and browser-local Pyodide execution.">
+<meta property="og:title" content="Stele — Architecture &amp; Trust Model">
+<meta property="og:description" content="Stele's trusted kernel (≈160 lines), six structural invariants, certificate flow, and browser-local execution. Only kernel.py can say VALID.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
@@ -786,6 +791,8 @@ python -m stele.cli minicheck dne.json</pre>
       <span>Formal Verification Framework for Mathematical Reasoning</span>
       <span class="footer-sep">·</span>
       <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/re-glow/stele-logic/blob/main/CHANGELOG.md" target="_blank" rel="noopener">v1.4.0</a>
     </div>
     <div class="footer-note">
       Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.

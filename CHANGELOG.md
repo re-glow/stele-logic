@@ -4,6 +4,59 @@ Development history of Stele Logic System.
 
 ---
 
+## [v1.4.0] — 2026-06-25  `release/v1.4-overhaul-freeze`
+
+v1.4 editorial and visual overhaul: site pages rewritten, ops files added,
+SEO/OG/favicon applied, kernel LOC corrected, version footer on all pages,
+claim and link audit. No new proof semantics, no kernel changes.
+
+### Added
+
+- **Hero constellation + verdict pulse (Tasks 57–58):** `site/index.html` rebuilt
+  from scratch — hero SVG constellation of proof steps, animated pulse propagating
+  along edges every ~6 s (reduced-motion → static); live proof demo with
+  syntax-highlighted editor, error bar, verdict card; trust-boundary SVG;
+  classical vs intuitionistic comparison; Space Grotesk variable display font
+  (self-hosted OFL); 6-category glow hierarchy.
+- **Studio workbench (Task 59):** `site/studio.html` and `site/assets/stele-pyodide.js`
+  rewritten — 60/40 editor/result split; rich verdict card with kernel/logic/steps/
+  theorem/diagnostics meta; gutter error highlights; inline SVG dependency graph
+  with BFS layout; 4 semantic preset buttons; 3-phase Pyodide loading indicator.
+- **Site-wide SEO/OG (Task 60):** `og:title`, `og:description`, `og:type`,
+  `twitter:card` added to all 7 pages.
+- **Favicon:** `site/favicon.svg` (amethyst ⊢ on dark background).
+- **Versioned footer:** all pages now show `v1.4.0 · CHANGELOG` link.
+- **Ops files:** `LICENSE` (MIT), `CITATION.cff`, `CONTRIBUTING.md`,
+  `SECURITY.md`, `docs/limitations.md`.
+
+### Changed
+
+- `stele/__version__.py`: `"1.3.0"` → `"1.4.0"`.
+- `README.md`: version heading updated to v1.4.0; test count to 2,390+;
+  capability matrix heading updated to v1.4.
+- `site/about.html`: kernel LOC corrected `~400` → `≈160`; test count
+  `Over 2,000` → `2,390+`.
+- `site/research.html`: hero abstract sharpened — "Stele asks whether logical
+  validity can be treated as a configurable rule boundary rather than a fixed
+  assumption of the verifier."
+- `tests/test_v12_release.py`: version assertions updated to v1.4.0.
+
+### QA / v1.4 audit
+
+- Kernel LOC verified: `wc -l stele/kernel.py` → 159 lines (reported ≈160).
+- All overclaim phrases absent (no `~400 line kernel`, no fabricated test counts).
+- OG meta tags on all 7 pages; favicon linked on all 7 pages.
+- Footer version link on all 7 pages.
+- `python -m pytest -q` passes.
+
+### Known limitations (v1.4)
+
+- No new proof semantics relative to v1.3.
+- All v1.3 known limitations carry forward (propositional surface, bounded Kripke,
+  code-level cert isolation, untrusted hints, sketch-level metatheory, CDN Pyodide).
+
+---
+
 ## [v1.3.0] — 2026-06-24  `release/v1.3-presentation-freeze`
 
 v1.3 presentation freeze: amethyst visual system applied across all site pages;

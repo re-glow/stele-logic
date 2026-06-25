@@ -1,4 +1,4 @@
-# Stele — v1.3.0
+# Stele — v1.4.0
 
 **Formal Verification Framework for Mathematical Reasoning**
 (수학적 추론의 형식 검증 프레임워크)
@@ -18,7 +18,7 @@
 | **Technical whitepaper** | [`docs/whitepaper.md`](docs/whitepaper.md) |
 | **Architecture & trust boundary** | [`architecture.html`](https://re-glow.github.io/stele-logic/architecture.html) |
 | **Formal spec + metatheory claims** | [`docs/semantics.md`](docs/semantics.md) · [`docs/metatheory.md`](docs/metatheory.md) |
-| **Full source + test suite** | This repository (2,512 tests) |
+| **Full source + test suite** | This repository (2,390+ tests) |
 
 **What it is:** proof checker for natural-deduction. The user writes explicit steps; the trusted kernel checks each inference.
 **What it is not:** theorem prover, SMT solver, or AI-powered system. No proof search.
@@ -50,7 +50,7 @@ Proof-term core: [`docs/proof-terms.md`](docs/proof-terms.md) · Formal spec: [`
 **Provenance map:** [`docs/provenance-map.md`](docs/provenance-map.md) — claim → module → test → source → limitation (4 structured tables)
 **Site design system:** [`docs/design-system.md`](docs/design-system.md) — IA plan, design tokens, component library, accessibility policy
 
-## v1.3 Capability Matrix
+## v1.4 Capability Matrix
 
 | Capability | v1.0 Status | How to use | Limitations |
 |---|---|---|---|
@@ -355,7 +355,7 @@ stele/
   web.py      Stele Studio HTTP 서버(stdlib) + JSON API 엔드포인트
   webapp/index.html  Stele Studio 단일 파일 프런트엔드
 examples/     증명·행렬·세계 예제 (.stele + .py)
-tests/        2,390개 통과 (4 skipped without Hypothesis)
+tests/        2,390+ 통과 (4 skipped without Hypothesis)
 ```
 
 ## 구현된 것 / 로드맵

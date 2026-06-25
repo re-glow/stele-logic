@@ -426,9 +426,9 @@
     opts = opts || {};
     var reduced = prefersReducedMotion();
 
-    var W = 900, H = 900;
+    var W = 920, H = 860;
     var cx = W / 2, cy = H / 2;
-    var R = 380; /* galaxy cloud radius */
+    var R = 350; /* galaxy cloud radius */
 
     var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
     canvas.width  = Math.round(W * dpr);

@@ -28,6 +28,10 @@ const STELE_ZIP = "./stele_source.zip";
 let pyodide = null;
 let steleReady = false;
 
+/* Reduced-motion preference */
+const reduced = typeof window !== "undefined" &&
+  window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 // ── Gallery data ───────────────────────────────────────────────────────────
 // Mirrors site/examples_gallery.json — source of truth for tests.
 
@@ -262,6 +266,20 @@ const TOTAL_TUTORIAL_STEPS = 6;
 
 // ── Loading UI ────────────────────────────────────────────────────────────
 
+/* Step indices: 1=pyodide download, 2=kernel+zip, 3=examples */
+function setLoadingPhase(phase) {
+  /* Mark previous phases done, current active */
+  for (let i = 1; i <= 3; i++) {
+    const icon = document.getElementById("lstep-icon-" + i);
+    if (!icon) continue;
+    if (i < phase)       icon.textContent = "✓";
+    else if (i === phase) icon.textContent = "›";
+    else                  icon.textContent = "○";
+    icon.className = "loading-step-icon" +
+      (i < phase ? " lstep-done" : i === phase ? " lstep-active" : "");
+  }
+}
+
 function setLoadingStep(msg) {
   const el = document.getElementById("loading-step");
   if (el) el.textContent = msg;
@@ -302,17 +320,20 @@ async function loadPyodideScript() {
 
 async function initStele() {
   try {
+    setLoadingPhase(1);
     setLoadingStep("Downloading Pyodide runtime (~8 MB, cached after first visit)…");
     setLoadingBar(5);
     await loadPyodideScript();
 
+    setLoadingPhase(1);
     setLoadingStep("Initialising Python/WASM environment…");
     setLoadingBar(25);
     pyodide = await window.loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/",
     });
 
-    setLoadingStep("Fetching Stele source bundle…");
+    setLoadingPhase(2);
+    setLoadingStep("Loading trusted kernel — fetching Stele source bundle…");
     setLoadingBar(55);
     const resp = await fetch(STELE_ZIP);
     if (!resp.ok)
@@ -327,9 +348,13 @@ async function initStele() {
     setLoadingBar(88);
     await pyodide.runPythonAsync("import stele.browser as _sb");
 
-    setLoadingStep("Ready.");
-    setLoadingBar(100);
+    setLoadingPhase(3);
+    setLoadingStep("Mounting proof examples…");
+    setLoadingBar(95);
+
     steleReady = true;
+    setLoadingBar(100);
+    setLoadingPhase(3);
 
     hideLoadingBanner();
     setButtonsEnabled(true);
@@ -375,21 +400,42 @@ function showStatus(kind, msg) {
   bar.className = "studio-status-bar";
   bar.style.display = "block";
   if (kind === "error") bar.style.color = "var(--red)";
-  else if (kind === "ready") bar.style.color = "var(--green)";
+  else if (kind === "ready") bar.style.color = "var(--success)";
   else bar.style.color = "";
 }
 
-// ── Tab navigation ─────────────────────────────────────────────────────────
+// ── Result sub-tab navigation ──────────────────────────────────────────────
 
-function activateTab(tabId) {
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    const active = btn.dataset.tab === tabId;
+function activateResultTab(tabId) {
+  document.querySelectorAll(".result-tab").forEach(btn => {
+    const active = btn.dataset.resultTab === tabId;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-selected", active ? "true" : "false");
   });
-  document.querySelectorAll(".panel").forEach(panel => {
-    panel.classList.toggle("active", panel.id === "panel-" + tabId);
+  document.querySelectorAll(".result-panel").forEach(p => {
+    p.classList.toggle("active", p.id === "rpanel-" + tabId);
   });
+}
+
+function showResultPane() {
+  const empty = document.getElementById("studio-empty-state");
+  const card  = document.getElementById("studio-verdict-card");
+  const tabs  = document.getElementById("result-tabs");
+  if (empty) empty.hidden = true;
+  if (card)  card.hidden  = false;
+  if (tabs)  tabs.hidden  = false;
+}
+
+// ── Tab navigation (legacy: landing tutorial support) ─────────────────────
+
+function activateTab(tabId) {
+  /* Map old tab names to result pane tabs */
+  const MAP = { verify: "result", diagnose: "diag", graph: "graph" };
+  const resultTab = MAP[tabId] || tabId;
+  if (resultTab === "result" || resultTab === "diag" || resultTab === "graph") {
+    showResultPane();
+    activateResultTab(resultTab);
+  }
 }
 
 // ── HTML escaping ──────────────────────────────────────────────────────────
@@ -400,13 +446,140 @@ function esc(s) {
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// ── Result rendering ───────────────────────────────────────────────────────
+// ── Result rendering (legacy) ──────────────────────────────────────────────
 
 function showResult(elId, html, kind) {
   const el = document.getElementById(elId);
   if (!el) return;
   el.innerHTML = html;
-  el.className = "result-box show" + (kind ? " result-" + kind : "");
+  el.className = "result-box studio-check-result show" + (kind ? " result-" + kind : "");
+}
+
+// ── Editor gutter sync ─────────────────────────────────────────────────────
+
+function syncGutter() {
+  const ta     = document.getElementById("proof-input");
+  const gutter = document.getElementById("editor-gutter");
+  if (!ta || !gutter) return;
+  const lines  = ta.value.split("\n");
+  gutter.innerHTML = lines.map((_, i) =>
+    `<span data-line="${i + 1}">${i + 1}</span>`
+  ).join("");
+}
+
+function highlightErrorLine(lineNum) {
+  const gutter = document.getElementById("editor-gutter");
+  if (!gutter) return;
+  gutter.querySelectorAll("span").forEach(span => {
+    span.classList.toggle("gutter-line--err",
+      parseInt(span.dataset.line) === lineNum);
+  });
+}
+
+function clearErrorLine() {
+  const gutter = document.getElementById("editor-gutter");
+  if (!gutter) return;
+  gutter.querySelectorAll("span").forEach(span => {
+    span.classList.remove("gutter-line--err");
+  });
+  const bar = document.getElementById("editor-errorbar");
+  if (bar) bar.hidden = true;
+}
+
+function showErrorBar(kind, msg) {
+  const bar  = document.getElementById("editor-errorbar");
+  const kEl  = document.getElementById("errorbar-kind");
+  const mEl  = document.getElementById("errorbar-msg");
+  if (!bar) return;
+  if (kEl) kEl.textContent = kind || "";
+  if (mEl) mEl.textContent = msg  || "";
+  bar.hidden = false;
+}
+
+function highlightGraphLine(lineNum) {
+  const gutter = document.getElementById("editor-gutter");
+  if (!gutter) return;
+  gutter.querySelectorAll("span").forEach(span => {
+    span.classList.toggle("gutter-line--graph",
+      parseInt(span.dataset.line) === lineNum);
+  });
+}
+
+function clearGraphHighlight() {
+  const gutter = document.getElementById("editor-gutter");
+  if (!gutter) return;
+  gutter.querySelectorAll("span").forEach(s =>
+    s.classList.remove("gutter-line--graph"));
+}
+
+// ── Run button pulse ───────────────────────────────────────────────────────
+
+function pulseRunBtn() {
+  if (reduced) return;
+  const btn = document.getElementById("btn-check");
+  if (!btn) return;
+  btn.classList.remove("btn--pulsing");
+  void btn.offsetWidth; /* force reflow to restart animation */
+  btn.classList.add("btn--pulsing");
+  setTimeout(() => btn.classList.remove("btn--pulsing"), 600);
+}
+
+// ── Verdict card rendering ────────────────────────────────────────────────
+
+function renderVerdictCard(state, data) {
+  /* state: "valid" | "invalid" | "error" | "checking" */
+  const card     = document.getElementById("studio-verdict-card");
+  const badge    = document.getElementById("verdict-badge");
+  const icon     = document.getElementById("verdict-icon");
+  const text     = document.getElementById("verdict-text");
+  const logicEl  = document.getElementById("verdict-logic");
+  const stepsRow = document.getElementById("verdict-steps-row");
+  const stepsEl  = document.getElementById("verdict-steps");
+  const nameRow  = document.getElementById("verdict-name-row");
+  const nameEl   = document.getElementById("verdict-name");
+  const diagsEl  = document.getElementById("verdict-diags");
+  if (!card) return;
+
+  card.dataset.state = state;
+  badge.dataset.state = state;
+
+  if (state === "checking") {
+    icon.textContent = "·";
+    text.textContent = "Checking…";
+    if (logicEl) logicEl.textContent = data.logic || "—";
+    if (stepsRow) stepsRow.hidden = true;
+    if (nameRow)  nameRow.hidden  = true;
+    if (diagsEl)  diagsEl.textContent = "—";
+    return;
+  }
+
+  if (state === "valid") {
+    icon.textContent = "✓";
+    text.textContent = "Valid";
+    if (logicEl) logicEl.textContent = data.logic || "—";
+    if (stepsRow) { stepsRow.hidden = false; stepsEl.textContent = String(data.steps || "—"); }
+    if (nameRow)  { nameRow.hidden  = false; nameEl.textContent  = data.name  || "—"; }
+    if (diagsEl)  diagsEl.textContent = data.diags || "none";
+    return;
+  }
+
+  if (state === "invalid") {
+    icon.textContent = "✗";
+    text.textContent = "Invalid";
+    if (logicEl) logicEl.textContent = data.logic || "—";
+    if (stepsRow) stepsRow.hidden = true;
+    if (nameRow)  nameRow.hidden  = true;
+    if (diagsEl)  diagsEl.textContent = data.error_summary || "—";
+    return;
+  }
+
+  /* error / parse */
+  icon.textContent = "✗";
+  text.textContent = "Error";
+  if (logicEl) logicEl.textContent = "—";
+  if (stepsRow) stepsRow.hidden = true;
+  if (nameRow)  nameRow.hidden  = true;
+  if (diagsEl)  diagsEl.textContent = data.error_summary || "—";
 }
 
 // ── Panel: Verify ──────────────────────────────────────────────────────────
@@ -414,21 +587,66 @@ function showResult(elId, html, kind) {
 async function runCheck() {
   const source = document.getElementById("proof-input").value.trim();
   const logic  = document.getElementById("logic-select").value;
-  if (!source) { showResult("check-result", "Enter a proof above.", "info"); return; }
+  if (!source) {
+    showResultPane();
+    showResult("check-result", "Enter a proof on the left.", "info");
+    renderVerdictCard("error", { error_summary: "No proof text." });
+    return;
+  }
 
+  pulseRunBtn();
+  clearErrorLine();
+  showResultPane();
+  activateResultTab("result");
+
+  renderVerdictCard("checking", { logic });
   showResult("check-result", "Checking…", "info");
+
   try {
     const r = await callBrowser("browser_check", { proof_text: source, logic });
     if (r.ok) {
+      const stepsCount = (source.match(/\b(have|conclude)\b/g) || []).length;
+      renderVerdictCard("valid", {
+        logic: r.logic || logic,
+        steps: stepsCount,
+        name:  r.name,
+        diags: "none",
+      });
       showResult("check-result",
-        `✓ Valid  |  theorem: <strong>${esc(r.name)}</strong>  |  logic: ${esc(r.logic)}`,
-        "ok");
+        `<div class="check-result-valid">
+           <span class="check-result-icon" aria-hidden="true">✓</span>
+           <div class="check-result-body">
+             <strong>Valid</strong> — theorem <code>${esc(r.name)}</code>
+             checked by kernel.py<br>
+             <span class="check-result-meta">Logic: ${esc(r.logic || logic)}</span>
+           </div>
+         </div>`, "ok");
     } else {
-      const line = r.line ? ` (line ${r.line})` : "";
-      showResult("check-result",
-        `✗ ${esc(r.kind || "error")}${line}: ${esc(r.error)}`, "err");
+      const line = r.line ? ` at line ${r.line}` : "";
+      const kind = r.kind || "error";
+      renderVerdictCard("invalid", {
+        logic: logic,
+        error_summary: `${kind}${line}: ${r.error}`,
+      });
+      /* Highlight error line in gutter */
+      if (r.line) {
+        highlightErrorLine(r.line);
+        showErrorBar(kind + line, r.error || "");
+      }
+      /* Build rich error card */
+      let errHTML = `<div class="check-result-error">
+        <span class="check-result-icon" aria-hidden="true">✗</span>
+        <div class="check-result-body">
+          <strong>${esc(kind)}</strong>${line ? `<span class="check-result-line">${esc(line)}</span>` : ""}
+          <br><span class="check-result-errmsg">${esc(r.error || "")}</span>`;
+      if (r.expected)  errHTML += `<br><span class="check-result-detail">Expected: <code>${esc(r.expected)}</code></span>`;
+      if (r.received)  errHTML += `<span class="check-result-detail"> · Got: <code>${esc(r.received)}</code></span>`;
+      if (r.rule)      errHTML += `<br><span class="check-result-detail">Rule: <code>${esc(r.rule)}</code></span>`;
+      errHTML += `</div></div>`;
+      showResult("check-result", errHTML, "err");
     }
   } catch (e) {
+    renderVerdictCard("error", { error_summary: e.message });
     showResult("check-result", "Internal error: " + esc(e.message), "err");
   }
 }
@@ -439,25 +657,34 @@ async function runDiagnose() {
   const source = document.getElementById("proof-input").value.trim();
   const logic  = document.getElementById("logic-select").value;
   const out    = document.getElementById("diag-result");
-  if (!source) { out.innerHTML = `<p class="dim-text">Enter a proof in the Verify panel first.</p>`; return; }
+  if (!source) { out.innerHTML = `<p class="dim-text">Enter a proof on the left first.</p>`; return; }
 
   out.innerHTML = `<p class="dim-text">Running diagnostics…</p>`;
   try {
     const r = await callBrowser("browser_diagnose", { proof_text: source, logic });
-    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${esc(r.error)}</p>`; return; }
+    if (!r.ok) { out.innerHTML = `<p class="result-err-text">${esc(r.error)}</p>`; return; }
     const diags = r.diagnostics || [];
     if (!diags.length) {
-      out.innerHTML = `<p style='color:var(--green)'>No diagnostics — proof structure looks clean.</p>`;
+      out.innerHTML = `<div class="diag-clean">
+        <span class="diag-clean-icon" aria-hidden="true">✓</span>
+        <span>No diagnostics — proof structure looks clean.</span>
+      </div>`;
       return;
     }
-    out.innerHTML = `<ul class="diag-list">${diags.map(d => `
-      <li class="diag-item ${esc(d.severity || "info")}">
-        <div class="diag-code">${esc(d.code || "")}</div>
+    out.innerHTML = `<ul class="diag-list">${diags.map(d => {
+      const sev = d.severity || "info";
+      const sevIcon = sev === "error" ? "✗" : sev === "warning" ? "⚠" : "ℹ";
+      return `<li class="diag-item ${esc(sev)}">
+        <div class="diag-header">
+          <span class="diag-sev-icon" aria-hidden="true">${sevIcon}</span>
+          <span class="diag-code">${esc(d.code || sev)}</span>
+          ${d.line ? `<span class="diag-line-tag">line ${d.line}</span>` : ""}
+        </div>
         <div class="diag-msg">${esc(d.message)}</div>
-        ${d.line ? `<div class="diag-line">line ${d.line}</div>` : ""}
-      </li>`).join("")}</ul>`;
+      </li>`;
+    }).join("")}</ul>`;
   } catch (e) {
-    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
+    out.innerHTML = `<p class="result-err-text">Error: ${esc(e.message)}</p>`;
   }
 }
 
@@ -466,24 +693,236 @@ async function runDiagnose() {
 async function runGraph() {
   const source = document.getElementById("proof-input").value.trim();
   const logic  = document.getElementById("logic-select").value;
-  const dotOut = document.getElementById("graph-dot");
-  const nodes  = document.getElementById("graph-nodes");
+  const dotOut  = document.getElementById("graph-dot");
+  const svgWrap = document.getElementById("studio-graph-svg-wrap");
+  const dotDets = document.getElementById("graph-dot-details");
+  const nodesEl = document.getElementById("graph-nodes");
   if (!source) {
-    dotOut.textContent = "Enter a proof in the Verify panel first.";
-    dotOut.style.display = "block"; return;
+    if (dotOut) dotOut.textContent = "Enter a proof on the left first.";
+    if (dotDets) { dotDets.hidden = false; dotDets.open = true; }
+    return;
   }
-  dotOut.textContent = "Building graph…"; dotOut.style.display = "block"; nodes.innerHTML = "";
+  if (svgWrap)  svgWrap.innerHTML = `<p class="dim-text">Building graph…</p>`;
+  if (dotOut)   dotOut.textContent = "";
+  if (nodesEl)  nodesEl.innerHTML  = "";
+
   try {
     const r = await callBrowser("browser_graph", { proof_text: source, logic });
-    if (!r.ok) { dotOut.textContent = `Error: ${r.error}`; return; }
-    dotOut.textContent = r.dot || "(no DOT output)";
-    nodes.innerHTML = (r.nodes || []).map(n => `
-      <div class="graph-node">
-        <div class="lbl">${esc(n.label)}</div>
-        <div class="knd">${esc(n.kind)}${n.rule ? " · " + esc(n.rule) : ""}</div>
-        <div class="frm">${esc(n.formula || "")}</div>
-      </div>`).join("");
-  } catch (e) { dotOut.textContent = "Error: " + e.message; }
+    if (!r.ok) {
+      if (svgWrap) svgWrap.innerHTML = `<p class="result-err-text">Error: ${esc(r.error)}</p>`;
+      if (svgWrap) svgWrap.hidden = false;
+      return;
+    }
+    /* DOT output */
+    if (dotOut)  dotOut.textContent = r.dot || "(no DOT output)";
+    if (dotDets) dotDets.hidden = false;
+
+    /* In-page SVG graph */
+    if (svgWrap) {
+      svgWrap.hidden = false;
+      svgWrap.innerHTML = buildSVGGraph(r.nodes || [], r.edges || []);
+      /* Wire hover → gutter highlight */
+      svgWrap.querySelectorAll("[data-line]").forEach(el => {
+        el.addEventListener("mouseenter", () => {
+          const ln = parseInt(el.dataset.line);
+          if (ln) highlightGraphLine(ln);
+        });
+        el.addEventListener("mouseleave", clearGraphHighlight);
+        el.addEventListener("focus", () => {
+          const ln = parseInt(el.dataset.line);
+          if (ln) highlightGraphLine(ln);
+        });
+        el.addEventListener("blur", clearGraphHighlight);
+      });
+    }
+
+    /* Node summary list (for test coverage — graph-nodes id) */
+    if (nodesEl) {
+      nodesEl.hidden = true; /* hidden; SVG handles visual; nodes div kept for test */
+      nodesEl.innerHTML = (r.nodes || []).map(n =>
+        `<div class="graph-node">
+          <div class="lbl">${esc(n.label)}</div>
+          <div class="knd">${esc(n.kind)}${n.rule ? " · " + esc(n.rule) : ""}</div>
+          <div class="frm">${esc(n.formula || "")}</div>
+        </div>`).join("");
+    }
+  } catch (e) {
+    if (svgWrap) { svgWrap.innerHTML = `<p class="result-err-text">Error: ${esc(e.message)}</p>`; svgWrap.hidden = false; }
+  }
+}
+
+// ── In-page SVG dependency graph renderer ─────────────────────────────────
+
+function buildSVGGraph(nodes, edges) {
+  if (!nodes.length) return `<p class="dim-text">No nodes in graph.</p>`;
+
+  /* Assign depth by BFS from root (theorem / node with no incoming edge) */
+  const labels = new Set(nodes.map(n => n.label));
+  const incoming = new Map();
+  nodes.forEach(n => incoming.set(n.label, 0));
+  edges.forEach(e => { incoming.set(e.tgt, (incoming.get(e.tgt) || 0) + 1); });
+
+  const roots = nodes.filter(n => (incoming.get(n.label) || 0) === 0).map(n => n.label);
+  if (!roots.length) roots.push(nodes[0].label); /* cycle fallback */
+
+  const depth  = new Map();
+  const queue  = [];
+  roots.forEach(r => { depth.set(r, 0); queue.push(r); });
+  const adj = new Map();
+  edges.forEach(e => {
+    if (!adj.has(e.src)) adj.set(e.src, []);
+    adj.get(e.src).push(e.tgt);
+  });
+  let head = 0;
+  while (head < queue.length) {
+    const cur = queue[head++];
+    (adj.get(cur) || []).forEach(tgt => {
+      if (!depth.has(tgt)) { depth.set(tgt, (depth.get(cur) || 0) + 1); queue.push(tgt); }
+    });
+  }
+  nodes.forEach(n => { if (!depth.has(n.label)) depth.set(n.label, 0); });
+
+  /* Group by depth */
+  const cols = new Map();
+  nodes.forEach(n => {
+    const d = depth.get(n.label) || 0;
+    if (!cols.has(d)) cols.set(d, []);
+    cols.get(d).push(n);
+  });
+  const maxDepth = Math.max(...cols.keys());
+
+  /* Layout constants */
+  const NODE_W  = 120;
+  const NODE_H  = 44;
+  const COL_GAP = 160;
+  const ROW_GAP = 60;
+  const PAD_X   = 30;
+  const PAD_Y   = 30;
+
+  const maxNodesInCol = Math.max(...[...cols.values()].map(c => c.length));
+  const svgW = PAD_X * 2 + (maxDepth + 1) * COL_GAP;
+  const svgH = PAD_Y * 2 + maxNodesInCol * (NODE_H + ROW_GAP);
+
+  /* Compute positions */
+  const pos = new Map();
+  cols.forEach((colNodes, d) => {
+    const totalColH = colNodes.length * (NODE_H + ROW_GAP) - ROW_GAP;
+    const startY    = PAD_Y + (svgH - PAD_Y * 2 - totalColH) / 2;
+    colNodes.forEach((n, i) => {
+      pos.set(n.label, {
+        x: PAD_X + d * COL_GAP,
+        y: startY + i * (NODE_H + ROW_GAP),
+      });
+    });
+  });
+
+  /* Detect which nodes have errors (incoming edges that fail) */
+  /* We detect unused assumptions by nodes w/ 0 outgoing in edges to non-root */
+  const outDeg = new Map();
+  nodes.forEach(n => outDeg.set(n.label, 0));
+  edges.forEach(e => outDeg.set(e.src, (outDeg.get(e.src) || 0) + 1));
+
+  function nodeColor(n) {
+    if (n.kind === "theorem")  return { stroke: "#7C5CFF", fill: "rgba(124,92,255,.12)" };
+    if (n.kind === "conclude") return { stroke: "#3E9C8F", fill: "rgba(62,156,143,.10)" };
+    if (n.kind === "suppose")  return { stroke: "#D4A050", fill: "rgba(212,160,80,.08)" };
+    if (n.kind === "assume" && (outDeg.get(n.label) || 0) === 0)
+      return { stroke: "#D4A050", fill: "rgba(212,160,80,.08)" }; /* unused assumption */
+    return { stroke: "#5A5070", fill: "rgba(90,80,112,.10)" };
+  }
+
+  function nodeTextColor(n) {
+    if (n.kind === "theorem")  return "#9D7BFF";
+    if (n.kind === "conclude") return "#3E9C8F";
+    if (n.kind === "suppose")  return "#D4A050";
+    if (n.kind === "assume" && (outDeg.get(n.label) || 0) === 0) return "#D4A050";
+    return "#C9C4D6";
+  }
+
+  /* Edge paths (curved) */
+  function edgePath(src, tgt) {
+    const s = pos.get(src), t = pos.get(tgt);
+    if (!s || !t) return "";
+    const sx = s.x + NODE_W, sy = s.y + NODE_H / 2;
+    const tx = t.x,           ty = t.y + NODE_H / 2;
+    const mx = (sx + tx) / 2;
+    return `M ${sx},${sy} C ${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+  }
+
+  /* Assign line numbers: assume ordering by proof line (approx by label sort in col) */
+  function approxLine(n, allNodes) {
+    const idx = allNodes.findIndex(x => x.label === n.label);
+    return idx + 1; /* 1-based approximate */
+  }
+
+  /* SVG */
+  let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg"
+    role="img" aria-label="Proof dependency graph"
+    class="studio-graph-svg"
+    style="width:100%;max-width:${svgW}px;height:${svgH}px">
+  <defs>
+    <marker id="sgraph-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0,1 L6,3.5 L0,6 Z" fill="rgba(90,80,112,0.7)"/>
+    </marker>
+    <marker id="sgraph-arrow-ok" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0,1 L6,3.5 L0,6 Z" fill="rgba(62,156,143,0.7)"/>
+    </marker>
+  </defs>`;
+
+  /* Edges */
+  edges.forEach(e => {
+    const path = edgePath(e.src, e.tgt);
+    if (!path) return;
+    const isFinal = nodes.find(n => n.label === e.tgt && n.kind === "conclude");
+    const color   = isFinal ? "rgba(62,156,143,0.45)" : "rgba(90,80,112,0.45)";
+    const marker  = isFinal ? "url(#sgraph-arrow-ok)" : "url(#sgraph-arrow)";
+    svg += `<path d="${esc(path)}" fill="none" stroke="${color}" stroke-width="1.5"
+      marker-end="${marker}"/>`;
+  });
+
+  /* Nodes */
+  nodes.forEach(n => {
+    const p   = pos.get(n.label);
+    if (!p) return;
+    const col = nodeColor(n);
+    const tc  = nodeTextColor(n);
+    const ln  = approxLine(n, nodes);
+
+    /* Truncate formula for display */
+    const formula = n.formula ? (n.formula.length > 16 ? n.formula.slice(0, 14) + "…" : n.formula) : "";
+    const tabIdx  = n.kind === "theorem" ? "0" : "-1";
+
+    svg += `<g class="sgraph-node" data-line="${ln}" data-label="${esc(n.label)}"
+      tabindex="${tabIdx}" role="button" aria-label="${esc(n.label)}: ${esc(n.kind)} ${esc(n.formula || "")}">
+      <rect x="${p.x}" y="${p.y}" width="${NODE_W}" height="${NODE_H}" rx="4"
+        fill="${col.fill}" stroke="${col.stroke}" stroke-width="1.5"/>
+      <text x="${p.x + NODE_W / 2}" y="${p.y + 15}" text-anchor="middle"
+        font-family="monospace" font-size="10" fill="${tc}" font-weight="600">${esc(n.label)}</text>
+      <text x="${p.x + NODE_W / 2}" y="${p.y + 27}" text-anchor="middle"
+        font-family="monospace" font-size="8" fill="rgba(${col.stroke.startsWith('#') ? hexToRgbStr(col.stroke) : "90,80,112"},0.7)">${esc(n.kind)}</text>
+      ${formula ? `<text x="${p.x + NODE_W / 2}" y="${p.y + 38}" text-anchor="middle"
+        font-family="monospace" font-size="8" fill="rgba(201,196,214,0.6)">${esc(formula)}</text>` : ""}
+    </g>`;
+  });
+
+  svg += `</svg>`;
+
+  /* Legend */
+  svg += `<div class="sgraph-legend" aria-label="Graph legend">
+    <span class="sgraph-legend-item"><span class="sgraph-swatch" style="border-color:#7C5CFF"></span>theorem</span>
+    <span class="sgraph-legend-item"><span class="sgraph-swatch" style="border-color:#3E9C8F"></span>conclude</span>
+    <span class="sgraph-legend-item"><span class="sgraph-swatch" style="border-color:#D4A050"></span>suppose / unused</span>
+    <span class="sgraph-legend-item"><span class="sgraph-swatch" style="border-color:#5A5070"></span>have / assume</span>
+  </div>`;
+
+  return svg;
+}
+
+function hexToRgbStr(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
 }
 
 // ── Panel: Semantics — Soundness ───────────────────────────────────────────
@@ -495,25 +934,31 @@ async function runSoundness() {
   out.innerHTML = `<p class="dim-text">Checking…</p>`;
   try {
     const r = await callBrowser("browser_soundness", { logic, matrix });
-    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${esc(r.error)}</p>`; return; }
+    if (!r.ok) { out.innerHTML = `<p class="result-err-text">${esc(r.error)}</p>`; return; }
     const rows = (r.rules || []).map(rule => {
       const cls = rule.status === "sound" ? "sound" : rule.status === "unsound" ? "unsound" : "skipped";
+      const statusIcon = rule.status === "sound" ? "✓" : rule.status === "unsound" ? "✗" : "—";
       const cx  = rule.counterexample
         ? `<br><small style='color:var(--muted)'>counterexample: ${esc(JSON.stringify(rule.counterexample))}</small>`
         : "";
-      return `<tr><td>${esc(rule.rule)}</td><td class="${cls}">${esc(rule.status)}${cx}</td></tr>`;
+      return `<tr>
+        <td>${esc(rule.rule)}</td>
+        <td class="${cls}">
+          <span aria-hidden="true">${statusIcon}</span> ${esc(rule.status)}${cx}
+        </td>
+      </tr>`;
     }).join("");
     out.innerHTML = `
-      <p style='font-size:.8rem;color:var(--muted);margin-bottom:8px'>
-        Logic <strong style='color:var(--text)'>${esc(r.logic)}</strong>
-        · matrix <strong style='color:var(--text)'>${esc(r.matrix)}</strong>
+      <p class="sem-meta">
+        Logic <strong>${esc(r.logic)}</strong>
+        · matrix <strong>${esc(r.matrix)}</strong>
       </p>
       <table class="soundness-table">
         <thead><tr><th>Rule</th><th>Status</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   } catch (e) {
-    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
+    out.innerHTML = `<p class="result-err-text">Error: ${esc(e.message)}</p>`;
   }
 }
 
@@ -526,23 +971,21 @@ async function runLattice() {
   out.innerHTML = `<p class="dim-text">Computing…</p>`;
   try {
     const r = await callBrowser("browser_lattice", { formula });
-    if (!r.ok) { out.innerHTML = `<p style='color:var(--red)'>${esc(r.error)}</p>`; return; }
+    if (!r.ok) { out.innerHTML = `<p class="result-err-text">${esc(r.error)}</p>`; return; }
     const rows = (r.rows || []).map(row =>
       `<tr>
         <td>${esc(row.label)}</td>
-        <td style='color:var(--muted);font-size:.75rem'>${row.axioms.length ? row.axioms.map(esc).join(", ") : "∅"}</td>
+        <td class="lat-axioms">${row.axioms.length ? row.axioms.map(esc).join(", ") : "∅"}</td>
         <td class="status-${esc(row.status)}">${esc(row.status)}</td>
       </tr>`).join("");
     out.innerHTML = `
-      <p style='font-size:.8rem;color:var(--muted);margin-bottom:8px'>
-        Formula: <strong style='color:var(--cyan)'>${esc(r.formula)}</strong>
-      </p>
+      <p class="sem-meta">Formula: <strong>${esc(r.formula)}</strong></p>
       <table class="lattice-table">
         <thead><tr><th>World</th><th>Axioms</th><th>Status</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
   } catch (e) {
-    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
+    out.innerHTML = `<p class="result-err-text">Error: ${esc(e.message)}</p>`;
   }
 }
 
@@ -553,41 +996,49 @@ async function runKripke() {
   const maxWorlds = parseInt(document.getElementById("kripke-worlds-select").value) || 3;
   const out       = document.getElementById("kripke-result");
   if (!formula) { out.innerHTML = `<p class="dim-text">Enter a formula above.</p>`; return; }
-  out.innerHTML = `<p class="dim-text">Searching…</p>`;
+  out.innerHTML = `<p class="dim-text">Searching for countermodel…</p>`;
   try {
     const r = await callBrowser("browser_kripke", { formula, max_worlds: maxWorlds });
     if (r.status === "parse_error" || r.status === "unsupported_formula") {
-      out.innerHTML = `<p style='color:var(--red)'>${esc(r.explanation)}</p>`; return;
+      out.innerHTML = `<p class="result-err-text">${esc(r.explanation)}</p>`; return;
     }
     if (r.status === "no_countermodel_within_bound") {
       out.innerHTML = `
-        <p style='color:var(--green)'>No countermodel found (max ${esc(String(r.max_worlds))} worlds).</p>
-        <p style='color:var(--muted);font-size:.75rem'>${esc(r.bound_note)}</p>`;
+        <div class="kripke-no-cm">
+          <span aria-hidden="true">✓</span>
+          No countermodel found (max ${esc(String(r.max_worlds))} worlds).
+        </div>
+        <p class="kripke-bound-note">${esc(r.bound_note)}</p>`;
       return;
     }
-    // countermodel_found
+    /* status === "countermodel_found" */
     const val = r.valuation || {};
     const worldRows = (r.worlds || []).map(w => {
       const atoms = val[String(w)] || [];
-      const fail  = w === r.failing_world ? `<span style='color:var(--red)'>✗ fails here</span>` : "";
-      return `<tr><td>${esc(String(w))}</td><td>${atoms.length ? atoms.map(esc).join(", ") : "∅"}</td><td>${fail}</td></tr>`;
+      const fail  = w === r.failing_world
+        ? `<span class="kripke-fail-badge" aria-label="fails here">✗ fails</span>` : "";
+      return `<tr>
+        <td>${esc(String(w))}</td>
+        <td>${atoms.length ? atoms.map(esc).join(", ") : "∅"}</td>
+        <td>${fail}</td>
+      </tr>`;
     }).join("");
     const orderStr = (r.order_pairs || []).length
       ? r.order_pairs.map(p => `${esc(String(p[0]))}≤${esc(String(p[1]))}`).join(", ")
       : "discrete (reflexive only)";
     out.innerHTML = `
-      <p style='font-size:.8rem;color:var(--muted);margin-bottom:6px'>
-        Formula: <strong style='color:var(--red)'>${esc(r.formula)}</strong>
-        · countermodel found
-      </p>
-      <p style='font-size:.75rem;margin-bottom:8px'>Order: ${orderStr}</p>
+      <div class="kripke-found-header">
+        <span aria-hidden="true">✗</span>
+        Countermodel found — formula fails in this model.
+      </div>
+      <p class="sem-meta">Formula: <strong>${esc(r.formula)}</strong> · Order: ${orderStr}</p>
       <table class="lattice-table">
         <thead><tr><th>World</th><th>True atoms</th><th></th></tr></thead>
         <tbody>${worldRows}</tbody>
       </table>
-      <p style='font-size:.75rem;color:var(--amber);margin-top:8px'>${esc(r.explanation)}</p>`;
+      <p class="kripke-bound-note">${esc(r.explanation)}</p>`;
   } catch (e) {
-    out.innerHTML = `<p style='color:var(--red)'>Error: ${esc(e.message)}</p>`;
+    out.innerHTML = `<p class="result-err-text">Error: ${esc(e.message)}</p>`;
   }
 }
 
@@ -633,20 +1084,22 @@ async function loadExamples() {
       });
     });
   } catch (e) {
-    grid.innerHTML = `<p style='color:var(--red)'>Failed to load examples: ${esc(e.message)}</p>`;
+    grid.innerHTML = `<p class="result-err-text">Failed to load examples: ${esc(e.message)}</p>`;
   }
 }
 
 function loadExampleCard(card) {
   const content = card.dataset.content;
-  const fn = card.dataset.filename;
+  const fn      = card.dataset.filename;
   setEditorContent(content, null);
-  activateTab("verify");
   document.getElementById("proof-input").focus();
   showStatus("info", `Loaded: ${fn}`);
+  /* Scroll to editor on mobile */
+  const editorPane = document.getElementById("studio-editor-pane");
+  if (editorPane) editorPane.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-// ── URL parameter support — studio.html?example=ID or ?proof=…&logic=…&tab=… ──
+// ── URL parameter support ──────────────────────────────────────────────────
 
 let _urlParamLoaded = false;
 
@@ -662,14 +1115,12 @@ function loadFromURLParams() {
     const entry = GALLERY_ENTRIES.find(e => e.id === exId);
     if (entry) {
       setEditorContent(entry.proof, logic || entry.logic);
-      if (tab) activateTab(tab);
       _urlParamLoaded = true;
       return true;
     }
   }
   if (proofTx) {
     setEditorContent(proofTx, logic);
-    if (tab) activateTab(tab);
     _urlParamLoaded = true;
     return true;
   }
@@ -689,7 +1140,7 @@ function navigateToStudio(proof, logic, tab) {
 
 function renderGallery() {
   const grid = document.getElementById("gallery-grid");
-  if (!grid) return; /* studio.html has no #gallery-grid — exits immediately */
+  if (!grid) return;
 
   const cards = GALLERY_ENTRIES.map(entry => {
     const tagClass = entry.category === "classical" ? "tag-classical"
@@ -727,31 +1178,38 @@ function renderGallery() {
   grid.innerHTML = cards;
 }
 
-// ── Gallery preset loader (global) ─────────────────────────────────────────
+// ── Editor content setter ──────────────────────────────────────────────────
 
 function setEditorContent(proof, logic) {
   const editor   = document.getElementById("proof-input");
   const logicSel = document.getElementById("logic-select");
   if (editor)   editor.value = proof;
   if (logicSel && logic) logicSel.value = logic;
+  /* Clear prior results */
+  clearErrorLine();
   const resultBox = document.getElementById("check-result");
-  if (resultBox) resultBox.className = "result-box";
+  if (resultBox) resultBox.className = "result-box studio-check-result";
   const diagResult = document.getElementById("diag-result");
   if (diagResult) diagResult.innerHTML = "";
+  /* Reset verdict card */
+  const empty = document.getElementById("studio-empty-state");
+  const card  = document.getElementById("studio-verdict-card");
+  const tabs  = document.getElementById("result-tabs");
+  if (empty) empty.hidden = false;
+  if (card)  card.hidden  = true;
+  if (tabs)  tabs.hidden  = true;
+  /* Sync gutter */
+  syncGutter();
 }
 
-/**
- * loadPreset — loads a proof into the editor.
- * On studio.html: loads directly and auto-runs.
- * On other pages: navigates to studio.html with the proof as a URL parameter.
- */
+// ── loadPreset (global — called from landing/tutorial) ────────────────────
+
 function loadPreset(proof, logic) {
   if (!document.getElementById("proof-input")) {
     navigateToStudio(proof, logic || "intuitionistic_prop", "verify");
     return;
   }
   setEditorContent(proof, logic);
-  activateTab("verify");
   document.getElementById("proof-input").scrollIntoView({ behavior: "smooth", block: "nearest" });
   if (steleReady) {
     setTimeout(runCheck, 600);
@@ -760,22 +1218,15 @@ function loadPreset(proof, logic) {
   }
 }
 
-/**
- * loadTutorialPreset — from tutorial step buttons; loads proof, activates panel,
- * and auto-runs the appropriate action if Stele is ready.
- * Only called when already on the Studio page.
- */
 function loadTutorialPreset(proof, logic, tab) {
   if (proof) setEditorContent(proof, logic);
-  if (tab) setTimeout(() => activateTab(tab), 300);
-
   if (steleReady && proof) {
     const delay = 700;
-    if (!tab || tab === "verify") setTimeout(runCheck, delay);
-    else if (tab === "diagnose") setTimeout(runDiagnose, delay);
-    else if (tab === "graph") setTimeout(runGraph, delay);
+    if (!tab || tab === "verify")   setTimeout(runCheck,   delay);
+    else if (tab === "diagnose")    setTimeout(runDiagnose, delay);
+    else if (tab === "graph")       setTimeout(runGraph,    delay);
   } else if (proof) {
-    showStatus("info", "Proof loaded — click the button in the panel once Stele finishes loading.");
+    showStatus("info", "Proof loaded — click the run button once Stele finishes loading.");
   }
 }
 
@@ -803,24 +1254,106 @@ function showTutorialStep(n) {
   const next = document.getElementById("tut-next");
   if (prev) prev.disabled = n <= 1;
   if (next) {
-    next.disabled = n >= TOTAL_TUTORIAL_STEPS;
+    next.disabled  = n >= TOTAL_TUTORIAL_STEPS;
     next.textContent = n >= TOTAL_TUTORIAL_STEPS ? "Done ✓" : "Next →";
+  }
+}
+
+// ── Semantic preset wiring ────────────────────────────────────────────────
+
+function wirePresets() {
+  /* LEM fails in K3: switch to Semantics → Soundness, set classical_prop + K3 */
+  const lemK3 = document.getElementById("preset-lem-k3");
+  if (lemK3) {
+    lemK3.addEventListener("click", () => {
+      const semLogic  = document.getElementById("sem-logic-select");
+      const semMatrix = document.getElementById("sem-matrix-select");
+      if (semLogic)  semLogic.value  = "classical_prop";
+      if (semMatrix) semMatrix.value = "K3";
+      const sem = document.getElementById("panel-semantics");
+      if (sem) sem.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (steleReady) setTimeout(runSoundness, 400);
+      else showStatus("info", "LEM in K3: go to Semantic Tools → Rule Soundness (classical_prop + K3) and click Check Soundness.");
+    });
+  }
+
+  /* DNE classical-only: load dne proof, set logic to intuitionistic, run check */
+  const dne = document.getElementById("preset-dne");
+  if (dne) {
+    dne.addEventListener("click", () => {
+      const entry = GALLERY_ENTRIES.find(e => e.id === "dne");
+      if (!entry) return;
+      setEditorContent(entry.proof, "intuitionistic_prop");
+      const logicSel = document.getElementById("logic-select");
+      if (logicSel) logicSel.value = "intuitionistic_prop";
+      showStatus("info", "DNE proof loaded with intuitionistic_prop — expected: rejected.");
+      if (steleReady) setTimeout(runCheck, 600);
+    });
+  }
+
+  /* ¬¬P→P countermodel: set Kripke input + scroll to it */
+  const kripkePr = document.getElementById("preset-kripke");
+  if (kripkePr) {
+    kripkePr.addEventListener("click", () => {
+      const ki = document.getElementById("kripke-input");
+      if (ki) ki.value = "not not P -> P";
+      const sem = document.getElementById("panel-semantics");
+      if (sem) sem.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (steleReady) setTimeout(runKripke, 400);
+      else showStatus("info", "Go to Semantic Tools → Kripke Countermodel and click Find Countermodel for ¬¬P→P.");
+    });
+  }
+
+  /* Peirce's law: load proof, set classical */
+  const peirce = document.getElementById("preset-peirce");
+  if (peirce) {
+    peirce.addEventListener("click", () => {
+      const entry = GALLERY_ENTRIES.find(e => e.id === "peirce");
+      if (!entry) return;
+      setEditorContent(entry.proof, "classical_prop");
+      showStatus("info", "Peirce's law loaded — classical_prop.");
+      if (steleReady) setTimeout(runCheck, 600);
+    });
   }
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  /* Detect whether we're on the Studio workbench page or the landing page */
   const onStudioPage = !!document.getElementById("proof-input");
 
   if (onStudioPage) {
-    /* ── Studio page: wire tabs, action buttons, Ctrl+Enter, then init Pyodide ── */
+    /* Gutter: sync on input */
+    const editor = document.getElementById("proof-input");
+    if (editor) {
+      syncGutter();
+      editor.addEventListener("input", syncGutter);
+      editor.addEventListener("keydown", e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault(); runCheck();
+        }
+        /* Sync gutter on Tab key (indent) */
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const start = editor.selectionStart;
+          const end   = editor.selectionEnd;
+          editor.value = editor.value.slice(0, start) + "  " + editor.value.slice(end);
+          editor.selectionStart = editor.selectionEnd = start + 2;
+          syncGutter();
+        }
+      });
+      editor.addEventListener("scroll", () => {
+        const gutter = document.getElementById("editor-gutter");
+        if (gutter) gutter.scrollTop = editor.scrollTop;
+      });
+    }
 
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+    /* Result sub-tabs */
+    document.querySelectorAll(".result-tab").forEach(btn => {
+      btn.addEventListener("click", () => activateResultTab(btn.dataset.resultTab));
     });
 
+    /* Action buttons */
     const bind = (id, fn) => {
       const el = document.getElementById(id);
       if (el) el.addEventListener("click", fn);
@@ -832,27 +1365,29 @@ document.addEventListener("DOMContentLoaded", () => {
     bind("btn-lattice",   runLattice);
     bind("btn-kripke",    runKripke);
 
-    const editor = document.getElementById("proof-input");
-    if (editor) {
-      editor.addEventListener("keydown", e => {
-        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-          e.preventDefault(); runCheck();
-        }
-      });
-    }
+    /* Preset buttons */
+    wirePresets();
 
-    /* Pre-populate editor from ?example= or ?proof= URL params before Pyodide loads */
+    /* URL params */
     loadFromURLParams();
 
-    /* Disable action buttons until Pyodide is ready, then initialise */
+    /* Disable action buttons until Pyodide ready */
     setButtonsEnabled(false);
     initStele();
+
+    /* Mobile: if viewport narrow, scroll result pane into view after run */
+    document.getElementById("btn-check")?.addEventListener("click", () => {
+      if (window.innerWidth < 900) {
+        setTimeout(() => {
+          const res = document.getElementById("studio-result-pane");
+          if (res) res.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 200);
+      }
+    });
   }
 
-  /* ── Both pages: gallery (landing only due to #gallery-grid guard) + tutorial nav ── */
-
+  /* Both pages */
   renderGallery();
-
   showTutorialStep(1);
 
   document.querySelectorAll(".tut-dot").forEach(dot => {
@@ -864,7 +1399,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (prevBtn) prevBtn.addEventListener("click", () => showTutorialStep(currentTutorialStep - 1));
   if (nextBtn) nextBtn.addEventListener("click", () => showTutorialStep(currentTutorialStep + 1));
 
-  /* Tutorial "Load & run in Studio" buttons — navigate to studio.html from landing */
   document.querySelectorAll(".tut-load-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const proof = btn.dataset.proof || null;
@@ -878,7 +1412,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* Tutorial "open tab" buttons — navigate to studio.html?tab=… from landing */
   document.querySelectorAll(".tut-open-tab-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const tab = btn.dataset.tab;
@@ -891,5 +1424,4 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Expose globally for gallery/tutorial onclick handlers and external scripts
 window.stele = { loadPreset, loadTutorialPreset, runCheck, activateTab, navigateToStudio };

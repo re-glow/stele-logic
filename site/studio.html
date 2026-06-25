@@ -11,11 +11,10 @@
   <link rel="stylesheet" href="assets/components.css">
   <link rel="stylesheet" href="assets/visuals.css">
 </head>
-<body>
+<body class="studio-body">
 
 <a href="#main-content" class="focus-skip">Skip to main content</a>
 
-<!-- Nav: back to landing + links -->
 <nav class="site-nav" aria-label="Site navigation">
   <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
@@ -32,250 +31,357 @@
 
 <main id="main-content">
 
-<!-- Studio header — compact, no marketing hero -->
-<div class="studio-page-header" style="position:relative;overflow:hidden">
-  <span class="page-motif" aria-hidden="true">⊢</span>
-  <div class="section-inner" style="position:relative;z-index:1">
-    <h1 id="studio-heading" class="studio-page-title">
-      Stele Studio
-      <span class="badge badge-stable">Stable</span>
-    </h1>
-    <p class="studio-page-subtitle">
-      Write structured natural-deduction proofs. The trusted kernel checks each
-      inference step for logical validity — entirely in your browser via Pyodide/WASM.
-    </p>
-    <div class="studio-trust-bar" role="note" aria-label="Execution trust model">
-      <span class="trust-pill trust-pill--kernel">kernel.py — trusted</span>
-      <span class="trust-pill trust-pill--untrusted">diagnostics / hints — untrusted</span>
-      <span class="trust-pill trust-pill--local">browser-local · no backend · proof text not transmitted</span>
+<!-- ── Studio header ──────────────────────────────────────────────────────── -->
+<header class="studio-header">
+  <div class="studio-header-inner">
+    <div class="studio-header-text">
+      <h1 class="studio-title">
+        <span class="studio-title-mark" aria-hidden="true">⊢</span>
+        Stele Studio
+        <span class="badge badge-stable">Stable</span>
+      </h1>
+      <p class="studio-subtitle">
+        Write a proof. The trusted kernel checks each rule.
+        Switch the logic; the verdict can change.
+      </p>
     </div>
+    <div class="studio-header-pills">
+      <span class="trust-pill trust-pill--kernel">kernel.py — ≈160 lines · trusted</span>
+      <span class="trust-pill trust-pill--untrusted">diagnostics / hints — untrusted</span>
+      <span class="trust-pill trust-pill--local">browser-local · no backend · proof not transmitted</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Pyodide loading banner ─────────────────────────────────────────────── -->
+<div id="studio-loading" class="studio-loading-banner" role="status" aria-live="polite">
+  <div class="studio-loading-inner">
+    <div class="loading-steps" aria-label="Loading progress">
+      <div class="loading-step-row">
+        <span class="loading-step-icon" id="lstep-icon-1" aria-hidden="true">○</span>
+        <span class="loading-step-text" id="lstep-1">Downloading Pyodide runtime</span>
+      </div>
+      <div class="loading-step-row">
+        <span class="loading-step-icon" id="lstep-icon-2" aria-hidden="true">○</span>
+        <span class="loading-step-text" id="lstep-2">Loading trusted kernel</span>
+      </div>
+      <div class="loading-step-row">
+        <span class="loading-step-icon" id="lstep-icon-3" aria-hidden="true">○</span>
+        <span class="loading-step-text" id="lstep-3">Mounting proof examples</span>
+      </div>
+    </div>
+    <div class="loading-bar-wrap">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <span id="loading-step" class="studio-loading-msg">Initialising Pyodide runtime (~8 MB on first visit)…</span>
+    <span class="studio-loading-note">~8 MB first load · cached after · all runs locally</span>
   </div>
 </div>
 
-<div class="section-inner section-inner--wide">
+<!-- ── Main lab layout ────────────────────────────────────────────────────── -->
+<div class="studio-lab" id="studio-lab">
 
-  <!-- Pyodide loading banner -->
-  <div id="studio-loading" class="studio-loading-banner" role="status" aria-live="polite">
-    <div class="studio-loading-inner">
-      <span id="loading-step" class="studio-loading-msg">
-        Initialising Pyodide runtime (~8 MB on first visit)…
-      </span>
-      <div class="loading-bar-wrap">
-        <div class="loading-bar" id="loading-bar"></div>
+  <!-- Left: editor pane (60%) -->
+  <div class="studio-editor-pane" id="studio-editor-pane">
+
+    <!-- Editor toolbar -->
+    <div class="studio-editor-toolbar">
+      <div class="studio-editor-toolbar-left">
+        <label for="logic-select" class="studio-label">Logic</label>
+        <select id="logic-select" class="studio-select" aria-label="Select proof logic">
+          <option value="intuitionistic_prop">intuitionistic_prop</option>
+          <option value="classical_prop">classical_prop</option>
+        </select>
       </div>
-      <span class="studio-loading-note">
-        All verification runs locally · no data sent to any server
-      </span>
-    </div>
-  </div>
-
-  <!-- Studio chrome (same as what was in index.html §4) -->
-  <div class="studio-chrome" id="studio-chrome">
-
-    <!-- Privacy notice -->
-    <div class="privacy-bar" role="note">
-      <strong>100% local</strong>
-      — All proof checking runs in this browser via Pyodide/WASM.
-      No proof text is transmitted to any server. No backend.
-      <span class="privacy-badge">WASM · LOCAL</span>
+      <div class="studio-editor-toolbar-right">
+        <button class="btn btn-primary studio-run-btn" id="btn-check" data-stele
+                aria-label="Run proof check (Ctrl+Enter or Cmd+Enter)">
+          ▶ Run Check
+        </button>
+        <kbd class="kbd-hint" aria-hidden="true">Ctrl+↵</kbd>
+      </div>
     </div>
 
-    <!-- Status bar -->
-    <div id="status-bar" class="studio-status-bar" style="display:none"
-         role="status" aria-live="polite"></div>
-
-    <!-- Tab bar -->
-    <nav class="tab-bar" role="tablist" aria-label="Studio panels">
-      <button class="tab-btn active" role="tab" aria-selected="true"
-              id="tab-verify-label" data-tab="verify" aria-controls="panel-verify">VERIFY</button>
-      <button class="tab-btn" role="tab" aria-selected="false"
-              id="tab-diagnose-label" data-tab="diagnose" aria-controls="panel-diagnose">DIAGNOSE</button>
-      <button class="tab-btn" role="tab" aria-selected="false"
-              id="tab-graph-label" data-tab="graph" aria-controls="panel-graph">GRAPH</button>
-      <button class="tab-btn" role="tab" aria-selected="false"
-              id="tab-semantics-label" data-tab="semantics" aria-controls="panel-semantics">SEMANTICS</button>
-      <button class="tab-btn" role="tab" aria-selected="false"
-              id="tab-examples-label" data-tab="examples" aria-controls="panel-examples">EXAMPLES</button>
-    </nav>
-
-    <div class="main">
-
-      <!-- VERIFY panel -->
-      <section id="panel-verify" class="panel active" role="tabpanel" aria-labelledby="tab-verify-label">
-        <div class="toolbar">
-          <label for="logic-select">Logic:</label>
-          <select id="logic-select" aria-label="Select proof logic">
-            <option value="intuitionistic_prop">Intuitionistic</option>
-            <option value="classical_prop">Classical</option>
-          </select>
-          <button class="btn btn-primary" id="btn-check" data-stele
-                  aria-label="Run proof check (Ctrl+Enter)">
-            ▶ Run Check
-          </button>
-          <span class="kbd-hint" aria-hidden="true">Ctrl+Enter</span>
-        </div>
-
-        <textarea id="proof-input" class="proof-editor"
-                  spellcheck="false" autocomplete="off" autocorrect="off"
-                  aria-label="Proof editor — write your natural-deduction proof here"
-                  placeholder="theorem identity:
+    <!-- Proof editor with gutter -->
+    <div class="studio-editor-chrome" id="studio-editor-chrome">
+      <div class="studio-editor-gutter" id="editor-gutter" aria-hidden="true">
+        <span>1</span>
+      </div>
+      <textarea
+        id="proof-input"
+        class="proof-editor studio-textarea"
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        aria-label="Proof editor — write your natural-deduction proof here"
+        aria-describedby="editor-errorbar"
+        placeholder="theorem identity:
   suppose h: P
     have h2: P by copy h
   have r: P -> P by imp_intro h h2
   conclude P -> P by r"></textarea>
+    </div>
 
-        <div id="check-result" class="result-box" role="status" aria-live="polite"></div>
+    <!-- Error annotation bar (hidden until error) -->
+    <div class="studio-errorbar" id="editor-errorbar" role="alert" aria-live="assertive" hidden>
+      <span class="studio-errorbar-icon" aria-hidden="true">✗</span>
+      <div class="studio-errorbar-body">
+        <code class="studio-errorbar-kind" id="errorbar-kind"></code>
+        <code class="studio-errorbar-msg"  id="errorbar-msg"></code>
+      </div>
+    </div>
 
-        <details class="lang-ref">
-          <summary>Language quick reference</summary>
-          <div class="lang-ref-body">
-            <code>theorem NAME [using LOGIC]:</code> theorem header<br>
-            <code>assume LABEL: FORMULA</code> introduce assumption<br>
-            <code>suppose LABEL: FORMULA</code> subproof assumption<br>
-            <code>have LABEL: FORMULA by RULE REFS…</code> derive step<br>
-            <code>conclude FORMULA by LABEL</code> final conclusion<br><br>
-            Rules:
-            <code class="r-i">mp</code>
-            <code class="r-i">copy</code>
-            <code class="r-i">imp_intro</code>
-            <code class="r-i">and_intro</code>
-            <code class="r-i">and_elim_left</code>
-            <code class="r-i">and_elim_right</code>
-            <code class="r-i">or_intro_left</code>
-            <code class="r-i">or_intro_right</code>
-            <code class="r-i">or_elim</code>
-            <code class="r-i">neg_intro</code>
-            <code class="r-i">neg_elim</code>
-            <code class="r-i">ex_falso</code><br>
-            Classical only:
-            <code class="r-c">dne</code>
-            <code class="r-c">lem</code>
-            <code class="r-c">pbc</code>
+    <!-- Semantic preset buttons -->
+    <div class="studio-presets" aria-label="Semantic preset demonstrations">
+      <span class="studio-presets-label">Try:</span>
+      <button class="preset-btn" id="preset-lem-k3"
+              aria-label="Show why Law of Excluded Middle fails in K3">
+        LEM fails in K3
+      </button>
+      <button class="preset-btn" id="preset-dne"
+              aria-label="Show why Double Negation Elimination is classical-only">
+        DNE is classical-only
+      </button>
+      <button class="preset-btn" id="preset-kripke"
+              aria-label="Find a Kripke countermodel for double-negation-elimination">
+        ¬¬P→P countermodel
+      </button>
+      <button class="preset-btn" id="preset-peirce"
+              aria-label="Load Peirce's law classical proof">
+        Peirce's law
+      </button>
+    </div>
+
+    <!-- Language reference (collapsible) -->
+    <details class="lang-ref">
+      <summary>Language reference</summary>
+      <div class="lang-ref-body">
+        <div class="lang-ref-grid">
+          <div>
+            <div class="lang-ref-heading">Syntax</div>
+            <code>theorem NAME:</code> — theorem header<br>
+            <code>assume H: FORMULA</code> — undischarged assumption<br>
+            <code>suppose H: FORMULA … have … </code> — dischargeable subproof<br>
+            <code>have H: FORMULA by RULE REFS</code> — derived step<br>
+            <code>conclude FORMULA by H</code> — final conclusion
           </div>
-        </details>
-      </section>
-
-      <!-- DIAGNOSE panel -->
-      <section id="panel-diagnose" class="panel" role="tabpanel" aria-labelledby="tab-diagnose-label">
-        <div class="toolbar">
-          <p class="panel-intro">
-            Multi-pass structural analysis of the proof in the Verify panel.
-          </p>
-          <button class="btn btn-primary" id="btn-diagnose" data-stele>
-            ▶ Run Diagnostics
-          </button>
-        </div>
-        <div id="diag-result" aria-live="polite" aria-atomic="false"></div>
-      </section>
-
-      <!-- GRAPH panel -->
-      <section id="panel-graph" class="panel" role="tabpanel" aria-labelledby="tab-graph-label">
-        <div class="toolbar">
-          <p class="panel-intro">
-            Builds the proof dependency graph and outputs DOT notation.
-            Paste into
-            <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank"
-               rel="noopener">Graphviz Online ↗</a>
-            to visualise.
-          </p>
-          <button class="btn btn-primary" id="btn-graph" data-stele>
-            ▶ Build Graph
-          </button>
-        </div>
-        <pre id="graph-dot" class="dot-output" style="display:none"
-             aria-live="polite"></pre>
-        <div id="graph-nodes" class="graph-nodes"></div>
-      </section>
-
-      <!-- SEMANTICS panel -->
-      <section id="panel-semantics" class="panel" role="tabpanel" aria-labelledby="tab-semantics-label">
-
-        <div class="sem-section">
-          <div class="sem-title">Rule Soundness</div>
-          <p class="panel-intro">
-            Check whether each inference rule is sound under a semantic matrix.
-            <strong>⊨</strong> (semantic) is separate from <strong>⊢</strong> (syntactic).
-          </p>
-          <div class="toolbar">
-            <label for="sem-logic-select">Logic:</label>
-            <select id="sem-logic-select">
-              <option value="classical_prop">Classical</option>
-              <option value="intuitionistic_prop">Intuitionistic</option>
-            </select>
-            <label for="sem-matrix-select">Matrix:</label>
-            <select id="sem-matrix-select">
-              <option value="K3">K3 (strong Kleene)</option>
-              <option value="LP">LP (Logic of Paradox)</option>
-              <option value="boolean">Boolean (classical)</option>
-            </select>
-            <button class="btn btn-secondary" id="btn-soundness" data-stele>
-              ▶ Check Soundness
-            </button>
+          <div>
+            <div class="lang-ref-heading">Rules</div>
+            <span class="r-i">mp</span>
+            <span class="r-i">copy</span>
+            <span class="r-i">imp_intro</span>
+            <span class="r-i">and_intro</span>
+            <span class="r-i">and_elim_left</span>
+            <span class="r-i">and_elim_right</span>
+            <span class="r-i">or_intro_left</span>
+            <span class="r-i">or_intro_right</span>
+            <span class="r-i">or_elim</span>
+            <span class="r-i">neg_intro</span>
+            <span class="r-i">neg_elim</span>
+            <span class="r-i">ex_falso</span><br>
+            <span class="lang-ref-cl">Classical only:</span>
+            <span class="r-c">dne</span>
+            <span class="r-c">lem</span>
+            <span class="r-c">pbc</span>
           </div>
-          <div id="soundness-result" aria-live="polite" aria-atomic="false"></div>
         </div>
+      </div>
+    </details>
 
-        <div class="sem-section">
-          <div class="sem-title">World Lattice</div>
-          <p class="panel-intro">
-            Checks a formula's semantic status across Γ, Γ+φ, and Γ+¬φ worlds.
-            A proposition-level independence demonstration — not set-theoretic forcing.
-          </p>
-          <div class="toolbar">
-            <label for="lattice-input">Formula:</label>
-            <input id="lattice-input" type="text" value="P or not P"
-                   class="lattice-input-field"
-                   placeholder="e.g. P or not P"
-                   aria-label="Formula for world lattice check">
-            <button class="btn btn-secondary" id="btn-lattice" data-stele>
-              ▶ Run Lattice
-            </button>
-          </div>
-          <div id="lattice-result" aria-live="polite" aria-atomic="false"></div>
+  </div><!-- /.studio-editor-pane -->
+
+  <!-- Right: result pane (40%) -->
+  <div class="studio-result-pane" id="studio-result-pane">
+
+    <!-- Empty state (shown before any run) -->
+    <div class="studio-empty-state" id="studio-empty-state">
+      <div class="studio-empty-icon" aria-hidden="true">⊢</div>
+      <p class="studio-empty-line">Write a proof on the left.</p>
+      <p class="studio-empty-line studio-empty-sub">Press <kbd>Ctrl+↵</kbd> or click <strong>Run Check</strong>.</p>
+      <p class="studio-empty-line studio-empty-sub">Or load a preset from the buttons below the editor.</p>
+    </div>
+
+    <!-- Verdict card (hidden until result) -->
+    <div class="studio-verdict-card" id="studio-verdict-card" hidden>
+      <div class="studio-verdict-badge" id="verdict-badge" aria-live="polite">
+        <span class="verdict-icon" id="verdict-icon" aria-hidden="true">·</span>
+        <span class="verdict-text" id="verdict-text">—</span>
+      </div>
+      <div class="studio-verdict-meta" id="verdict-meta">
+        <div class="verdict-meta-row">
+          <span class="verdict-meta-key">Kernel</span>
+          <span class="verdict-meta-val">kernel.py · syntactic rule match</span>
         </div>
-
-        <div class="sem-section">
-          <div class="sem-title">Kripke Countermodel <span class="badge badge-experimental" style="font-size:.65rem">Experimental</span></div>
-          <p class="panel-intro">
-            Bounded finite Kripke countermodel search for intuitionistic propositional logic.
-            Finds a world where a formula fails to be forced. Propositional formulas only.
-            Bounded search — <em>absence of a countermodel is not a proof of validity</em>.
-          </p>
-          <div class="toolbar">
-            <label for="kripke-input">Formula:</label>
-            <input id="kripke-input" type="text" value="P or not P"
-                   class="lattice-input-field"
-                   placeholder="e.g. P or not P"
-                   aria-label="Formula for Kripke countermodel search">
-            <label for="kripke-worlds-select">Max worlds:</label>
-            <select id="kripke-worlds-select" style="width:auto">
-              <option value="3" selected>3</option>
-              <option value="4">4</option>
-            </select>
-            <button class="btn btn-secondary" id="btn-kripke" data-stele>
-              ▶ Find Countermodel
-            </button>
-          </div>
-          <div id="kripke-result" aria-live="polite" aria-atomic="false"></div>
+        <div class="verdict-meta-row">
+          <span class="verdict-meta-key">Logic</span>
+          <span class="verdict-meta-val" id="verdict-logic">—</span>
         </div>
-      </section>
-
-      <!-- EXAMPLES panel -->
-      <section id="panel-examples" class="panel" role="tabpanel" aria-labelledby="tab-examples-label">
-        <p class="panel-intro">
-          Click an example to load it into the Verify editor.
-          Try switching between <em>Intuitionistic</em> and <em>Classical</em>
-          to see the same proof accepted or rejected.
-        </p>
-        <div id="examples-grid" class="example-grid">
-          <p class="dim-text">Loading…</p>
+        <div class="verdict-meta-row" id="verdict-steps-row" hidden>
+          <span class="verdict-meta-key">Steps</span>
+          <span class="verdict-meta-val" id="verdict-steps">—</span>
         </div>
-      </section>
+        <div class="verdict-meta-row" id="verdict-name-row" hidden>
+          <span class="verdict-meta-key">Theorem</span>
+          <span class="verdict-meta-val verdict-meta-mono" id="verdict-name">—</span>
+        </div>
+        <div class="verdict-meta-row" id="verdict-diags-row">
+          <span class="verdict-meta-key">Diagnostics</span>
+          <span class="verdict-meta-val" id="verdict-diags">—</span>
+        </div>
+      </div>
+    </div>
 
-    </div><!-- /.main -->
-  </div><!-- /.studio-chrome -->
+    <!-- Result sub-tabs: RESULT / DIAGNOSTICS / GRAPH -->
+    <nav class="result-tabs" id="result-tabs" hidden aria-label="Studio panels" role="tablist">
+      <button class="result-tab active" data-result-tab="result"
+              id="rtab-result" role="tab" aria-selected="true" aria-controls="rpanel-result">
+        RESULT
+      </button>
+      <button class="result-tab" data-result-tab="diag"
+              id="rtab-diag" role="tab" aria-selected="false" aria-controls="rpanel-diag">
+        DIAGNOSTICS
+      </button>
+      <button class="result-tab" data-result-tab="graph"
+              id="rtab-graph" role="tab" aria-selected="false" aria-controls="rpanel-graph">
+        GRAPH
+      </button>
+    </nav>
 
-</div><!-- /.section-inner -->
+    <!-- RESULT panel -->
+    <div class="result-panel active" id="rpanel-result" role="tabpanel" aria-labelledby="rtab-result">
+      <div id="check-result" class="result-box studio-check-result" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- DIAGNOSTICS panel -->
+    <div class="result-panel" id="rpanel-diag" role="tabpanel" aria-labelledby="rtab-diag">
+      <div class="result-panel-actions">
+        <button class="btn btn-secondary" id="btn-diagnose" data-stele>
+          ▶ Run Diagnostics
+        </button>
+      </div>
+      <div id="diag-result" aria-live="polite" aria-atomic="false" class="studio-diag-result"></div>
+    </div>
+
+    <!-- GRAPH panel -->
+    <div class="result-panel" id="rpanel-graph" role="tabpanel" aria-labelledby="rtab-graph">
+      <div class="result-panel-actions">
+        <button class="btn btn-secondary" id="btn-graph" data-stele>
+          ▶ Build Graph
+        </button>
+      </div>
+      <!-- In-page SVG graph (rendered by JS) -->
+      <div id="studio-graph-svg-wrap" class="studio-graph-svg-wrap" hidden
+           aria-label="Proof dependency graph visualization"></div>
+      <!-- DOT output (for Graphviz) -->
+      <details class="graph-dot-details" id="graph-dot-details" hidden>
+        <summary>DOT notation <span class="graph-dot-note">(paste into Graphviz Online)</span></summary>
+        <pre id="graph-dot" class="dot-output" aria-live="polite"></pre>
+      </details>
+      <div id="graph-nodes" class="graph-nodes" hidden></div>
+    </div>
+
+  </div><!-- /.studio-result-pane -->
+
+</div><!-- /.studio-lab -->
+
+<!-- Status bar (below lab) -->
+<div id="status-bar" class="studio-status-bar" style="display:none"
+     role="status" aria-live="polite"></div>
+
+<!-- ── Semantics section ───────────────────────────────────────────────────── -->
+<section class="studio-semantics-section section-inner" aria-labelledby="sem-heading">
+  <h2 id="sem-heading" class="section-heading">Semantic Tools</h2>
+  <p class="section-sub">Separate from proof checking — ⊨ (semantic) vs ⊢ (syntactic).</p>
+
+  <div class="sem-grid">
+
+    <!-- Rule Soundness -->
+    <div class="sem-card" id="panel-semantics">
+      <div class="sem-card-title">Rule Soundness</div>
+      <p class="sem-card-desc">Check if inference rules are sound under a semantic matrix.</p>
+      <div class="sem-controls">
+        <label for="sem-logic-select" class="studio-label">Logic</label>
+        <select id="sem-logic-select" class="studio-select">
+          <option value="classical_prop">classical_prop</option>
+          <option value="intuitionistic_prop">intuitionistic_prop</option>
+        </select>
+        <label for="sem-matrix-select" class="studio-label">Matrix</label>
+        <select id="sem-matrix-select" class="studio-select">
+          <option value="K3">K3 (strong Kleene)</option>
+          <option value="LP">LP (Logic of Paradox)</option>
+          <option value="boolean">Boolean (classical)</option>
+        </select>
+        <button class="btn btn-secondary" id="btn-soundness" data-stele>
+          ▶ Check Soundness
+        </button>
+      </div>
+      <div id="soundness-result" aria-live="polite" aria-atomic="false" class="sem-result"></div>
+    </div>
+
+    <!-- World Lattice -->
+    <div class="sem-card">
+      <div class="sem-card-title">World Lattice</div>
+      <p class="sem-card-desc">Formula semantic status across Γ, Γ+φ, and Γ+¬φ worlds.</p>
+      <div class="sem-controls">
+        <label for="lattice-input" class="studio-label">Formula</label>
+        <input id="lattice-input" type="text" value="P or not P"
+               class="studio-text-input"
+               placeholder="e.g. P or not P"
+               aria-label="Formula for world lattice check">
+        <button class="btn btn-secondary" id="btn-lattice" data-stele>
+          ▶ Run Lattice
+        </button>
+      </div>
+      <div id="lattice-result" aria-live="polite" aria-atomic="false" class="sem-result"></div>
+    </div>
+
+    <!-- Kripke Countermodel -->
+    <div class="sem-card">
+      <div class="sem-card-title">
+        Kripke Countermodel
+        <span class="badge badge-experimental" style="font-size:.6rem">Experimental</span>
+      </div>
+      <p class="sem-card-desc">
+        Bounded finite Kripke countermodel search for intuitionistic propositional logic.
+        Absence of a countermodel is not a proof of validity.
+      </p>
+      <div class="sem-controls">
+        <label for="kripke-input" class="studio-label">Formula</label>
+        <input id="kripke-input" type="text" value="P or not P"
+               class="studio-text-input"
+               placeholder="e.g. P or not P"
+               aria-label="Formula for Kripke countermodel search">
+        <label for="kripke-worlds-select" class="studio-label">Max worlds</label>
+        <select id="kripke-worlds-select" class="studio-select" style="width:auto">
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
+        <button class="btn btn-secondary" id="btn-kripke" data-stele>
+          ▶ Find Countermodel
+        </button>
+      </div>
+      <div id="kripke-result" aria-live="polite" aria-atomic="false" class="sem-result"></div>
+    </div>
+
+  </div><!-- /.sem-grid -->
+</section>
+
+<!-- ── Examples section ───────────────────────────────────────────────────── -->
+<section class="studio-examples-section section-inner" id="examples" aria-labelledby="examples-heading">
+  <h2 id="examples-heading" class="section-heading">Example Proofs</h2>
+  <p class="section-sub">
+    Click any example to load it into the editor.
+    Try switching between <em>intuitionistic_prop</em> and <em>classical_prop</em>
+    to see the same proof accepted or rejected.
+  </p>
+  <!-- panel-examples wrapper keeps tab panel role for backward compat -->
+  <div id="panel-examples" role="region" aria-label="Example proofs">
+    <div id="examples-grid" class="example-grid">
+      <p class="dim-text">Loading examples…</p>
+    </div>
+  </div>
+</section>
 
 </main>
 
@@ -284,9 +390,9 @@
     <div class="footer-inner">
       <span class="footer-brand">STELE</span>
       <span class="footer-sep">·</span>
-      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span>Proof checker for natural-deduction reasoning</span>
       <span class="footer-sep">·</span>
-      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
     <div class="footer-note">
       Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.

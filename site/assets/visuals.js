@@ -581,6 +581,163 @@
     drawFrame();
     canvas._steleStop = function() { if (rafId) cancelAnimationFrame(rafId); };
   }
+  /* Auto-init: proof-orb section end */
+
+  /* ══════════════════════════════════════════════════════════════════════ */
+  /* 6. HeroConstellation — large proof-step constellation, hero background */
+  /* ══════════════════════════════════════════════════════════════════════ */
+
+  /**
+   * Renders a wide proof-step constellation into `canvas`.
+   * Nodes: P, P→Q, mp, Q, ⊢ (kernel), ✓ (verdict) — sparse layout.
+   * Designed as a hero section background; CSS controls display size.
+   * Does NOT set canvas.style.width/height — caller/CSS handles sizing.
+   * Internal resolution: 1600×800 (scales down at low CSS opacity).
+   *
+   * @param {HTMLCanvasElement} canvas
+   * @param {object} [opts]
+   */
+  function renderHeroConstellation(canvas, opts) {
+    var reduced = prefersReducedMotion();
+
+    var W = 1600, H = 800;
+    var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.setAttribute('aria-hidden', 'true');
+
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    /* Proof-step nodes spread as a wide constellation */
+    var nodes = [
+      { id:'p',       x: 280, y: 290, r:30, label:'P',     sub:'premise',    rgb:[157,123,255], depth:0.72, phase:0.0  },
+      { id:'pq',      x: 280, y: 510, r:30, label:'P→Q',   sub:'hypothesis', rgb:[157,123,255], depth:0.60, phase:1.4  },
+      { id:'mp',      x: 680, y: 400, r:28, label:'mp',    sub:'step',       rgb:[176,106,255], depth:0.88, phase:0.8  },
+      { id:'q',       x:1100, y: 250, r:26, label:'Q',     sub:'derived',    rgb:[200,220,245], depth:0.78, phase:2.1  },
+      { id:'kernel',  x:1320, y: 400, r:22, label:'⊢',     sub:'kernel',     rgb:[200,220,245], depth:0.52, phase:1.7  },
+      { id:'verdict', x:1100, y: 560, r:22, label:'✓',     sub:'valid',      rgb:[ 62,156,143], depth:0.42, phase:2.9  }
+    ];
+
+    var nodeMap = {};
+    nodes.forEach(function(n) { nodeMap[n.id] = n; });
+
+    var edgeDefs = [
+      ['p',      'mp',      false],
+      ['pq',     'mp',      false],
+      ['mp',     'q',       false],
+      ['mp',     'kernel',  false],
+      ['q',      'verdict', true ],
+      ['kernel', 'verdict', true ]
+    ];
+
+    var edges = edgeDefs.map(function(d) {
+      return { src: nodeMap[d[0]], dst: nodeMap[d[1]], dashed: d[2] };
+    });
+
+    var t = 0, rafId;
+
+    function nodePos(n) {
+      var dy = reduced ? 0 : Math.sin(t * 0.42 + n.phase) * 5;
+      return { x: n.x, y: n.y + dy };
+    }
+
+    function drawFrame() {
+      ctx.clearRect(0, 0, W, H);
+
+      /* Central atmosphere */
+      var atm = ctx.createRadialGradient(W * 0.5, H * 0.5, 0, W * 0.5, H * 0.5, W * 0.42);
+      atm.addColorStop(0, 'rgba(124,92,255,0.06)');
+      atm.addColorStop(1, 'rgba(11,10,16,0)');
+      ctx.fillStyle = atm;
+      ctx.fillRect(0, 0, W, H);
+
+      /* Edges */
+      edges.forEach(function(e) {
+        var sp = nodePos(e.src), dp = nodePos(e.dst);
+        var vx = dp.x - sp.x, vy = dp.y - sp.y;
+        var len = Math.sqrt(vx * vx + vy * vy);
+        if (len < 1) return;
+        var ux = vx / len, uy = vy / len;
+        var x1 = sp.x + ux * (e.src.r + 3), y1 = sp.y + uy * (e.src.r + 3);
+        var x2 = dp.x - ux * (e.dst.r + 8), y2 = dp.y - uy * (e.dst.r + 8);
+        var a  = Math.min(e.src.depth, e.dst.depth) * 0.28;
+        var er = e.dashed ? [62, 156, 143] : [176, 106, 255];
+
+        ctx.save();
+        ctx.beginPath();
+        if (e.dashed) ctx.setLineDash([6, 10]);
+        ctx.strokeStyle = 'rgba(' + er[0] + ',' + er[1] + ',' + er[2] + ',' + a.toFixed(3) + ')';
+        ctx.lineWidth = 1.8;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        /* Arrowhead */
+        ctx.setLineDash([]);
+        var ang = Math.atan2(uy, ux);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 8 * Math.cos(ang - 0.42), y2 - 8 * Math.sin(ang - 0.42));
+        ctx.lineTo(x2 - 8 * Math.cos(ang + 0.42), y2 - 8 * Math.sin(ang + 0.42));
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(' + er[0] + ',' + er[1] + ',' + er[2] + ',' + a.toFixed(3) + ')';
+        ctx.fill();
+        ctx.restore();
+      });
+
+      /* Nodes */
+      nodes.forEach(function(n) {
+        var p = nodePos(n);
+        var r = n.rgb, a = n.depth;
+
+        /* Ambient glow */
+        if (!reduced) {
+          var gs  = n.r + 14 + Math.sin(t * 0.55 + n.phase) * 4;
+          var grd = ctx.createRadialGradient(p.x, p.y, n.r * 0.3, p.x, p.y, gs);
+          grd.addColorStop(0, 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + (a * 0.12) + ')');
+          grd.addColorStop(1, 'rgba(11,10,16,0)');
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, gs, 0, Math.PI * 2);
+          ctx.fillStyle = grd;
+          ctx.fill();
+        }
+
+        /* Node body */
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(11,10,16,' + (a * 0.45) + ')';
+        ctx.fill();
+
+        /* Node ring */
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, n.r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + (a * 0.70) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        /* Label */
+        ctx.fillStyle = 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + (a * 0.92) + ')';
+        ctx.font = 'bold 14px ui-monospace,monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(n.label, p.x, p.y - 4);
+
+        /* Sub-label */
+        ctx.fillStyle = 'rgba(184,204,224,' + (a * 0.40) + ')';
+        ctx.font = '9px ui-monospace,monospace';
+        ctx.fillText(n.sub, p.x, p.y + 11);
+      });
+
+      if (!reduced) {
+        t += 0.014;
+        rafId = requestAnimationFrame(drawFrame);
+      }
+    }
+
+    drawFrame();
+    canvas._steleStop = function() { if (rafId) cancelAnimationFrame(rafId); };
+  }
 
   /* ══════════════════════════════════════════════════════════════════════ */
   /* Auto-init on DOMContentLoaded                                           */
@@ -591,7 +748,8 @@
     'symbol-field':        renderLogicSymbolField,
     'kripke-motif':        renderKripkeMotif,
     'proof-constellation': renderProofConstellation,
-    'proof-orb':           renderProofOrb
+    'proof-orb':           renderProofOrb,
+    'hero-constellation':  renderHeroConstellation
   };
 
   function autoInit() {
@@ -622,10 +780,11 @@
 
   /* ── Exports ─────────────────────────────────────────────────────────── */
   global.SteleVisuals = {
-    renderProofGraph:          renderProofGraph,
-    renderLogicSymbolField:    renderLogicSymbolField,
-    renderKripkeMotif:         renderKripkeMotif,
-    renderProofConstellation:  renderProofConstellation,
-    renderProofOrb:            renderProofOrb
+    renderProofGraph:           renderProofGraph,
+    renderLogicSymbolField:     renderLogicSymbolField,
+    renderKripkeMotif:          renderKripkeMotif,
+    renderProofConstellation:   renderProofConstellation,
+    renderProofOrb:             renderProofOrb,
+    renderHeroConstellation:    renderHeroConstellation
   };
 }(typeof window !== 'undefined' ? window : {}));

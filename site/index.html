@@ -3,15 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stele — Formal Proof Verification in the Browser</title>
+<title>Stele — Proof Checker for Natural-Deduction Reasoning</title>
 <meta name="description"
-  content="Stele is a formal verification framework for mathematical reasoning. Write structured natural-deduction proofs and verify them step by step — directly in your browser, no install required.">
+  content="Stele is a formal verification framework for natural-deduction reasoning. A browser-local proof checker with a ≈160-line trusted kernel. Write a proof; the kernel checks the rule.">
+<!-- Open Graph -->
+<meta property="og:title" content="Stele — Proof Checker for Natural-Deduction Reasoning">
+<meta property="og:description" content="A browser-local proof checker with a ≈160-line trusted kernel. Write a proof; Stele checks the rule. Change the logic; the verdict can change.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/og-preview.png">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stele — Proof Checker">
+<meta name="twitter:description" content="Browser-local proof checker. Trusted kernel. Multi-logic.">
 <!-- Self-hosted fonts (Spectral · IBM Plex Sans · IBM Plex Mono) -->
 <link rel="stylesheet" href="assets/fonts/fonts.css">
-<!-- Design tokens — load first so base CSS can selectively override -->
+<!-- Design tokens — load first -->
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/stele_site.css">
-<!-- Component library (status badges, trust cards, metric cards, etc.) -->
 <link rel="stylesheet" href="assets/components.css">
 <link rel="stylesheet" href="assets/visuals.css">
 </head>
@@ -24,12 +32,11 @@
   <a class="nav-brand" href="index.html">STELE</a>
   <div class="nav-links">
     <a href="studio.html">Studio</a>
-    <a href="#tutorial">Tutorial</a>
-    <a href="theory.html">Theory</a>
+    <a href="studio.html#examples">Examples</a>
     <a href="architecture.html">Architecture</a>
     <a href="research.html">Research</a>
-    <a href="foundations.html">Foundations</a>
-    <a href="about.html">About</a>
+    <a href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
+       target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
        class="nav-link-gh">GitHub ↗</a>
   </div>
@@ -42,600 +49,502 @@
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <section id="hero" aria-labelledby="hero-heading">
 
-  <!-- Mathematical symbol cascade — decorative, hidden from screen readers -->
-  <div class="hero-symbols" aria-hidden="true">
-    <span style="--x:3%;  --ty:-45px; --d:0s;   --fs:1.1rem">∀</span>
-    <span style="--x:9%;  --ty:-30px; --d:2.3s;  --fs:.85rem">⊢</span>
-    <span style="--x:17%; --ty:-50px; --d:0.8s;  --fs:1.3rem">→</span>
-    <span style="--x:24%; --ty:-35px; --d:4.1s;  --fs:.9rem">¬</span>
-    <span style="--x:31%; --ty:-55px; --d:1.6s;  --fs:1.1rem">∃</span>
-    <span style="--x:47%; --ty:-30px; --d:0.4s;  --fs:1.2rem">⊨</span>
-    <span style="--x:62%; --ty:-45px; --d:1.2s;  --fs:1.0rem">⊥</span>
-    <span style="--x:70%; --ty:-35px; --d:3.7s;  --fs:.85rem">∴</span>
-    <span style="--x:84%; --ty:-30px; --d:2.1s;  --fs:.9rem">∈</span>
-    <span style="--x:96%; --ty:-40px; --d:1.9s;  --fs:.8rem">∀</span>
+  <!-- Static decorative symbols — hidden from screen readers -->
+  <div class="hero-symbols" aria-hidden="true">∴ ∧ ∨ ¬ → ⊢ ⊨ ⊥</div>
+
+  <!-- Background proof-step constellation (decorative) -->
+  <div class="hero-orb-wrap" aria-hidden="true">
+    <canvas id="proof-orb" data-stele-visual="hero-constellation"></canvas>
   </div>
 
-  <div class="hero-inner">
+  <!-- Centered content -->
+  <div class="hero-centered">
+    <div class="hero-eyebrow">Formal Verification Framework</div>
+    <div class="hero-wordmark" aria-hidden="true">STELE</div>
+    <h1 class="hero-headline" id="hero-heading">
+      Proofs, checked<br>at the rule level.
+    </h1>
+    <p class="hero-sub">
+      A browser-local proof checker for natural-deduction reasoning —
+      proof checker, not theorem prover. Write every step;
+      the kernel verifies each rule against the declared logic.
+    </p>
 
-    <!-- Left: text content -->
-    <div class="hero-text">
-      <div class="hero-brand-chip" aria-hidden="true">STELE</div>
-      <p class="hero-eyebrow">Formal Verification Framework for Mathematical Reasoning</p>
-      <h1 class="hero-headline" id="hero-heading">
-        Write a proof.<br>Verify each step.
-      </h1>
-      <p class="hero-desc">
-        Stele checks structured natural-deduction proofs against declared inference
-        rules — it verifies the steps you write and locates missing hypotheses,
-        invalid transitions, and undefined symbols. A proof checker, not a theorem
-        prover. Runs browser-local via Pyodide/WASM; no data is transmitted.
-      </p>
-
-      <!-- Status evidence strip -->
-      <div class="hero-badges" role="list" aria-label="Feature status">
-        <span class="badge badge-stable" role="listitem">Proof checker — Stable</span>
-        <span class="badge badge-stable" role="listitem">Browser Studio — Stable</span>
-        <span class="badge badge-experimental" role="listitem">Kripke countermodels — Experimental</span>
-        <span class="badge badge-experimental" role="listitem">Certificates — Experimental</span>
-        <span class="badge badge-optional" role="listitem">Lean bridge — Optional</span>
-      </div>
-
-      <!-- Primary actions -->
-      <div class="hero-actions">
-        <a href="studio.html"   class="btn btn-primary  hero-cta">Open Studio</a>
-        <a href="#tutorial"     class="btn btn-ghost    hero-cta">Try Tutorial</a>
-        <a href="overview.html" class="btn btn-secondary hero-cta">For Reviewers</a>
-        <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
-           class="btn btn-ghost hero-cta">GitHub ↗</a>
-      </div>
-
-      <p class="hero-notice">
-        <span class="notice-dot" aria-hidden="true"></span>
-        Runs locally via Pyodide/WASM · ~8 MB on first visit, then cached
-      </p>
+    <div class="hero-badges" role="list" aria-label="Key properties">
+      <span class="badge badge-stable" role="listitem">Local-first</span>
+      <span class="badge badge-stable" role="listitem">Trusted kernel</span>
+      <span class="badge badge-stable" role="listitem">Multi-logic</span>
     </div>
 
-    <!-- Right: proof-space orb (canvas, decorative) -->
-    <div class="hero-orb-wrap" aria-hidden="true">
-      <canvas id="proof-orb"
-              data-stele-visual="proof-orb"></canvas>
+    <div class="hero-actions">
+      <a href="studio.html" class="btn btn-primary hero-cta">Open Studio</a>
+      <a href="architecture.html" class="btn btn-ghost hero-cta">Inspect Architecture</a>
     </div>
 
+    <p class="hero-notice">
+      <span class="notice-dot" aria-hidden="true"></span>
+      Runs locally via Pyodide/WASM · no data transmitted
+    </p>
   </div>
-
-  <!-- Audience navigation cards -->
-  <nav class="hero-audiences" aria-label="Start here by audience">
-    <a href="overview.html" class="audience-card">
-      <span class="audience-card-role">Reviewer / Advisor</span>
-      <span class="audience-card-dest">Technical Overview →</span>
-    </a>
-    <a href="architecture.html" class="audience-card">
-      <span class="audience-card-role">Technical reader</span>
-      <span class="audience-card-dest">Architecture &amp; Trust →</span>
-    </a>
-    <a href="theory.html" class="audience-card">
-      <span class="audience-card-role">Teacher / student</span>
-      <span class="audience-card-dest">Theory &amp; Tutorial →</span>
-    </a>
-    <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
-       class="audience-card">
-      <span class="audience-card-role">Developer</span>
-      <span class="audience-card-dest">GitHub &amp; Docs →</span>
-    </a>
-  </nav>
 
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 2  WHAT STELE DOES                                                    -->
+<!-- § 2  CORE IDEA                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="core-idea" aria-label="Core idea">
+  <div class="section-inner">
+    <div class="core-trio">
+      <p class="core-line">You write every inference.</p>
+      <p class="core-line">The kernel checks each rule.</p>
+      <p class="core-line core-line--accent">Change the logic; the verdict can change.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 3  LIVE DEMO SLOT                                                     -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="demo" aria-labelledby="demo-heading">
+  <div class="section-inner">
+    <div class="section-label">Demo</div>
+    <h2 id="demo-heading" class="section-heading">Write a proof. See the verdict.</h2>
+    <div class="demo-slot">
+
+      <!-- Left: proof editor mockup -->
+      <div class="demo-editor" role="region" aria-label="Proof editor">
+        <div class="demo-editor-bar">
+          <span class="demo-editor-label">proof.stele</span>
+          <span class="badge badge-stable">intuitionistic_prop</span>
+        </div>
+        <pre class="demo-editor-code" aria-label="Example proof: implication identity P implies P">theorem imp_self:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P -&gt; P by imp_intro h1 h2
+  conclude P -&gt; P by h3</pre>
+      </div>
+
+      <!-- Right: kernel verdict -->
+      <div class="demo-verdict" role="region" aria-label="Kernel verdict">
+        <div class="demo-verdict-label">kernel.py verdict</div>
+        <div class="demo-verdict-result">✓ Valid</div>
+        <div class="demo-verdict-detail">intuitionistic_prop · 3 steps verified</div>
+        <hr class="demo-verdict-divider">
+        <a href="studio.html?example=imp_self" class="btn btn-primary">Try in Studio →</a>
+        <p class="demo-verdict-note">Load this proof and run live in the browser.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 4  WHAT STELE DOES                                                    -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <section id="what" aria-labelledby="what-heading">
   <div class="section-inner">
     <div class="section-label">What Stele Does</div>
     <h2 id="what-heading" class="section-heading">
-      A proof checker with semantic diagnostics
+      A proof checker with semantic tools
     </h2>
     <p class="section-sub">
-      Stele is a <strong>proof checker</strong>, not a theorem prover.
-      You supply each inference step; the kernel decides if it is valid under
-      the declared logic. Multiple logics can be compared side-by-side.
+      Proof checker, not theorem prover. You supply each inference step;
+      the kernel decides if it is valid under the declared logic.
     </p>
 
     <div class="feature-grid">
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">⊢</div>
+        <span class="feature-icon" aria-hidden="true">⊢</span>
         <h3 class="feature-title">Proof Verification</h3>
         <div class="feature-card-badges">
           <span class="badge badge-stable">Stable</span>
         </div>
         <p class="feature-desc">
-          Write proofs in a readable natural-deduction language.
-          The trusted kernel verifies every step against the declared logic
-          (intuitionistic, classical, or a custom rule set).
+          The trusted kernel verifies every step against the declared logic —
+          intuitionistic, classical, or a custom rule set.
         </p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">⚠</div>
+        <span class="feature-icon" aria-hidden="true">⚑</span>
         <h3 class="feature-title">Structural Diagnostics</h3>
         <div class="feature-card-badges">
           <span class="badge badge-stable">Stable</span>
         </div>
         <p class="feature-desc">
-          Multi-pass analysis flags undefined symbols, missing hypotheses,
-          invalid transitions, and unused assumptions with exact line numbers.
+          Flags undefined symbols, missing hypotheses, and invalid transitions
+          with exact line numbers.
         </p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">⬡</div>
+        <span class="feature-icon" aria-hidden="true">◈</span>
         <h3 class="feature-title">Dependency Graph</h3>
         <div class="feature-card-badges">
           <span class="badge badge-stable">Stable</span>
         </div>
         <p class="feature-desc">
-          Extract the proof's step-by-step dependency graph. Detect cycles,
-          isolated steps, and unused assumptions. Export in DOT notation.
+          Extracts the proof's step-by-step dependency graph, detects cycles,
+          and exports DOT notation.
         </p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon" aria-hidden="true">⊨</div>
+        <span class="feature-icon" aria-hidden="true">⬡</span>
         <h3 class="feature-title">Semantic Tools</h3>
         <div class="feature-card-badges">
           <span class="badge badge-stable">Stable</span>
           <span class="badge badge-experimental">Kripke — Experimental</span>
         </div>
         <p class="feature-desc">
-          Check rule soundness against multi-valued matrices (K3, LP, Boolean).
-          Explore world lattices and proposition-level independence patterns.
-          Bounded Kripke countermodel search for intuitionistic propositional logic.
+          Check rule soundness against K3/LP/Boolean matrices;
+          find bounded Kripke countermodels for intuitionistic logic.
         </p>
       </div>
     </div>
 
-    <!-- Trust boundary summary -->
-    <div class="trust-boundary-block">
-      <div class="trust-card trust-card-trusted">
-        <div class="trust-card-header">
-          <span class="badge badge-stable" style="font-size:.65rem;padding:2px 6px">Trusted</span>
-          <span class="trust-card-name">kernel.py</span>
-        </div>
-        <div class="trust-card-body">
-          stdlib only · pure syntactic matching.
-          The only code path that issues proof verdicts.
-        </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 5  STUDIO ENTRY + TRUST CARDS                                         -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="studio" aria-labelledby="studio-heading">
+  <div class="section-inner">
+    <div class="section-label">Studio</div>
+    <h2 id="studio-heading" class="section-heading">Run proofs in your browser</h2>
+    <p class="section-sub">
+      The Stele Studio runs entirely via Pyodide/WASM — no installation,
+      no backend, browser-local. Paste a proof, pick a logic, and get an
+      instant kernel verdict.
+    </p>
+
+    <div class="trust-cards" role="list" aria-label="Trust boundary components">
+      <div class="trust-card trust-card-trusted" role="listitem">
+        <span class="trust-card-label">Trusted</span>
+        <code class="trust-card-module">kernel.py</code>
+        <p class="trust-card-desc">≈160-line syntactic checker. Only this module can affect the verdict.</p>
       </div>
-      <div class="trust-card trust-card-untrusted">
-        <div class="trust-card-header">
-          <span class="badge badge-untrusted" style="font-size:.65rem;padding:2px 6px">Untrusted</span>
-          <span class="trust-card-name">diagnostics · hints · ML</span>
-        </div>
-        <div class="trust-card-body">
-          Structural diagnostics, proof-state hints, ML baseline.
-          Explicitly outside the trust boundary.
-          Cannot affect kernel soundness.
-        </div>
+      <div class="trust-card trust-card-untrusted" role="listitem">
+        <span class="trust-card-label">Untrusted</span>
+        <code class="trust-card-module">diagnostics.py</code>
+        <p class="trust-card-desc">Structural hints and error messages. Cannot change the kernel verdict.</p>
       </div>
     </div>
 
-    <div class="what-callout">
-      <span class="callout-label">Proof relativity</span>
-      The same proof accepted by classical logic may be rejected by
-      intuitionistic logic — switch the logic selector and see instantly.
-      The kernel never changes; only the rule set does.
+    <a href="studio.html" class="btn btn-primary">Open Studio →</a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 6  TRUST BOUNDARY                                                     -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="trust" aria-labelledby="trust-heading">
+  <div class="section-inner">
+    <div class="section-label">Architecture</div>
+    <h2 id="trust-heading" class="section-heading">One trusted path</h2>
+
+    <div class="trust-flow" role="img" aria-label="Proof verification pipeline: proof text to parser to kernel.py to verdict">
+      <div class="trust-flow-node">
+        <span class="trust-flow-label">proof text</span>
+      </div>
+      <span class="trust-flow-arrow" aria-hidden="true">→</span>
+      <div class="trust-flow-node">
+        <span class="trust-flow-label">parser</span>
+      </div>
+      <span class="trust-flow-arrow" aria-hidden="true">→</span>
+      <div class="trust-flow-node trust-flow-node--kernel">
+        <span class="trust-flow-label">kernel.py</span>
+        <span class="badge badge-stable" style="font-size:.62rem">≈160 lines</span>
+      </div>
+      <span class="trust-flow-arrow" aria-hidden="true">→</span>
+      <div class="trust-flow-node trust-flow-node--verdict">
+        <span class="trust-flow-label trust-flow-label--ok">verdict ∴</span>
+      </div>
+    </div>
+
+    <div class="trust-notes">
+      <p>Diagnostics and hints run outside the trust boundary — they cannot affect the kernel verdict.</p>
+      <p>Semantics (matrix soundness, Kripke search) is separate from proof scoring.</p>
+      <p>Rules are data (<code>logic.py</code> schemas), not code inside the kernel.</p>
+    </div>
+
+    <a href="architecture.html" class="btn btn-ghost">Full architecture →</a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 7  EVIDENCE STRIP                                                     -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="evidence" aria-labelledby="evidence-heading" class="evidence-section">
+  <div class="section-inner">
+    <h2 id="evidence-heading" class="visually-hidden">Evidence</h2>
+    <div class="evidence-strip" role="list" aria-label="Project metrics">
+
+      <div class="evidence-item" role="listitem">
+        <span class="evidence-value" aria-label="approximately 160">≈160</span>
+        <span class="evidence-label">line trusted kernel</span>
+        <span class="evidence-note">kernel.py</span>
+      </div>
+
+      <div class="evidence-item" role="listitem">
+        <span class="evidence-value">2,390</span>
+        <span class="evidence-label">tests passing</span>
+        <span class="evidence-note">54 test files</span>
+      </div>
+
+      <div class="evidence-item" role="listitem">
+        <span class="evidence-value">15</span>
+        <span class="evidence-label">curated examples</span>
+        <span class="evidence-note">gallery verified</span>
+      </div>
+
+      <div class="evidence-item" role="listitem">
+        <span class="evidence-value">0</span>
+        <span class="evidence-label">runtime dependencies</span>
+        <span class="evidence-note">stdlib only</span>
+      </div>
+
+      <div class="evidence-item" role="listitem">
+        <span class="evidence-value">local</span>
+        <span class="evidence-label">browser-first</span>
+        <span class="evidence-note">Pyodide/WASM</span>
+      </div>
+
+    </div>
+    <p class="evidence-footnote">
+      Kernel LOC measured from <code>stele/kernel.py</code> in this repo.
+      4 tests skipped without optional Hypothesis dependency.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 8  GALLERY (DOM structure required for JS population)                 -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="gallery" aria-labelledby="gallery-heading">
+  <div class="section-inner">
+    <div class="section-label">Gallery</div>
+    <h2 id="gallery-heading" class="section-heading">Example Proofs</h2>
+    <p class="section-sub">
+      15 curated proofs spanning classical, intuitionistic, paraconsistent,
+      and diagnostic examples.
+      <a href="studio.html#examples">Browse all in Studio →</a>
+    </p>
+    <div id="gallery-grid" aria-live="polite" role="list"
+         aria-label="Proof examples gallery">
+      <!-- Populated by stele-pyodide.js on load -->
+      <p class="visual-fallback">Loading examples…</p>
     </div>
   </div>
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 3  TUTORIAL                                                           -->
+<!-- § 9  TRY EXAMPLES (compact showcase)                                    -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<section id="tutorial" aria-labelledby="tut-heading">
+<section id="examples" aria-labelledby="examples-heading">
   <div class="section-inner">
-    <div class="tut-toprow">
-      <div class="section-label">Tutorial</div>
-      <h2 id="tut-heading" class="section-heading">5-minute walkthrough</h2>
-      <p class="section-sub">
-        Learn the proof format and main features step by step.
-        <a href="#studio" class="tut-skip">Skip to Studio →</a>
-      </p>
-    </div>
+    <div class="section-label">Examples</div>
+    <h2 id="examples-heading" class="section-heading">See it in action</h2>
+    <p class="section-sub">
+      Three proofs that cover the key behaviors. Open any in the Studio to run live.
+    </p>
 
-    <!-- Step progress dots -->
-    <div class="tut-dots" role="group" aria-label="Tutorial steps">
-      <button class="tut-dot active" data-step="1" aria-current="true"
-              aria-label="Tutorial step 1: The proof format">1</button>
-      <button class="tut-dot" data-step="2" aria-current="false"
-              aria-label="Tutorial step 2: Catch an error">2</button>
-      <button class="tut-dot" data-step="3" aria-current="false"
-              aria-label="Tutorial step 3: Dependency graph">3</button>
-      <button class="tut-dot" data-step="4" aria-current="false"
-              aria-label="Tutorial step 4: Classical vs intuitionistic">4</button>
-      <button class="tut-dot" data-step="5" aria-current="false"
-              aria-label="Tutorial step 5: Semantic tools">5</button>
-      <button class="tut-dot" data-step="6" aria-current="false"
-              aria-label="Tutorial step 6: What's next">6</button>
-    </div>
+    <div class="examples-trio">
 
-    <!-- ── Step 1: The proof format ─────────────────────────────────────── -->
-    <div class="tut-step active" id="tstep-1">
-      <div class="tstep-content">
-        <h3 class="tstep-title">1 — The proof format</h3>
-        <div class="tstep-desc">
-          <p>Stele proofs follow natural-deduction structure with five keywords:</p>
-          <ul class="tstep-keywords">
-            <li><code>theorem NAME:</code> — declares the theorem</li>
-            <li><code>assume LABEL: FORMULA</code> — introduces a global premise</li>
-            <li><code>suppose LABEL: FORMULA … end</code> — opens a subproof block</li>
-            <li><code>have LABEL: FORMULA by RULE REFS…</code> — derives a step using a named rule</li>
-            <li><code>conclude FORMULA by LABEL</code> — states the final conclusion</li>
-          </ul>
-          <p class="tstep-note">
-            The trusted kernel checks every <code>have</code> step against
-            the declared logic's inference rules. The example on the right proves P&nbsp;→&nbsp;P
-            (implication identity) intuitionistically.
-          </p>
-        </div>
-        <div class="tstep-actions">
-          <button class="btn btn-primary tut-load-btn"
-                  data-proof="theorem imp_self:
+      <div class="example-mini-card">
+        <div class="example-mini-tag tag-valid">valid · intuitionistic</div>
+        <h3 class="example-mini-title">Identity: P → P</h3>
+        <pre class="example-mini-code">theorem imp_self:
   suppose h1: P
     have h2: P by copy h1
-  have h3: P -> P by imp_intro h1 h2
-  conclude P -> P by h3"
-                  data-logic="intuitionistic_prop"
-                  data-tab="verify"
-                  aria-label="Load identity proof into Studio and run check">
-            Load &amp; run in Studio →
-          </button>
-        </div>
+  have h3: P -&gt; P by imp_intro h1 h2
+  conclude P -&gt; P by h3</pre>
+        <a href="studio.html?example=imp_self" class="btn btn-ghost">Open in Studio →</a>
       </div>
-      <pre class="tstep-code" aria-label="Example: imp_self proof of P implies P">theorem imp_self:
-  suppose h1: P
-    have h2: P by copy h1
-  have h3: P -> P by imp_intro h1 h2
-  conclude P -> P by h3</pre>
-    </div>
 
-    <!-- ── Step 2: Catch an error ────────────────────────────────────────── -->
-    <div class="tut-step" id="tstep-2">
-      <div class="tstep-content">
-        <h3 class="tstep-title">2 — Catch an error</h3>
-        <div class="tstep-desc">
-          <p>The kernel rejects each step that does not satisfy its rule.
-            Here <code>mp</code> (modus ponens) requires:</p>
-          <ul class="tstep-keywords">
-            <li>a premise of form <code>A → B</code> — h1 is <code>P → Q</code> ✓</li>
-            <li>a premise matching the antecedent A — h2 is <code>R</code>, not <code>P</code> ✗</li>
-          </ul>
-          <p class="tstep-note">
-            The Diagnose panel classifies the error:
-            <em>InvalidTransition</em>, <em>UndefinedSymbol</em>,
-            <em>UnusedAssumption</em>, and more — each with a line number.
-          </p>
-        </div>
-        <div class="tstep-actions">
-          <button class="btn btn-primary tut-load-btn"
-                  data-proof="theorem bad_mp:
-  assume h1: P -> Q
-  assume h2: R
-  have h3: Q by mp h1 h2
-  conclude Q by h3"
-                  data-logic="intuitionistic_prop"
-                  data-tab="diagnose"
-                  aria-label="Load type-mismatch proof and run diagnostics">
-            Load &amp; run diagnostics →
-          </button>
-        </div>
-      </div>
-      <pre class="tstep-code" aria-label="Example: bad_mp proof with type mismatch error">theorem bad_mp:
-  assume h1: P -> Q
+      <div class="example-mini-card">
+        <div class="example-mini-tag tag-invalid">invalid · type mismatch</div>
+        <h3 class="example-mini-title">Wrong premise for mp</h3>
+        <pre class="example-mini-code">theorem bad_mp:
+  assume h1: P -&gt; Q
   assume h2: R
   have h3: Q by mp h1 h2
   conclude Q by h3</pre>
-    </div>
-
-    <!-- ── Step 3: Dependency graph ──────────────────────────────────────── -->
-    <div class="tut-step" id="tstep-3">
-      <div class="tstep-content">
-        <h3 class="tstep-title">3 — Dependency graph</h3>
-        <div class="tstep-desc">
-          <p>The Graph panel extracts proof structure as a dependency graph.
-            Each node is a step; directed edges show which steps cite which hypotheses.</p>
-          <p class="tstep-note">
-            Output is DOT notation. Paste it into
-            <a href="https://dreampuf.github.io/GraphvizOnline/" target="_blank"
-               rel="noopener">Graphviz Online ↗</a>
-            to visualise the proof tree. Useful for spotting unused assumptions and
-            isolated subproofs.
-          </p>
-        </div>
-        <div class="tstep-actions">
-          <button class="btn btn-primary tut-load-btn"
-                  data-proof="theorem chain:
-  assume h1: P -> Q
-  assume h2: Q -> R
-  assume h3: P
-  have h4: Q by mp h1 h3
-  have h5: R by mp h2 h4
-  conclude R by h5"
-                  data-logic="intuitionistic_prop"
-                  data-tab="graph"
-                  aria-label="Load hypothetical syllogism proof and view dependency graph">
-            Load &amp; view graph →
-          </button>
-        </div>
+        <a href="studio.html?example=bad_mp" class="btn btn-ghost">Open in Studio →</a>
       </div>
-      <pre class="tstep-code" aria-label="Example: chain proof of hypothetical syllogism">theorem chain:
-  assume h1: P -> Q
-  assume h2: Q -> R
-  assume h3: P
-  have h4: Q by mp h1 h3
-  have h5: R by mp h2 h4
-  conclude R by h5</pre>
-    </div>
 
-    <!-- ── Step 4: Classical vs intuitionistic ───────────────────────────── -->
-    <div class="tut-step" id="tstep-4">
-      <div class="tstep-content">
-        <h3 class="tstep-title">4 — Classical vs intuitionistic</h3>
-        <div class="tstep-desc">
-          <p>
-            The same proof can be
-            <strong class="clr-ok">accepted</strong> or
-            <strong class="clr-err">rejected</strong>
-            depending on the active logic.
-            Double negation elimination (<code>dne</code>) is a rule in classical
-            logic but not in intuitionistic logic.
-          </p>
-          <p class="tstep-note">
-            The kernel never changes — only the active rule set does.
-            This is proof relativity at the rule-availability level.
-            Switch the logic selector in the Studio to compare.
-          </p>
-        </div>
-        <div class="tstep-actions">
-          <button class="btn btn-primary tut-load-btn"
-                  data-proof="theorem dne_consequent:
-  assume h1: not not P
-  have h2: P by dne h1
-  conclude P by h2"
-                  data-logic="classical_prop"
-                  data-tab="verify"
-                  aria-label="Load DNE proof with classical logic (should pass)">
-            Try Classical ✓
-          </button>
-          <button class="btn btn-ghost tut-load-btn"
-                  data-proof="theorem dne_consequent:
-  assume h1: not not P
-  have h2: P by dne h1
-  conclude P by h2"
-                  data-logic="intuitionistic_prop"
-                  data-tab="verify"
-                  aria-label="Load DNE proof with intuitionistic logic (should fail)">
-            Try Intuitionistic ✗
-          </button>
-        </div>
-      </div>
-      <pre class="tstep-code" aria-label="Example: dne proof, classical only">theorem dne_consequent:
+      <div class="example-mini-card">
+        <div class="example-mini-tag tag-classical">classical only</div>
+        <h3 class="example-mini-title">Double negation elimination</h3>
+        <pre class="example-mini-code">theorem dne:
   assume h1: not not P
   have h2: P by dne h1
   conclude P by h2</pre>
+        <a href="studio.html?example=dne" class="btn btn-ghost">Open in Studio →</a>
+      </div>
+
     </div>
 
-    <!-- ── Step 5: Semantic tools ─────────────────────────────────────────── -->
-    <div class="tut-step" id="tstep-5">
-      <div class="tstep-content">
-        <h3 class="tstep-title">5 — Semantic tools (⊢ vs ⊨)</h3>
-        <div class="tstep-desc">
-          <p>Stele separates <strong>syntactic provability</strong> (⊢, proof checking)
-            from <strong>semantic validity</strong> (⊨). The Semantics panel provides
-            two independent tools:</p>
-          <ul class="tstep-keywords">
-            <li><strong>Rule Soundness</strong> — checks whether each inference rule
-              preserves designated values in K3 (strong Kleene), LP (Logic of Paradox),
-              or Boolean matrices.</li>
-            <li><strong>World Lattice</strong> — shows a formula's status (provable,
-              refutable, or independent) across worlds that differ in one axiom.</li>
-          </ul>
-          <p class="tstep-note">
-            These tools operate independently of proof checking — no proof text required.
-          </p>
+    <!-- Tutorial card -->
+    <div class="examples-footer">
+      <div class="tutorial-card">
+        <div class="tutorial-card-text">
+          <strong>5-minute tutorial</strong> — learn the proof format, catch an error,
+          inspect the dependency graph, and compare logics.
         </div>
-        <div class="tstep-actions">
-          <button class="btn btn-primary tut-open-tab-btn" data-tab="semantics"
-                  aria-label="Open the Semantics panel in the Studio">
-            Open Semantics panel →
-          </button>
-        </div>
+        <a href="#tutorial" class="btn btn-secondary">Start Tutorial ↓</a>
       </div>
-      <div class="tstep-code tstep-code--sem" role="img"
-           aria-label="Sample output: K3 soundness check and world lattice for P or not P">
-        <div class="sem-mini">
-          <div class="sem-mini-label">Rule Soundness — Classical / K3 matrix</div>
-          <div class="sem-mini-rows">
-            <span class="sem-mini-row"><span class="sound">mp — sound ✓</span></span>
-            <span class="sem-mini-row"><span class="unsound">lem — unsound ✗</span></span>
-            <span class="sem-mini-row"><span class="sound">and_intro — sound ✓</span></span>
-            <span class="sem-mini-row"><span class="unsound">dne — unsound ✗</span></span>
-          </div>
-        </div>
-        <div class="sem-mini" style="margin-top:14px">
-          <div class="sem-mini-label">World Lattice — P or not P</div>
-          <div class="sem-mini-rows">
-            <span class="sem-mini-row">Γ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="status-INDEPENDENT">INDEPENDENT</span></span>
-            <span class="sem-mini-row">Γ+P &nbsp;&nbsp;&nbsp; <span class="status-PROVABLE">PROVABLE</span></span>
-            <span class="sem-mini-row">Γ+¬P &nbsp; <span class="status-REFUTABLE">REFUTABLE</span></span>
-          </div>
-        </div>
-      </div>
+      <p class="examples-gallery-link">
+        All 15 curated examples →
+        <a href="studio.html#examples">Browse in Studio</a>
+      </p>
     </div>
 
-    <!-- ── Step 6: What's next ────────────────────────────────────────────── -->
-    <div class="tut-step tstep--final" id="tstep-6">
-      <h3 class="tstep-title">6 — What's next</h3>
-      <div class="tstep-final-grid">
-        <div class="tstep-next-card">
-          <div class="tstep-nc-icon" aria-hidden="true">▶</div>
-          <h4 class="tstep-nc-title">Browser Studio</h4>
-          <p class="tstep-nc-desc">
-            Write and verify proofs directly in the browser.
-            Use the Examples tab to load any of the bundled example proofs.
-          </p>
-          <a href="studio.html" class="btn btn-primary tstep-nc-btn">Open Studio →</a>
-        </div>
-        <div class="tstep-next-card">
-          <div class="tstep-nc-icon" aria-hidden="true">⬡</div>
-          <h4 class="tstep-nc-title">Example Gallery</h4>
-          <p class="tstep-nc-desc">
-            Browse 15 verified proof examples with explanations —
-            valid intuitionistic proofs, classical-only theorems,
-            and diagnostic failure cases.
-          </p>
-          <a href="#gallery" class="btn btn-ghost tstep-nc-btn">View Gallery ↓</a>
-        </div>
-        <div class="tstep-next-card">
-          <div class="tstep-nc-icon" aria-hidden="true">📖</div>
-          <h4 class="tstep-nc-title">Language Guide</h4>
-          <p class="tstep-nc-desc">
-            Complete syntax reference, inference rules, matrix semantics,
-            world lattice, CLI, and proof term elaboration.
-          </p>
-          <a href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
-             target="_blank" rel="noopener" class="btn btn-ghost tstep-nc-btn">Read Guide ↗</a>
-        </div>
-        <div class="tstep-next-card">
-          <div class="tstep-nc-icon" aria-hidden="true">∴</div>
-          <h4 class="tstep-nc-title">Technical Whitepaper</h4>
-          <p class="tstep-nc-desc">
-            Formal semantics, metatheory claims, proof-term calculus,
-            and the trust boundary specification.
-          </p>
-          <a href="research.html" class="btn btn-secondary tstep-nc-btn">Read Whitepaper →</a>
-        </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- § 10  TUTORIAL (6-step interactive walkthrough)                         -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section id="tutorial" aria-labelledby="tut-heading">
+  <div class="section-inner">
+    <div class="section-label">Tutorial</div>
+    <h2 id="tut-heading" class="section-heading">Learn Stele in 5 minutes</h2>
+    <a class="tut-skip" href="studio.html">Skip to Studio →</a>
+
+    <div class="tutorial-steps">
+
+      <div id="tstep-1" data-step="1" class="tut-step">
+        <h3 class="tstep-title">Write your first proof</h3>
+        <p>A Stele proof names hypotheses and cites a rule for each step.
+           The kernel checks every citation.</p>
+        <pre class="tut-code">theorem imp_self:
+  suppose h1: P
+    have h2: P by copy h1
+  have h3: P -&gt; P by imp_intro h1 h2
+  conclude P -&gt; P by h3</pre>
+        <button class="tut-load-btn btn btn-ghost"
+                data-tab="verify"
+                data-proof="theorem imp_self: suppose h1: P have h2: P by copy h1 have h3: P -> P by imp_intro h1 h2 conclude P -> P by h3">
+          Load in Studio
+        </button>
       </div>
+
+      <div id="tstep-2" data-step="2" class="tut-step">
+        <h3 class="tstep-title">Verify with the kernel</h3>
+        <p>Select a logic and click Verify. The kernel checks each rule citation
+           against that logic's schema — intuitionistic or classical.</p>
+        <pre class="tut-code">-- select: intuitionistic_prop
+-- click: Verify
+-- result: ✓ Valid · 3 steps</pre>
+        <button class="tut-load-btn btn btn-ghost"
+                data-tab="verify"
+                data-proof="theorem imp_self: suppose h1: P have h2: P by copy h1 have h3: P -> P by imp_intro h1 h2 conclude P -> P by h3">
+          Verify in Studio
+        </button>
+      </div>
+
+      <div id="tstep-3" data-step="3" class="tut-step">
+        <h3 class="tstep-title">Catch an error</h3>
+        <p>Stele's diagnostics locate the exact step with the wrong rule
+           citation — undefined symbol, wrong premise type, missing hypothesis.</p>
+        <pre class="tut-code">theorem bad_mp:
+  assume h1: P -&gt; Q
+  assume h2: R          -- wrong type!
+  have h3: Q by mp h1 h2
+  conclude Q by h3</pre>
+        <button class="tut-load-btn btn btn-ghost"
+                data-tab="diagnose"
+                data-proof="theorem bad_mp: assume h1: P -> Q assume h2: R have h3: Q by mp h1 h2 conclude Q by h3">
+          Run Diagnostics
+        </button>
+      </div>
+
+      <div id="tstep-4" data-step="4" class="tut-step">
+        <h3 class="tstep-title">Inspect the dependency graph</h3>
+        <p>The graph view extracts the proof's step dependencies, detects
+           cycles, and exports DOT notation for visualization tools.</p>
+        <pre class="tut-code">-- theorem node
+-- → suppose/assume nodes
+-- → have nodes → conclude node
+-- each edge: "cited by" relation</pre>
+        <button class="tut-load-btn btn btn-ghost"
+                data-tab="graph"
+                data-proof="theorem imp_self: suppose h1: P have h2: P by copy h1 have h3: P -> P by imp_intro h1 h2 conclude P -> P by h3">
+          Show Graph
+        </button>
+      </div>
+
+      <div id="tstep-5" data-step="5" class="tut-step">
+        <h3 class="tstep-title">Compare logics</h3>
+        <p>The same proof can be valid under classical logic but rejected by
+           intuitionistic logic. Switch the logic selector to see the verdict change.</p>
+        <pre class="tut-code">theorem dne:
+  assume h1: not not P
+  have h2: P by dne h1
+  conclude P by h2
+-- classical_prop: ✓ Valid
+-- intuitionistic_prop: ✗ Rejected</pre>
+        <button class="tut-load-btn btn btn-ghost"
+                data-tab="verify"
+                data-proof="theorem dne: assume h1: not not P have h2: P by dne h1 conclude P by h2">
+          Try Classical vs Intuitionistic
+        </button>
+      </div>
+
+      <div id="tstep-6" data-step="6" class="tut-step tstep-final">
+        <h3 class="tstep-title">What's next</h3>
+        <p>You've seen the core workflow. Here's where to go deeper:</p>
+        <ul class="tut-next-links">
+          <li><a href="architecture.html">Architecture &amp; Trust Model</a> — how the kernel boundary works</li>
+          <li><a href="research.html">Whitepaper</a> — formal semantics and metatheory evidence</li>
+          <li><a href="studio.html#examples">Example Gallery</a> — 15 curated proofs in the Studio</li>
+        </ul>
+      </div>
+
     </div>
 
-    <!-- Navigation -->
-    <nav class="tut-nav" aria-label="Tutorial navigation">
-      <button id="tut-prev" class="btn btn-ghost" disabled
-              aria-label="Previous tutorial step">← Previous</button>
-      <span id="tut-counter" class="tut-counter"
-            aria-live="polite" aria-atomic="true">Step 1 of 6</span>
-      <button id="tut-next" class="btn btn-ghost"
-              aria-label="Next tutorial step">Next →</button>
+    <nav aria-label="Tutorial navigation" class="tut-nav">
+      <button id="tut-prev" aria-label="Previous tutorial step" class="btn btn-ghost tut-btn">← Prev</button>
+      <div class="tut-dots" aria-hidden="true">
+        <button data-step="1" class="tut-dot tut-dot--active" aria-label="Tutorial step 1">·</button>
+        <button data-step="2" class="tut-dot" aria-label="Tutorial step 2">·</button>
+        <button data-step="3" class="tut-dot" aria-label="Tutorial step 3">·</button>
+        <button data-step="4" class="tut-dot" aria-label="Tutorial step 4">·</button>
+        <button data-step="5" class="tut-dot" aria-label="Tutorial step 5">·</button>
+        <button data-step="6" class="tut-dot" aria-label="Tutorial step 6">·</button>
+      </div>
+      <span id="tut-counter" aria-live="polite" class="tut-counter">1 / 6</span>
+      <button id="tut-next" aria-label="Next tutorial step" class="btn btn-primary tut-btn">Next →</button>
     </nav>
 
   </div>
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 4  STUDIO ENTRY POINT                                                 -->
+<!-- § 11  QUICKSTART — three paths in                                       -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<section id="studio" aria-labelledby="studio-cta-heading">
-  <div class="section-inner">
-    <div class="section-label">Proof Workbench</div>
-    <h2 id="studio-cta-heading" class="section-heading">Write and verify proofs</h2>
-
-    <div class="studio-preview-block">
-      <pre class="studio-preview-code" aria-label="Example proof: P implies P">theorem imp_self:
-  suppose h1: P
-    have h2: P by copy h1
-  have h3: P -&gt; P by imp_intro h1 h2
-  conclude P -&gt; P by h3</pre>
-      <div class="studio-preview-meta">
-        <div class="studio-preview-verdict" aria-hidden="true">✓ Valid — intuitionistic_prop</div>
-        <div class="studio-preview-actions">
-          <a href="studio.html" class="btn btn-primary">Open Studio →</a>
-          <a href="studio.html?example=imp_self" class="btn btn-ghost">Load this example</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="studio-trust-note" role="note" aria-label="Execution trust model">
-      <span class="trust-pill trust-pill--kernel">kernel.py — trusted</span>
-      <span class="trust-pill trust-pill--untrusted">diagnostics / hints — untrusted</span>
-      <span class="trust-pill trust-pill--local">browser-local · no backend</span>
-    </div>
-
-  </div><!-- /.section-inner -->
-</section>
-
-
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 5  VERIFIED EXAMPLES GALLERY                                          -->
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<section id="gallery" aria-labelledby="gallery-heading">
-  <div class="section-inner">
-    <div class="section-label">Verified Examples</div>
-    <h2 id="gallery-heading" class="section-heading">
-      15 curated proof examples
-    </h2>
-    <p class="section-sub">
-      Each example is verified against the Stele kernel.
-      Click <em>Open in Studio</em> to load any proof into the workbench.
-      Switch the logic selector to observe how acceptance changes.
-    </p>
-
-    <!-- Populated by renderGallery() in stele-pyodide.js -->
-    <div id="gallery-grid" class="gallery-grid" aria-live="polite">
-      <p class="dim-text">Loading gallery…</p>
-    </div>
-
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 6  QUICKSTART                                                         -->
-<!-- ════════════════════════════════════════════════════════════════════════ -->
-<section id="quickstart" aria-labelledby="qs-heading">
+<section id="quickstart" aria-labelledby="quickstart-heading">
   <div class="section-inner">
     <div class="section-label">Get Started</div>
-    <h2 id="qs-heading" class="section-heading">Three ways to use Stele</h2>
+    <h2 id="quickstart-heading" class="section-heading">Three ways in</h2>
 
-    <div class="qs-grid">
+    <div class="audience-cards" role="list" aria-label="Starting paths by role">
 
-      <div class="qs-card qs-card--featured">
-        <div class="qs-num">1</div>
-        <h3 class="qs-title">Browser Studio</h3>
-        <p class="qs-desc">
-          No installation. Open the site and start writing proofs immediately.
-          Pyodide/WASM runs the full kernel locally — nothing is sent to a server.
-        </p>
-        <a href="studio.html" class="btn btn-primary qs-btn">Open Studio →</a>
-        <p class="qs-note">~8 MB first-load (Pyodide runtime), then cached.</p>
+      <div class="audience-card" role="listitem">
+        <h3 class="audience-card-title">Technical reviewer</h3>
+        <p class="audience-card-desc">Verify the kernel boundary claim and audit the trust model.</p>
+        <a href="architecture.html" class="btn btn-ghost">Architecture →</a>
       </div>
 
-      <div class="qs-card">
-        <div class="qs-num">2</div>
-        <h3 class="qs-title">Standalone App</h3>
-        <p class="qs-desc">
-          Download a pre-built executable. No Python install needed.
-          The browser opens automatically to a local Studio with full features.
-        </p>
-        <a href="https://github.com/re-glow/stele-logic/releases"
-           target="_blank" rel="noopener"
-           class="btn btn-secondary qs-btn">Releases ↗</a>
-        <div class="qs-code">
-          <code>SteleStudio       # macOS / Linux</code>
-          <code>SteleStudio.exe   # Windows</code>
-        </div>
+      <div class="audience-card" role="listitem">
+        <h3 class="audience-card-title">Researcher</h3>
+        <p class="audience-card-desc">Read the formal semantics, metatheory claims, and evidence.</p>
+        <a href="research.html" class="btn btn-ghost">Whitepaper →</a>
       </div>
 
-      <div class="qs-card">
-        <div class="qs-num">3</div>
-        <h3 class="qs-title">Local Python</h3>
-        <p class="qs-desc">
-          Clone the repo and run the local Studio with full features, CLI,
-          benchmarks, and optional ML / Lean integrations.
-          Requires Python 3.10+.
-        </p>
-        <a href="https://github.com/re-glow/stele-logic"
-           target="_blank" rel="noopener"
-           class="btn btn-ghost qs-btn">View Source ↗</a>
-        <div class="qs-code">
-          <code>python -m stele</code>
-          <code>python -m pytest -q</code>
-        </div>
+      <div class="audience-card" role="listitem">
+        <h3 class="audience-card-title">Developer</h3>
+        <p class="audience-card-desc">Run proofs in the browser or install as a Python 3.10+ library.</p>
+        <a href="studio.html" class="btn btn-ghost">Open Studio →</a>
       </div>
 
     </div>
@@ -643,64 +552,57 @@
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
-<!-- § 7  DOCS / LINKS                                                       -->
+<!-- § 12  RESEARCH CONTEXT + DOCS + FINAL CTA                              -->
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <section id="docs" aria-labelledby="docs-heading">
   <div class="section-inner">
     <div class="section-label">Documentation</div>
-    <h2 id="docs-heading" class="section-heading">Learn more</h2>
+    <h2 id="docs-heading" class="section-heading">Go deeper</h2>
 
-    <div class="docs-grid">
-      <a class="doc-card" href="research.html">
-        <span class="doc-icon" aria-hidden="true">∴</span>
-        <span class="doc-title">Technical Whitepaper</span>
-        <span class="doc-desc">Formal semantics, proof terms, Kripke semantics, metatheory claims and evidence.</span>
+    <p class="research-line">
+      Stele explores what happens when logical validity is treated as a rule-set parameter
+      rather than a fixed background assumption.
+    </p>
+
+    <div class="docs-grid docs-grid--three">
+      <a class="doc-card" href="architecture.html">
+        <span class="doc-title">Architecture &amp; Trust</span>
+        <span class="doc-desc">Trust boundary, kernel design, de Bruijn invariants, and the UNTRUSTED boundary.</span>
       </a>
       <a class="doc-card" href="https://github.com/re-glow/stele-logic/blob/main/GUIDE.md"
          target="_blank" rel="noopener">
-        <span class="doc-icon" aria-hidden="true">📖</span>
-        <span class="doc-title">Language Guide</span>
-        <span class="doc-desc">Proof syntax, rules, matrix semantics, world lattice, CLI.</span>
+        <span class="doc-title">Language Guide ↗</span>
+        <span class="doc-desc">Proof syntax, inference rules, matrix semantics, world lattice, CLI reference.</span>
       </a>
-      <a class="doc-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/semantics.md"
-         target="_blank" rel="noopener">
-        <span class="doc-icon" aria-hidden="true">⊢</span>
-        <span class="doc-title">Formal Semantics</span>
-        <span class="doc-desc">BNF grammar, typing rules, reduction rules, de Bruijn layer.</span>
-      </a>
-      <a class="doc-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/metatheory.md"
-         target="_blank" rel="noopener">
-        <span class="doc-icon" aria-hidden="true">∴</span>
-        <span class="doc-title">Metatheory</span>
-        <span class="doc-desc">Subject reduction, normalization, consistency — claims and evidence.</span>
-      </a>
-      <a class="doc-card" href="https://github.com/re-glow/stele-logic/blob/main/docs/proof-terms.md"
-         target="_blank" rel="noopener">
-        <span class="doc-icon" aria-hidden="true">λ</span>
-        <span class="doc-title">Proof Terms</span>
-        <span class="doc-desc">Curry–Howard core, FOL fragment, term parser, elaboration API.</span>
-      </a>
-      <a class="doc-card" href="https://github.com/re-glow/stele-logic"
-         target="_blank" rel="noopener">
-        <span class="doc-icon" aria-hidden="true">⌥</span>
-        <span class="doc-title">GitHub</span>
-        <span class="doc-desc">Source code, issues, CI, releases.</span>
-      </a>
-      <a class="doc-card" href="https://github.com/re-glow/stele-logic/blob/main/DECISIONS.md"
-         target="_blank" rel="noopener">
-        <span class="doc-icon" aria-hidden="true">⚙</span>
-        <span class="doc-title">Design Decisions</span>
-        <span class="doc-desc">Architecture rationale, invariants, trust boundaries.</span>
+      <a class="doc-card" href="research.html">
+        <span class="doc-title">Whitepaper</span>
+        <span class="doc-desc">Formal semantics, metatheory claims, proof-term calculus, and evidence.</span>
       </a>
     </div>
 
+    <!-- Secondary doc links: theory + foundations -->
+    <div class="docs-secondary-links">
+      <a href="theory.html">Theory &amp; Semantics</a>
+      <span class="footer-sep" aria-hidden="true">·</span>
+      <a href="foundations.html">Logical Foundations</a>
+    </div>
+
+    <!-- Final CTAs -->
+    <div class="final-ctas">
+      <a href="studio.html"   class="btn btn-primary hero-cta">Open Studio</a>
+      <a href="research.html" class="btn btn-ghost   hero-cta">Read Whitepaper</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener"
+         class="btn btn-ghost hero-cta">View Source ↗</a>
+    </div>
+
+    <!-- Scope note -->
     <div class="scope-note">
       <strong>Scope:</strong>
       Stele is a proof <em>checker</em>, not a theorem prover — it does not search for proofs.
-      The browser build excludes optional ML / Lean components.
-      Proof terms use the Curry–Howard correspondence for the intuitionistic fragment;
-      classical proofs are accepted at the rule level, not through proof-term extraction.
+      The browser build excludes optional ML and Lean components.
+      Classical proofs are accepted at the rule level; proof-term extraction covers the intuitionistic fragment.
     </div>
+
   </div>
 </section>
 
@@ -712,9 +614,9 @@
     <div class="footer-inner">
       <span class="footer-brand">STELE</span>
       <span class="footer-sep">·</span>
-      <span>Formal Verification Framework for Mathematical Reasoning</span>
+      <span>Proof checker for natural-deduction reasoning</span>
       <span class="footer-sep">·</span>
-      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/re-glow/stele-logic" target="_blank" rel="noopener">GitHub ↗</a>
     </div>
     <div class="footer-note">
       Browser Studio runs entirely via Pyodide/WASM — no backend, no data transmission.
@@ -723,7 +625,6 @@
 </footer>
 
 <script src="assets/stele-pyodide.js"></script>
-<!-- Visual motif primitives (auto-inits data-stele-visual elements; defer = non-blocking) -->
 <script src="assets/visuals.js" defer></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Stele Public Site — styles
+﻿/* Stele Public Site — styles
    Dark, academic, futuristic. No external libraries.
    Single colour palette; mathematical observatory feel. */
 
@@ -39,7 +39,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
-a { color: var(--accent2); text-decoration: none; }
+a { color: var(--text-secondary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 button:disabled { opacity: 0.38; cursor: not-allowed; }
@@ -2729,4 +2729,67 @@ blockquote.spectral {
   margin-left: auto; font-size: .67rem; padding: 2px 7px;
   border-radius: 3px; background: rgba(62,156,143,.1); color: var(--success);
   border: 1px solid rgba(62,156,143,.22); font-family: var(--mono);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* Design/hero-orb-and-centering — §1 orb, §3 color, §4 cards               */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+/* §1 — Galaxy-orb: absolute centered background behind hero text */
+.hero-orb-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(82vh, 900px);
+  height: min(82vh, 900px);
+  min-height: unset;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.28;
+}
+.hero-orb-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb-wrap { opacity: 0.18; }
+}
+@media (max-width: 600px) {
+  .hero-orb-wrap {
+    width: min(94vw, 480px);
+    height: min(94vw, 480px);
+  }
+}
+
+/* §3 — Keep nav brand + primary CTA purple; neutralize footer/prose links */
+.nav-brand { color: var(--accent2); }
+.footer-inner a,
+.footer-nav a,
+.footer-copy a { color: var(--muted); }
+.footer-inner a:hover,
+.footer-nav a:hover,
+.footer-copy a:hover { color: var(--text); }
+
+/* §4 — Feature grid: fixed 4 columns, uniform card height */
+.feature-grid {
+  grid-template-columns: repeat(4, 1fr);
+  align-items: stretch;
+}
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+}
+.feature-desc { flex: 1; }
+@media (max-width: 860px) {
+  .feature-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .feature-grid { grid-template-columns: 1fr; }
 }

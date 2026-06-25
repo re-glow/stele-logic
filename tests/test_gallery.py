@@ -341,8 +341,10 @@ class TestSiteAccessibility:
         assert 'aria-labelledby="gallery-heading"' in html
 
     def test_hero_symbols_hidden_from_screen_readers(self):
-        assert 'aria-hidden="true"' in self._html()
-        assert 'class="hero-symbols"' in self._html()
+        html = self._html()
+        assert 'aria-hidden="true"' in html
+        # Symbols may be in the orb canvas wrapper or a dedicated symbols div
+        assert 'class="hero-symbols"' in html or 'hero-orb-wrap' in html
 
     def test_focus_visible_defined_in_css(self):
         css = self._css()

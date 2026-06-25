@@ -636,6 +636,17 @@
       return { src: nodeMap[d[0]], dst: nodeMap[d[1]], dashed: d[2] };
     });
 
+    /* Verdict pulse: propagates along edges every ~6 s (reduced-motion → skip) */
+    var PULSE_PERIOD = 360; /* frames ≈ 6 s at 60 fps */
+    var PULSE_DUR    = 100; /* frames for full propagation */
+    var pulseT = 0, pulseTick = 0;
+
+    function pulseProg() {
+      /* Returns 0..1 = how far through the pulse propagation we are */
+      if (reduced || pulseTick === 0) return -1;
+      return Math.min(1, pulseTick / PULSE_DUR);
+    }
+
     var t = 0, rafId;
 
     function nodePos(n) {
@@ -653,8 +664,19 @@
       ctx.fillStyle = atm;
       ctx.fillRect(0, 0, W, H);
 
+      /* Verdict pulse: per-edge phase windows (0=premise,1=derive,2=verdict) */
+      var pp = pulseProg();
+      var edgePulseWindows = [
+        [0, 0.35],  /* p  → mp    */
+        [0, 0.35],  /* pq → mp    */
+        [0.30, 0.70], /* mp → q   */
+        [0.30, 0.70], /* mp → kernel */
+        [0.65, 1.0],  /* q  → verdict */
+        [0.65, 1.0]   /* kernel → verdict */
+      ];
+
       /* Edges */
-      edges.forEach(function(e) {
+      edges.forEach(function(e, ei) {
         var sp = nodePos(e.src), dp = nodePos(e.dst);
         var vx = dp.x - sp.x, vy = dp.y - sp.y;
         var len = Math.sqrt(vx * vx + vy * vy);
@@ -683,6 +705,29 @@
         ctx.closePath();
         ctx.fillStyle = 'rgba(' + er[0] + ',' + er[1] + ',' + er[2] + ',' + a.toFixed(3) + ')';
         ctx.fill();
+
+        /* Pulse dot travelling along edge */
+        if (pp >= 0 && ei < edgePulseWindows.length) {
+          var win = edgePulseWindows[ei];
+          var local = (pp - win[0]) / (win[1] - win[0]);
+          if (local >= 0 && local <= 1) {
+            var px = x1 + (x2 - x1) * local;
+            var py = y1 + (y2 - y1) * local;
+            var pc = e.dashed ? [62, 156, 143] : [200, 180, 255];
+            ctx.beginPath();
+            ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.9)';
+            ctx.fill();
+            var glr = ctx.createRadialGradient(px, py, 0, px, py, 14);
+            glr.addColorStop(0, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.35)');
+            glr.addColorStop(1, 'rgba(11,10,16,0)');
+            ctx.beginPath();
+            ctx.arc(px, py, 14, 0, Math.PI * 2);
+            ctx.fillStyle = glr;
+            ctx.fill();
+          }
+        }
+
         ctx.restore();
       });
 
@@ -731,6 +776,12 @@
 
       if (!reduced) {
         t += 0.014;
+        pulseT++;
+        if (pulseT >= PULSE_PERIOD) { pulseT = 0; pulseTick = 1; }
+        if (pulseTick > 0) {
+          pulseTick++;
+          if (pulseTick > PULSE_DUR + 20) pulseTick = 0; /* hold briefly, then reset */
+        }
         rafId = requestAnimationFrame(drawFrame);
       }
     }

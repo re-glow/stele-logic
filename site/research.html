@@ -238,6 +238,59 @@
     </div>
   </section>
 
+<!-- Claim → Evidence → Limitation matrix -->
+<section id="claims" aria-labelledby="research-claims-heading">
+  <div class="section-inner">
+    <div class="section-label">Transparency</div>
+    <h2 id="research-claims-heading" class="section-heading">What Stele claims — and doesn't</h2>
+    <p class="section-sub">
+      Evidence values are measured from the repository.
+      Limitations are stated plainly — no inflation.
+    </p>
+    <div class="claim-matrix-wrap">
+      <table class="claim-matrix" role="table" aria-label="Claim, evidence, and limitation matrix">
+        <thead>
+          <tr>
+            <th scope="col">Claim</th>
+            <th scope="col">Evidence</th>
+            <th scope="col">Limitation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Subject-reduction holds for STLC fragment</td>
+            <td>Property-based tests (Hypothesis); proof-term typing tests</td>
+            <td class="limitation">Not machine-verified in Lean/Coq; Hypothesis tests are regression, not formal proof.</td>
+          </tr>
+          <tr>
+            <td>Classical propositional logic is sound</td>
+            <td><code>test_rule_soundness_classical_prop</code>; all Boolean matrix checks pass</td>
+            <td class="limitation">Soundness is checked against the built-in matrix, not an independent semantic definition.</td>
+          </tr>
+          <tr>
+            <td>Intuitionistic logic is sound (bounded Kripke)</td>
+            <td>Bounded countermodel search; Kripke tests; 15 curated examples</td>
+            <td class="limitation">Bounded search: countermodels up to width 3 only. Not a completeness proof.</td>
+          </tr>
+          <tr>
+            <td>Kernel is the only truth-producing path</td>
+            <td><code>test_regression_invariants</code> enforces import isolation (kernel ↔ matrix)</td>
+            <td class="limitation">Python's import system does not enforce isolation at the language level; it's a convention enforced by tests.</td>
+          </tr>
+          <tr>
+            <td>Proof-term elaboration is conservative</td>
+            <td><code>elaborate.py</code> crosscheck tests; term-check CLI examples</td>
+            <td class="limitation">Elaboration covers the intuitionistic fragment only; classical proofs are checked at rule level, not term level.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-sub" style="margin-top:var(--space-8)">
+      See <a href="architecture.html">architecture page</a> for the full trust boundary and component model.
+    </p>
+  </div>
+</section>
+
 </main>
 
 <footer class="site-footer" aria-label="Site footer">

@@ -1489,3 +1489,505 @@ select:focus-visible { outline: 2px solid var(--accent); }
 @media (max-width: 400px) {
   .evidence-strip { grid-template-columns: 1fr 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* Visual Identity v58 — display font, glow hierarchy, live demo, trust sig  */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Display font: Space Grotesk on all headings ──────────────────────── */
+h1, h2, h3,
+.hero-headline,
+.section-heading,
+.hero-wordmark,
+.feature-title,
+.doc-title,
+.evidence-value,
+.demo-verdict-result,
+.core-line {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.hero-headline {
+  letter-spacing: -0.025em;
+}
+
+/* Spectral relegated to pull-quote / callout only */
+.pull-quote,
+blockquote.spectral {
+  font-family: var(--font-serif);
+}
+
+/* ── Glow hierarchy: ONLY primary CTA · valid verdict · kernel node ──── */
+
+/* Remove glow from cards not in the allowed set */
+.feature-card,
+.audience-card,
+.trust-card:not(.trust-card-trusted),
+.evidence-item,
+.doc-card,
+.example-mini-card,
+.tut-step,
+.scope-note {
+  box-shadow: none;
+}
+
+/* Card hover: border brightening only, no glow */
+.feature-card:hover,
+.audience-card:hover,
+.doc-card:hover,
+.example-mini-card:hover {
+  border-color: var(--bord2);
+  box-shadow: none;
+}
+
+/* Primary CTA glow ✓ */
+.btn-primary {
+  box-shadow: 0 0 14px rgba(124,92,255,.15);
+}
+.btn-primary:hover {
+  box-shadow: 0 0 22px rgba(124,92,255,.28);
+}
+
+/* Valid verdict glow ✓ */
+.demo-verdict--valid .demo-verdict-result,
+#demo-verdict-result[data-state="valid"] {
+  color: var(--success);
+  text-shadow: 0 0 14px rgba(62,156,143,.30);
+}
+
+/* Invalid verdict color */
+#demo-verdict-result[data-state="invalid"] {
+  color: var(--red);
+  text-shadow: none;
+}
+
+/* Kernel node glow ✓ */
+.trust-flow-node--kernel {
+  border-color: rgba(62,156,143,.7);
+  box-shadow: 0 0 16px rgba(62,156,143,.18), inset 0 0 8px rgba(62,156,143,.06);
+}
+
+/* ── Hero eyebrow label ───────────────────────────────────────────────── */
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: var(--space-4);
+  opacity: 0.8;
+}
+
+/* ── Live demo enhanced: toggle controls ─────────────────────────────── */
+.demo-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.demo-toggle-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  letter-spacing: .08em;
+}
+
+.demo-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.demo-toggle-btn {
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  padding: 5px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--dur-normal), color var(--dur-normal);
+}
+
+.demo-toggle-btn:hover {
+  border-color: var(--bord2);
+  color: var(--text);
+}
+
+.demo-toggle-btn--active {
+  border-color: var(--accent);
+  color: var(--accent2);
+}
+
+.demo-toggle-btn--invalid.demo-toggle-btn--active {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ── Editor with line numbers ────────────────────────────────────────── */
+.demo-editor-content {
+  display: flex;
+  overflow-x: auto;
+}
+
+.demo-line-nums {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 10px 16px 14px;
+  min-width: 32px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  line-height: 1.75;
+  color: var(--dim);
+  user-select: none;
+  border-right: 1px solid var(--border);
+  background: var(--surf3);
+  flex-shrink: 0;
+}
+
+.demo-line-nums span {
+  display: block;
+}
+
+.demo-line-nums span.err {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.demo-editor-code {
+  padding: 16px 18px;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  color: var(--text);
+  line-height: 1.75;
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0;
+  background: none;
+  border: none;
+  flex: 1;
+}
+
+/* Syntax highlight tokens */
+.tok-kw   { color: #9D7BFF; }               /* keyword: theorem, suppose, have, conclude */
+.tok-label { color: var(--text-secondary); } /* hypothesis labels: h1, h2 */
+.tok-form  { color: var(--cyan); }           /* formulas: P, Q, P→Q */
+.tok-rule  { color: #D4A050; }              /* rule names: mp, imp_intro, copy, dne */
+.tok-colon { color: var(--muted); }
+.tok-com   { color: var(--dim); font-style: italic; }
+
+/* Error line highlight */
+.demo-line--err {
+  background: rgba(255,53,102,.08);
+  display: block;
+  margin-left: -18px;
+  padding-left: 18px;
+  margin-right: -18px;
+  padding-right: 18px;
+  border-left: 2px solid rgba(255,53,102,.5);
+}
+
+/* Error annotation bar at bottom of editor */
+.demo-error-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255,53,102,.05);
+  border-top: 1px solid rgba(255,53,102,.20);
+  font-family: var(--font-mono);
+  font-size: .76rem;
+  line-height: 1.6;
+  color: rgba(255,53,102,.85);
+}
+
+.demo-error-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Verdict card: state variants ────────────────────────────────────── */
+.demo-verdict {
+  transition: border-color var(--dur-normal);
+}
+
+.demo-verdict--valid {
+  border-color: rgba(62,156,143,.25);
+}
+
+.demo-verdict--invalid {
+  border-color: rgba(255,53,102,.22);
+}
+
+/* ── Trust signature diagram (landing) ───────────────────────────────── */
+.trust-sig {
+  max-width: 660px;
+  margin: var(--space-8) auto var(--space-6);
+}
+
+.trust-sig svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.trust-sig-caption {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-top: var(--space-3);
+  letter-spacing: .02em;
+}
+
+/* ── Classical vs Intuitionistic comparison ──────────────────────────── */
+.logic-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  max-width: 700px;
+  margin: var(--space-8) 0;
+}
+
+.logic-compare-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.logic-compare-header {
+  padding: 10px 16px;
+  background: var(--surf2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: .08em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logic-compare-name {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.logic-compare-body {
+  padding: 16px;
+}
+
+.logic-compare-formula {
+  font-family: var(--font-mono);
+  font-size: .88rem;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.logic-compare-verdict {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.logic-compare-verdict--valid   { color: var(--success); }
+.logic-compare-verdict--invalid { color: var(--red); }
+
+.logic-compare-note {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+@media (max-width: 540px) {
+  .logic-compare { grid-template-columns: 1fr; }
+  .demo-controls { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Claim-evidence-limitation matrix ────────────────────────────────── */
+.claim-matrix-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.claim-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  margin: var(--space-8) 0;
+}
+
+.claim-matrix th {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.claim-matrix td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(35,27,53,.5);
+  vertical-align: top;
+  line-height: var(--lh-normal);
+  color: var(--text-secondary);
+}
+
+.claim-matrix tr:last-child td { border-bottom: none; }
+
+.claim-matrix td:first-child {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.claim-matrix td code {
+  font-family: var(--font-mono);
+  font-size: .80rem;
+  color: var(--accent2);
+  background: rgba(124,92,255,.07);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.cm-limitation,
+.claim-matrix td.limitation {
+  color: var(--amber);
+  font-size: var(--text-xs);
+}
+
+/* ── Audience cards layout ────────────────────────────────────────────── */
+.audience-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap-card);
+  margin-top: var(--space-8);
+}
+
+.audience-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: border-color var(--dur-normal);
+}
+
+.audience-card:hover { border-color: var(--bord2); }
+
+.audience-card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.audience-card-desc {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin: 0;
+  line-height: var(--lh-normal);
+  flex: 1;
+}
+
+@media (max-width: 700px) {
+  .audience-cards { grid-template-columns: 1fr; }
+}
+
+/* ── Trust cards layout (studio section) ─────────────────────────────── */
+.trust-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-card);
+  margin: var(--space-6) 0;
+  max-width: 640px;
+}
+
+.trust-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.trust-card-trusted {
+  border-color: rgba(62,156,143,.30);
+}
+
+.trust-card-untrusted {
+  border-color: rgba(255,53,102,.18);
+}
+
+.trust-card-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.trust-card-trusted .trust-card-label  { color: var(--success); }
+.trust-card-untrusted .trust-card-label { color: rgba(255,53,102,.80); }
+
+.trust-card-module {
+  font-family: var(--font-mono);
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trust-card-desc {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin: 0;
+  line-height: var(--lh-normal);
+}
+
+@media (max-width: 520px) {
+  .trust-cards { grid-template-columns: 1fr; }
+}
+
+/* ── docs-secondary-links ────────────────────────────────────────────── */
+.docs-secondary-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-6) 0;
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+}
+
+.docs-secondary-links a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border);
+  transition: color var(--dur-fast), text-decoration-color var(--dur-fast);
+}
+
+.docs-secondary-links a:hover {
+  color: var(--text);
+  text-decoration-color: var(--bord2);
+}
+
+/* ── Reduced-motion: freeze all JS-driven animations ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .demo-toggle-btn,
+  .demo-verdict,
+  .trust-sig,
+  .logic-compare-col {
+    transition: none;
+  }
+}

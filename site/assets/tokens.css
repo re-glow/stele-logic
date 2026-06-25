@@ -64,8 +64,10 @@
   --status-untrusted-border: rgba(255,53,102,.2);
 
   /* ── Typography ───────────────────────────────────────────────────────── */
-  /* Spectral: mathematical serif for headings — load via assets/fonts/fonts.css */
-  --font-display: 'Spectral', 'Georgia', 'Times New Roman', serif;
+  /* Space Grotesk: technical grotesque for display headings */
+  --font-display: 'Space Grotesk', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  /* Spectral: mathematical serif — pull-quotes and callouts only */
+  --font-serif:   'Spectral', 'Georgia', 'Times New Roman', serif;
   /* IBM Plex Sans: precise grotesque for body text and UI */
   --font-sans:    'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   /* IBM Plex Mono: monospace for proofs, code, logic symbols */

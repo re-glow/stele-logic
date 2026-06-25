@@ -426,16 +426,15 @@
     opts = opts || {};
     var reduced = prefersReducedMotion();
 
-    var W = 680, H = 620;
+    var W = 900, H = 900;
     var cx = W / 2, cy = H / 2;
-    var R = 252; /* galaxy cloud radius */
+    var R = 380; /* galaxy cloud radius */
 
     var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
     canvas.width  = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     canvas.style.width  = '100%';
-    canvas.style.maxWidth = W + 'px';
-    canvas.style.height = 'auto';
+    canvas.style.height = '100%';
     canvas.setAttribute('aria-hidden', 'true');
 
     var ctx = canvas.getContext('2d');
@@ -503,17 +502,25 @@
     function drawFrame() {
       ctx.clearRect(0, 0, W, H);
 
-      /* Core glow — the heart of the orb */
-      var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.62);
-      core.addColorStop(0,    'rgba(124,92,255,.12)');
-      core.addColorStop(0.40, 'rgba(157,123,255,.05)');
+      /* Deep core radial highlight — 3D amethyst depth */
+      var inner = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.22);
+      inner.addColorStop(0,   'rgba(190,155,255,.18)');
+      inner.addColorStop(0.5, 'rgba(157,123,255,.08)');
+      inner.addColorStop(1,   'rgba(124,92,255,0)');
+      ctx.fillStyle = inner;
+      ctx.fillRect(0, 0, W, H);
+
+      /* Mid core glow — the heart of the orb */
+      var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.65);
+      core.addColorStop(0,    'rgba(124,92,255,.14)');
+      core.addColorStop(0.38, 'rgba(157,123,255,.06)');
       core.addColorStop(1,    'rgba(11,10,16,0)');
       ctx.fillStyle = core;
       ctx.fillRect(0, 0, W, H);
 
       /* Outer nebula haze */
-      var haze = ctx.createRadialGradient(cx, cy, R * 0.52, cx, cy, R * 1.18);
-      haze.addColorStop(0, 'rgba(59,42,107,.04)');
+      var haze = ctx.createRadialGradient(cx, cy, R * 0.50, cx, cy, R * 1.20);
+      haze.addColorStop(0, 'rgba(59,42,107,.05)');
       haze.addColorStop(1, 'rgba(11,10,16,0)');
       ctx.fillStyle = haze;
       ctx.fillRect(0, 0, W, H);
@@ -546,11 +553,12 @@
 
       sorted.forEach(function(item) {
         var p   = item.p;
-        var d01 = (item.z + R) / (2 * R);
+        var d01 = (item.z + R) / (2 * R);   /* 0 = far back, 1 = nearest front */
         var rF  = p.r / R;
-        var alpha = Math.min(0.80, d01 * 0.58 * (1 - rF * 0.45) + 0.03);
-        var sz    = p.sz * (0.5 + d01 * 0.7);
-        if (sz < 0.18 || alpha < 0.025) return;
+        /* Stronger depth cue: front particles brighter+bigger, back dimmer+smaller */
+        var alpha = Math.min(0.85, d01 * 0.72 * (1 - rF * 0.38) + 0.02);
+        var sz    = p.sz * (0.30 + d01 * 0.90);
+        if (sz < 0.14 || alpha < 0.018) return;
         var rgb = PAL[p.ci];
         ctx.beginPath();
         ctx.arc(item.x, item.y, sz, 0, Math.PI * 2);
